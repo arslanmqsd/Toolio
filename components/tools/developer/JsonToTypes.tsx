@@ -1,0 +1,94 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { InputPanel, OutputPanel } from "@/components/tool-shell/ToolPanels";
+import SegmentedControl from "@/components/ui/SegmentedControl";
+import { generateTypes, type Language } from "@/lib/tools/developer/json-to-types";
+
+const EXAMPLE_JSON = `{
+  "id": 1024,
+  "username": "ada",
+  "email": "ada@example.com",
+  "is_active": true,
+  "score": 98.5,
+  "created_at": "2025-01-01T00:00:00Z",
+  "profile": {
+    "display_name": "Ada Lovelace",
+    "avatar_url": "https://example.com/ada.png"
+  },
+  "tags": ["admin", "beta"],
+  "orders": [
+    { "order_id": "A-1", "total": 42.5, "items": 3, "shipped_at": "2025-02-01T10:00:00Z" },
+    { "order_id": "A-2", "total": 10, "items": 1, "shipped_at": null, "coupon": "WELCOME10" }
+  ]
+}
+`;
+
+const LANGUAGES: { id: Language; label: string }[] = [
+  { id: "typescript", label: "TypeScript" },
+  { id: "python", label: "Python" },
+  { id: "go", label: "Go" },
+];
+
+const fieldClass =
+  "w-full rounded-md border border-[color:var(--border)] bg-transparent font-[family-name:var(--font-mono)] text-sm focus:outline focus:outline-1 focus:outline-[color:var(--accent)]";
+
+export default function JsonToTypes() {
+  const [json, setJson] = useState(EXAMPLE_JSON);
+  const [language, setLanguage] = useState<Language>("typescript");
+  const [rootName, setRootName] = useState("User");
+  const result = useMemo(() => generateTypes(json, language, rootName), [json, language, rootName]);
+
+  return (
+    <>
+      <InputPanel label="JSON">
+        <div className="space-y-4">
+          <textarea
+            aria-label="JSON input"
+            value={json}
+            onChange={(e) => setJson(e.target.value)}
+            rows={18}
+            spellCheck={false}
+            autoComplete="off"
+            aria-invalid={!result.ok}
+            aria-describedby={!result.ok ? "json-to-types-error" : undefined}
+            className={`${fieldClass} resize-y p-3 ${
+              result.ok ? "" : "border-[color:var(--error)] focus:outline-[color:var(--error)]"
+            }`}
+          />
+          <div className="flex flex-wrap items-end gap-4">
+            <div>
+              <label htmlFor="root-name" className="mb-1 block text-xs text-[color:var(--text-muted)]">
+                Root type name
+              </label>
+              <input
+                id="root-name"
+                value={rootName}
+                onChange={(e) => setRootName(e.target.value)}
+                placeholder="Root"
+                spellCheck={false}
+                className={`${fieldClass} px-3 py-1.5`}
+              />
+            </div>
+            <SegmentedControl label="Output language" options={LANGUAGES} value={language} onChange={setLanguage} />
+          </div>
+        </div>
+      </InputPanel>
+
+      <OutputPanel label={LANGUAGES.find((l) => l.id === language)!.label} copyText={result.ok ? result.code : undefined}>
+        {result.ok ? (
+          <pre className="whitespace-pre [tab-size:4]">{result.code}</pre>
+        ) : (
+          <div
+            id="json-to-types-error"
+            role="alert"
+            className="rounded-md border border-[color:color-mix(in_srgb,var(--error)_40%,transparent)] p-4 text-[color:var(--error)]"
+          >
+            <p className="font-semibold">Can&apos;t generate types</p>
+            <p className="mt-1">{result.error}</p>
+          </div>
+        )}
+      </OutputPanel>
+    </>
+  );
+}

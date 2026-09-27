@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Design tokens. Plain CSS custom properties (not a Tailwind theme extension)
+ * so any scope can override them — see the [data-category] block below.
+ */
+:root {
+  --bg: #0E1116;
+  --bg-light: #F5F6F8;
+  /* Brand blue for fills, buttons, focus. White text on it is 5.2:1. */
+  --accent: #2563EB;
+  --accent-warn: #C9A961;
+  --error: #E2483D;
+  --text-secondary: #5B6472;
+  /* --font-jetbrains-mono / --font-inter are set by next/font in app/layout.tsx. */
+  --font-mono: var(--font-jetbrains-mono), 'JetBrains Mono', monospace;
+  --font-ui: var(--font-inter), 'Inter', sans-serif;
+  --font-display: var(--font-ui);
+
+  /* Theme-dependent tokens. Dark is the default. */
+  --surface: var(--bg);
+  --surface-raised: #151A22;
+  --text: #E6E8EB;
+  /* Blue for text and icons; lighter in dark mode for contrast on --bg. */
+  --accent-text: #60A5FA;
+  /* Readable secondary text. --text-secondary is only ~3:1 on --bg, too dim for body copy in dark mode. */
+  --text-muted: #8C95A3;
+  /* Gold for text and small marks; --accent-warn itself is too light on --bg-light. */
+  --accent-warn-text: var(--accent-warn);
+  --border: rgb(255 255 255 / 0.1);
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --surface: var(--bg-light);
+  --surface-raised: #FFFFFF;
+  --text: #0E1116;
+  --accent-text: var(--accent);
+  --text-muted: var(--text-muted);
+  --accent-warn-text: #8A6D2B;
+  --border: rgb(14 17 22 / 0.12);
+  color-scheme: light;
+}
+
+/*
+ * Per-category overrides. The root layout wrapper carries
+ * data-category="<category id>" on /tools/<category>/... routes.
+ * Example once the category exists:
+ *
+ * [data-category="think-better"] {
+ *   --accent: #...;
+ *   --font-display: <humanist serif>, serif;
+ * }
+ */
+
+body {
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-ui);
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+/* Zero specificity so components can style their own focus state. */
+:where(:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@keyframes caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.caret {
+  animation: caret-blink 1s steps(1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .caret {
+    animation: none;
+  }
+}
