@@ -43,7 +43,7 @@ export function OutputPanel({ label = "Output", copyText, children }: OutputPane
 
 type CopyStatus = "idle" | "copied" | "failed";
 
-function CopyButton({ text }: { text?: string }) {
+export function CopyButton({ text }: { text?: string }) {
   const [status, setStatus] = useState<CopyStatus>("idle");
 
   useEffect(() => {

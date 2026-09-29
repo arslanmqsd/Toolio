@@ -2,7 +2,12 @@
 
 import { useDeferredValue, useMemo, useRef, useState } from "react";
 import { InputPanel, OutputPanel } from "@/components/tool-shell/ToolPanels";
+import Alert from "@/components/ui/Alert";
+import Button from "@/components/ui/Button";
+import Checkbox from "@/components/ui/Checkbox";
+import { CodeTextArea } from "@/components/ui/CodeField";
 import SegmentedControl from "@/components/ui/SegmentedControl";
+import { formatBytes } from "@/lib/format-bytes";
 import { formatJson, type JsonStats } from "@/lib/tools/developer/json-format";
 
 const EXAMPLE =
@@ -24,10 +29,7 @@ type Indent = (typeof INDENTS)[number]["id"];
 
 const INDENT_STRINGS: Record<Indent, string> = { "2": "  ", "4": "    ", tab: "\t" };
 
-function formatBytes(text: string): string {
-  const bytes = new TextEncoder().encode(text).length;
-  return bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(1)} KB`;
-}
+const textSize = (text: string) => formatBytes(new TextEncoder().encode(text).length);
 
 function Summary({ stats, input, output }: { stats: JsonStats; input: string; output: string }) {
   const values = Object.values(stats.counts).reduce((a, b) => a + b, 0);
@@ -36,7 +38,7 @@ function Summary({ stats, input, output }: { stats: JsonStats; input: string; ou
     ["Keys", stats.keys.toLocaleString()],
     ["Values", values.toLocaleString()],
     ["Depth", String(stats.depth)],
-    ["Size", `${formatBytes(input)} → ${formatBytes(output)}`],
+    ["Size", `${textSize(input)} → ${textSize(output)}`],
   ];
   return (
     <div className="mb-4 space-y-2 border-b border-[color:var(--border)] pb-4 font-[family-name:var(--font-ui)] text-xs">
@@ -91,34 +93,21 @@ export default function JsonFormatter() {
     <>
       <InputPanel label="JSON">
         <div className="space-y-4">
-          <textarea
+          <CodeTextArea
             ref={inputRef}
             aria-label="JSON input"
             value={text}
             onChange={(e) => setText(e.target.value)}
             rows={16}
-            spellCheck={false}
-            autoComplete="off"
-            aria-invalid={!result.ok}
+            invalid={!result.ok}
             aria-describedby={!result.ok ? "json-format-error" : undefined}
-            className={`w-full resize-y rounded-md border bg-transparent p-3 font-[family-name:var(--font-mono)] text-sm focus:outline focus:outline-1 ${
-              result.ok
-                ? "border-[color:var(--border)] focus:outline-[color:var(--accent)]"
-                : "border-[color:var(--error)] focus:outline-[color:var(--error)]"
-            }`}
           />
           <div className="flex flex-wrap items-center gap-3">
             <SegmentedControl label="Mode" options={MODES} value={mode} onChange={setMode} />
             {mode === "format" && <SegmentedControl label="Indent" options={INDENTS} value={indent} onChange={setIndent} />}
-            <label className="flex items-center gap-2 text-sm text-[color:var(--text-muted)]">
-              <input
-                type="checkbox"
-                checked={sortKeys}
-                onChange={(e) => setSortKeys(e.target.checked)}
-                className="h-4 w-4 accent-[color:var(--accent)]"
-              />
+            <Checkbox checked={sortKeys} onChange={setSortKeys}>
               Sort keys
-            </label>
+            </Checkbox>
           </div>
         </div>
       </InputPanel>
@@ -132,37 +121,29 @@ export default function JsonFormatter() {
             </pre>
           </>
         ) : (
-          <div
+          <Alert
             id="json-format-error"
-            role="alert"
-            className="rounded-md border border-[color:color-mix(in_srgb,var(--error)_40%,transparent)] p-4"
+            title={result.error.message === "Input is empty. Paste some JSON." ? "Nothing to format" : "Invalid JSON"}
           >
-            <p className="font-semibold text-[color:var(--error)]">
-              {result.error.message === "Input is empty. Paste some JSON." ? "Nothing to format" : "Invalid JSON"}
-            </p>
-            <p className="mt-1 text-[color:var(--error)]">{result.error.message}</p>
+            <p>{result.error.message}</p>
             {deferredText.trim() !== "" && (
               <>
-                <p className="mt-3 font-[family-name:var(--font-ui)] text-xs text-[color:var(--text-muted)]">
+                <p className="mt-3 text-xs text-[color:var(--text-muted)]">
                   Line {result.error.line}, column {result.error.column}
                 </p>
-                <pre className="mt-2 overflow-x-auto whitespace-pre text-xs">
+                <pre className="mt-2 overflow-x-auto whitespace-pre font-[family-name:var(--font-mono)] text-xs text-[color:var(--text)]">
                   {errorLine}
                   {"\n"}
                   <span className="text-[color:var(--error)]">
                     {errorLine.slice(0, result.error.column - 1).replace(/[^\t]/g, " ")}^
                   </span>
                 </pre>
-                <button
-                  type="button"
-                  onClick={() => showError(result.error.offset)}
-                  className="mt-3 rounded-md border border-[color:var(--border)] px-3 py-1 font-[family-name:var(--font-ui)] text-sm hover:border-[color:var(--accent)]"
-                >
+                <Button size="sm" onClick={() => showError(result.error.offset)} className="mt-3">
                   Show in input
-                </button>
+                </Button>
               </>
             )}
-          </div>
+          </Alert>
         )}
       </OutputPanel>
     </>

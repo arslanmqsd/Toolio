@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { InputPanel, OutputPanel } from "@/components/tool-shell/ToolPanels";
+import Alert from "@/components/ui/Alert";
+import { CodeTextArea, codeFieldClass } from "@/components/ui/CodeField";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import { generateTypes, type Language } from "@/lib/tools/developer/json-to-types";
 
@@ -30,9 +32,6 @@ const LANGUAGES: { id: Language; label: string }[] = [
   { id: "go", label: "Go" },
 ];
 
-const fieldClass =
-  "w-full rounded-md border border-[color:var(--border)] bg-transparent font-[family-name:var(--font-mono)] text-sm focus:outline focus:outline-1 focus:outline-[color:var(--accent)]";
-
 export default function JsonToTypes() {
   const [json, setJson] = useState(EXAMPLE_JSON);
   const [language, setLanguage] = useState<Language>("typescript");
@@ -43,18 +42,13 @@ export default function JsonToTypes() {
     <>
       <InputPanel label="JSON">
         <div className="space-y-4">
-          <textarea
+          <CodeTextArea
             aria-label="JSON input"
             value={json}
             onChange={(e) => setJson(e.target.value)}
             rows={18}
-            spellCheck={false}
-            autoComplete="off"
-            aria-invalid={!result.ok}
+            invalid={!result.ok}
             aria-describedby={!result.ok ? "json-to-types-error" : undefined}
-            className={`${fieldClass} resize-y p-3 ${
-              result.ok ? "" : "border-[color:var(--error)] focus:outline-[color:var(--error)]"
-            }`}
           />
           <div className="flex flex-wrap items-end gap-4">
             <div>
@@ -67,7 +61,7 @@ export default function JsonToTypes() {
                 onChange={(e) => setRootName(e.target.value)}
                 placeholder="Root"
                 spellCheck={false}
-                className={`${fieldClass} px-3 py-1.5`}
+                className={`${codeFieldClass()} px-3 py-1.5`}
               />
             </div>
             <SegmentedControl label="Output language" options={LANGUAGES} value={language} onChange={setLanguage} />
@@ -79,14 +73,9 @@ export default function JsonToTypes() {
         {result.ok ? (
           <pre className="whitespace-pre [tab-size:4]">{result.code}</pre>
         ) : (
-          <div
-            id="json-to-types-error"
-            role="alert"
-            className="rounded-md border border-[color:color-mix(in_srgb,var(--error)_40%,transparent)] p-4 text-[color:var(--error)]"
-          >
-            <p className="font-semibold">Can&apos;t generate types</p>
-            <p className="mt-1">{result.error}</p>
-          </div>
+          <Alert id="json-to-types-error" title="Can't generate types">
+            {result.error}
+          </Alert>
         )}
       </OutputPanel>
     </>
