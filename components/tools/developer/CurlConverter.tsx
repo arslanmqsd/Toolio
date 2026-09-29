@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { InputPanel, OutputPanel } from "@/components/tool-shell/ToolPanels";
+import Alert from "@/components/ui/Alert";
+import { CodeTextArea } from "@/components/ui/CodeField";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import { convertCurl, type Target } from "@/lib/tools/developer/curl-to-code";
 
@@ -26,20 +28,13 @@ export default function CurlConverter() {
     <>
       <InputPanel label="cURL command">
         <div className="space-y-4">
-          <textarea
+          <CodeTextArea
             aria-label="cURL command"
             value={command}
             onChange={(e) => setCommand(e.target.value)}
             rows={12}
-            spellCheck={false}
-            autoComplete="off"
-            aria-invalid={!result.ok}
+            invalid={!result.ok}
             aria-describedby={!result.ok ? "curl-error" : undefined}
-            className={`w-full resize-y rounded-md border bg-transparent p-3 font-[family-name:var(--font-mono)] text-sm focus:outline focus:outline-1 ${
-              result.ok
-                ? "border-[color:var(--border)] focus:outline-[color:var(--accent)]"
-                : "border-[color:var(--error)] focus:outline-[color:var(--error)]"
-            }`}
           />
           <SegmentedControl label="Output language" options={TARGETS} value={target} onChange={setTarget} />
           <p className="text-xs text-[color:var(--text-muted)]">
@@ -61,14 +56,9 @@ export default function CurlConverter() {
             )}
           </div>
         ) : (
-          <div
-            id="curl-error"
-            role="alert"
-            className="rounded-md border border-[color:color-mix(in_srgb,var(--error)_40%,transparent)] p-4 text-[color:var(--error)]"
-          >
-            <p className="font-semibold">Can&apos;t convert this command</p>
-            <p className="mt-1">{result.error}</p>
-          </div>
+          <Alert id="curl-error" title="Can't convert this command">
+            {result.error}
+          </Alert>
         )}
       </OutputPanel>
     </>

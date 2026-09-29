@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { InputPanel, OutputPanel } from "@/components/tool-shell/ToolPanels";
+import Alert from "@/components/ui/Alert";
+import { CodeTextArea } from "@/components/ui/CodeField";
+import { useNow } from "@/lib/hooks/useNow";
 import { decodeJwt, formatDuration, getExpiry, type ExpiryInfo } from "@/lib/tools/developer/jwt";
 
 // Real HS256 token signed with the secret "your-256-bit-secret"; expires 2031-01-01.
@@ -9,18 +12,6 @@ const EXAMPLE_TOKEN =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkFkYSBMb3ZlbGFjZSIsImVtYWlsIjoiYWRhQGV4YW1wbGUuY29tIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzM1Njg5NjAwLCJleHAiOjE5MjQ5OTIwMDB9.V-GZZDP_65htbNewPaxGMfEnN_UlGTjctwqp6kot9QY";
 
 const EXPIRING_SOON_MS = 5 * 60 * 1000;
-
-/** Current time, ticking every second. Null during SSR and the first client render. */
-function useNow(enabled: boolean): number | null {
-  const [now, setNow] = useState<number | null>(null);
-  useEffect(() => {
-    if (!enabled) return;
-    setNow(Date.now());
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, [enabled]);
-  return now;
-}
 
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -86,21 +77,15 @@ export default function JwtDecoder() {
   return (
     <>
       <InputPanel label="Encoded token">
-        <textarea
+        <CodeTextArea
           aria-label="Encoded token"
           value={token}
           onChange={(e) => setToken(e.target.value)}
           placeholder="Paste a JWT (eyJhbGciOi...)"
           rows={10}
-          spellCheck={false}
-          autoComplete="off"
-          aria-invalid={result?.ok === false}
+          invalid={result?.ok === false}
           aria-describedby={result?.ok === false ? "jwt-error" : undefined}
-          className={`w-full resize-y break-all rounded-md border bg-transparent p-3 font-[family-name:var(--font-mono)] text-sm focus:outline focus:outline-1 ${
-            result?.ok === false
-              ? "border-[color:var(--error)] focus:outline-[color:var(--error)]"
-              : "border-[color:var(--border)] focus:outline-[color:var(--accent)]"
-          }`}
+          className="break-all"
         />
         <p className="mt-2 text-xs text-[color:var(--text-muted)]">
           Decoding happens in your browser. The signature is not verified.
@@ -111,14 +96,9 @@ export default function JwtDecoder() {
         {result === null && <p className="text-[color:var(--text-muted)]">Paste a token to decode it.</p>}
 
         {result?.ok === false && (
-          <div
-            id="jwt-error"
-            role="alert"
-            className="rounded-md border border-[color:color-mix(in_srgb,var(--error)_40%,transparent)] p-4 text-[color:var(--error)]"
-          >
-            <p className="font-semibold">Invalid token</p>
-            <p className="mt-1">{result.error}</p>
-          </div>
+          <Alert id="jwt-error" title="Invalid token">
+            {result.error}
+          </Alert>
         )}
 
         {result?.ok && (
