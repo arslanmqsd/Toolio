@@ -7,7 +7,26 @@ interface SegmentedControlProps<T extends string> {
   options: readonly { id: T; label: string }[];
   value: T;
   onChange: (value: T) => void;
+  /**
+   * "buttons" (default): an outlined row sized to its labels, the chosen one filled with the accent.
+   * "tabs": full width with equal segments on a sunken track, the chosen one raised. For switching a panel.
+   */
+  variant?: "buttons" | "tabs";
 }
+
+const variantClasses = {
+  buttons: {
+    group: "inline-flex max-w-full flex-wrap rounded-md border border-[color:var(--border)]",
+    option: "px-3 py-1.5 text-sm first:rounded-l-md last:rounded-r-md",
+    selected: "bg-[color:var(--accent)] text-[color:var(--on-accent)]",
+  },
+  tabs: {
+    // --surface is a step darker than the dialog/card it sits on (--surface-raised) in both themes: a sunken track.
+    group: "flex w-full gap-1 rounded-lg border border-[color:var(--border)] bg-[color:var(--surface)] p-1",
+    option: "flex-1 rounded-md px-3 py-1.5 text-sm font-medium",
+    selected: "bg-[color:var(--control-selected)] text-[color:var(--text)] shadow-sm ring-1 ring-[color:var(--border)]",
+  },
+};
 
 const STEP: Record<string, number> = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
 
@@ -15,8 +34,15 @@ const STEP: Record<string, number> = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -
  * A row of mutually exclusive buttons, exposed as a radio group. Follows the ARIA radio group pattern:
  * one tab stop, arrow keys move and select, Home/End jump to the ends.
  */
-export default function SegmentedControl<T extends string>({ label, options, value, onChange }: SegmentedControlProps<T>) {
+export default function SegmentedControl<T extends string>({
+  label,
+  options,
+  value,
+  onChange,
+  variant = "buttons",
+}: SegmentedControlProps<T>) {
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
+  const styles = variantClasses[variant];
   const current = Math.max(0, options.findIndex((option) => option.id === value));
 
   function onKeyDown(e: KeyboardEvent) {
@@ -31,7 +57,7 @@ export default function SegmentedControl<T extends string>({ label, options, val
   }
 
   return (
-    <div role="radiogroup" aria-label={label} onKeyDown={onKeyDown} className="inline-flex max-w-full flex-wrap rounded-md border border-[color:var(--border)]">
+    <div role="radiogroup" aria-label={label} onKeyDown={onKeyDown} className={styles.group}>
       {options.map((option, i) => (
         <button
           key={option.id}
@@ -43,10 +69,8 @@ export default function SegmentedControl<T extends string>({ label, options, val
           aria-checked={i === current}
           tabIndex={i === current ? 0 : -1}
           onClick={() => onChange(option.id)}
-          className={`px-3 py-1.5 text-sm first:rounded-l-md last:rounded-r-md ${
-            i === current
-              ? "bg-[color:var(--accent)] text-[color:var(--on-accent)]"
-              : "text-[color:var(--text-muted)] hover:text-[color:var(--text)]"
+          className={`${styles.option} ${
+            i === current ? styles.selected : "text-[color:var(--text-muted)] hover:text-[color:var(--text)]"
           }`}
         >
           {option.label}

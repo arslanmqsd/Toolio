@@ -8,6 +8,8 @@ interface DialogProps {
   onClose: () => void;
   title: ReactNode;
   description?: ReactNode;
+  /** Shown above the title; the header centers under it. */
+  icon?: ReactNode;
   children: ReactNode;
 }
 
@@ -15,7 +17,7 @@ interface DialogProps {
  * Modal dialog on the native <dialog> element: the browser traps focus, makes the page behind inert,
  * and closes it on Escape. Clicking the backdrop closes it too.
  */
-export default function Dialog({ open, onClose, title, description, children }: DialogProps) {
+export default function Dialog({ open, onClose, title, description, icon, children }: DialogProps) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const descriptionId = useId();
@@ -47,14 +49,17 @@ export default function Dialog({ open, onClose, title, description, children }: 
         >
           <X aria-hidden className="h-4 w-4" />
         </button>
-        <h2 id={titleId} className="pr-8 text-lg font-semibold tracking-[-0.01em]">
-          {title}
-        </h2>
-        {description && (
-          <p id={descriptionId} className="mt-1 text-sm text-[color:var(--text-muted)]">
-            {description}
-          </p>
-        )}
+        <div className={icon ? "px-4 text-center" : "pr-8"}>
+          {icon && <div className="mb-4 flex justify-center">{icon}</div>}
+          <h2 id={titleId} className="text-lg font-semibold tracking-[-0.01em]">
+            {title}
+          </h2>
+          {description && (
+            <p id={descriptionId} className="mt-1 text-sm text-[color:var(--text-muted)]">
+              {description}
+            </p>
+          )}
+        </div>
         <div className="mt-5">{children}</div>
       </div>
     </dialog>
