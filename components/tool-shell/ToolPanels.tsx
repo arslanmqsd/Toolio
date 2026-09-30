@@ -5,7 +5,7 @@ import type { DataType } from "@/registry";
 import { panelButtonClass } from "./panel-styles";
 import SendToMenu from "./SendToMenu";
 
-const panelClass = "flex min-w-0 flex-col rounded-lg border border-[color:var(--border)]";
+const panelClass = "flex min-w-0 flex-col rounded-[var(--panel-radius)] border border-[color:var(--border)]";
 const panelHeaderClass =
   "flex items-center justify-between border-b border-[color:var(--border)] px-4 py-2 text-xs font-medium text-[color:var(--text-muted)]";
 
@@ -39,7 +39,7 @@ interface OutputPanelProps {
 
 export function OutputPanel({ label = "Output", copyText, outputType, children }: OutputPanelProps) {
   return (
-    <section className={`${panelClass} font-[family-name:var(--font-mono)]`} aria-label={label}>
+    <section className={`${panelClass} font-[family-name:var(--font-output)]`} aria-label={label}>
       <div className={panelHeaderClass}>
         <span className="font-[family-name:var(--font-ui)]">{label}</span>
         <div className="flex items-center gap-2">

@@ -19,6 +19,27 @@
   --font-mono: var(--font-jetbrains-mono), 'JetBrains Mono', monospace;
   --font-ui: var(--font-inter), 'Inter', sans-serif;
   --font-display: var(--font-ui);
+  /* Face for tool output. Mono by default: precise input, precise output. */
+  --font-output: var(--font-mono);
+
+  /* Tool page layout, overridable per category. */
+  --shell-max: 72rem;
+  --shell-py: 2.5rem;
+  --shell-columns: 2;
+  --panel-gap: 1rem;
+  --panel-radius: 0.5rem;
+
+  /* Categorical chart series, in order. Mid-tones that hold 3:1 on both backgrounds. */
+  --chart-1: #3F9A80;
+  --chart-2: #C9A961;
+  --chart-3: #6F8FB8;
+  --chart-4: #B0647A;
+  --chart-5: #8577B8;
+  --chart-6: #7A8594;
+  --chart-positive: var(--accent-text);
+  --chart-negative: var(--error);
+  --chart-grid: var(--border);
+  --chart-axis: var(--text-muted);
 
   /* Theme-dependent tokens. Dark is the default. */
   --surface: var(--bg);
@@ -48,14 +69,51 @@
 
 /*
  * Per-category overrides. The root layout wrapper carries
- * data-category="<category id>" on /tools/<category>/... routes.
- * Example once the category exists:
+ * data-category="<category id>" on /tools/<category>/... routes, and paints
+ * its own background so a category can recolor the whole page.
  *
- * [data-category="think-better"] {
- *   --accent: #...;
- *   --font-display: <humanist serif>, serif;
- * }
+ * - developer, fix-my-file: the :root system above (precise input, precise output).
+ * - freelancer: developer's structure plus figures set for tables and charts.
+ * - think-better: warmer and editorial, for reflection rather than execution.
  */
+[data-category] {
+  background: var(--surface);
+  color: var(--text);
+}
+
+[data-category="freelancer"] {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Dusk violet with sky highlights: real color, a humanist serif, and more room. */
+[data-category="think-better"] {
+  --accent: #6A58B0;
+  --accent-2: #79B8D9;
+  --surface: #17151F;
+  --surface-raised: #211E2C;
+  --text: #ECE8F2;
+  --text-muted: #A59FB4;
+  --accent-text: #B9AAF0;
+  --border: color-mix(in srgb, var(--accent) 30%, transparent);
+  --font-display: var(--font-literata), 'Literata', Georgia, serif;
+  --font-output: var(--font-display);
+  --shell-max: 48rem;
+  --shell-py: 4rem;
+  --shell-columns: 1;
+  --panel-gap: 2rem;
+  --panel-radius: 1rem;
+}
+
+:root[data-theme="light"] [data-category="think-better"] {
+  --accent: #5B4A9E;
+  --accent-2: #2F7FA6;
+  --surface: #F6F3FA;
+  --surface-raised: #FFFFFF;
+  --text: #211B2E;
+  --text-muted: #625A73;
+  --accent-text: var(--accent);
+  --border: color-mix(in srgb, var(--accent) 22%, transparent);
+}
 
 body {
   background: var(--surface);
