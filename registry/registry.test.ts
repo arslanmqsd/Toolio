@@ -27,3 +27,20 @@ describe("tool data types", () => {
     }
   });
 });
+
+describe("tool SEO fields", () => {
+  // Page titles, meta descriptions and the sitemap are generated from these, so every tool needs them.
+  it("are filled in for every tool", () => {
+    for (const tool of allTools) {
+      expect(tool.title.trim(), `${tool.id} title`).not.toBe("");
+      expect(tool.description.trim().length, `${tool.id} description`).toBeGreaterThanOrEqual(20);
+      expect(tool.description, `${tool.id} description ends with a full stop`).toMatch(/\.$/);
+      expect(tool.keywords.length, `${tool.id} keywords`).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it("use unique titles", () => {
+    const titles = allTools.map((tool) => tool.title.toLowerCase());
+    expect(new Set(titles).size).toBe(titles.length);
+  });
+});

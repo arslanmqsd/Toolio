@@ -5,8 +5,9 @@ import { IconTile } from "@/components/catalog/icons";
 import { categories } from "@/registry";
 
 export const metadata: Metadata = {
-  title: "All tools | Toolio",
+  title: "All tools",
   description: "Every Toolio tool, grouped by category.",
+  alternates: { canonical: "/tools" },
 };
 
 export default function AllToolsPage() {
