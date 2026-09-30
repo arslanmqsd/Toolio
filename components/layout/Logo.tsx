@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 /* The "T" mark: a leaf-cut bar over an off-center stem, the stem a shade deeper. */
-function LogoMark({ className }: { className?: string }) {
+export function LogoMark({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className={className}>
       <path d="M3.5 3H22v.5C22 5.99 19.99 8 17.5 8h-14A1.5 1.5 0 0 1 2 6.5v-2A1.5 1.5 0 0 1 3.5 3Z" />

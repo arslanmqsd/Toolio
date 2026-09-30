@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useId, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { useWorkbench } from "@/components/workbench/context";
+import { useDismiss } from "@/lib/hooks/useDismiss";
 import { dataTypeLabels, sendTargets, toolHref, type DataType } from "@/registry";
 import { panelButtonClass } from "./panel-styles";
 import { useToolIO } from "./tool-io";
@@ -22,23 +23,8 @@ export default function SendToMenu({ value, type }: SendToMenuProps) {
   const root = useRef<HTMLDivElement>(null);
   const button = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    function onPointerDown(event: PointerEvent) {
-      if (!root.current?.contains(event.target as Node)) setOpen(false);
-    }
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key !== "Escape") return;
-      setOpen(false);
-      button.current?.focus();
-    }
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open]);
+  const close = useCallback(() => setOpen(false), []);
+  useDismiss(open, close, root, button);
 
   if (!io) return null;
   const from = io.tool;

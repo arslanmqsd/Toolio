@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono, Literata } from "next/font/google";
 import Link from "next/link";
+import AuthNav from "@/components/auth/AuthNav";
 import CategoryScope from "@/components/layout/CategoryScope";
 import Logo from "@/components/layout/Logo";
 import SearchHotkey from "@/components/layout/SearchHotkey";
 import SiteFooter from "@/components/layout/SiteFooter";
-import SignInButton from "@/components/layout/SignInButton";
 import ThemeToggle, { themeInitScript } from "@/components/layout/ThemeToggle";
 import { WorkbenchProvider } from "@/components/workbench/context";
+import { AuthProvider } from "@/lib/auth-context";
 import { categoryThemesCss } from "@/lib/category-theme-css";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 import "./globals.css";
@@ -43,30 +44,32 @@ export default function RootLayout({
         <style dangerouslySetInnerHTML={{ __html: categoryThemesCss() }} />
       </head>
       <body className="antialiased">
-        <WorkbenchProvider>
-          <CategoryScope>
-            <header data-brand className="sticky top-0 z-30 border-b border-[color:var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_85%,transparent)] backdrop-blur">
-              <div className="mx-auto flex max-w-6xl items-center gap-8 px-4 py-3">
-                <Logo />
-                <nav aria-label="Main" className="hidden gap-6 text-sm text-[color:var(--text-muted)] sm:flex">
-                  <Link href="/tools" className="hover:text-[color:var(--text)]">
-                    Tools
-                  </Link>
-                  <Link href="/#categories" className="hover:text-[color:var(--text)]">
-                    Categories
-                  </Link>
-                </nav>
-                <div className="ml-auto flex items-center gap-2">
-                  <ThemeToggle />
-                  <SignInButton />
+        <AuthProvider>
+          <WorkbenchProvider>
+            <CategoryScope>
+              <header data-brand className="sticky top-0 z-30 border-b border-[color:var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_85%,transparent)] backdrop-blur">
+                <div className="mx-auto flex max-w-6xl items-center gap-8 px-4 py-3">
+                  <Logo />
+                  <nav aria-label="Main" className="hidden gap-6 text-sm text-[color:var(--text-muted)] sm:flex">
+                    <Link href="/tools" className="hover:text-[color:var(--text)]">
+                      Tools
+                    </Link>
+                    <Link href="/#categories" className="hover:text-[color:var(--text)]">
+                      Categories
+                    </Link>
+                  </nav>
+                  <div className="ml-auto flex items-center gap-2">
+                    <ThemeToggle />
+                    <AuthNav />
+                  </div>
                 </div>
-              </div>
-            </header>
-            {children}
-            <SiteFooter />
-          </CategoryScope>
-          <SearchHotkey />
-        </WorkbenchProvider>
+              </header>
+              {children}
+              <SiteFooter />
+            </CategoryScope>
+            <SearchHotkey />
+          </WorkbenchProvider>
+        </AuthProvider>
       </body>
     </html>
   );

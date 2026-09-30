@@ -6,6 +6,9 @@ const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT
 /** Whether Supabase is configured. The site works without it; accounts and sync are simply off. */
 export const hasSupabaseEnv = Boolean(url && key);
 
+/** "Continue with Google" shows only once the Google provider is set up in Supabase (see .env.local.example). */
+export const googleSignInEnabled = process.env.NEXT_PUBLIC_GOOGLE_SIGN_IN === "on";
+
 export function supabaseEnv(): { url: string; key: string } {
   if (!url || !key) {
     throw new Error(

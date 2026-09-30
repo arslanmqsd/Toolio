@@ -50,6 +50,8 @@
   /* Theme-dependent tokens. Dark is the default. */
   --surface: var(--bg);
   --surface-raised: #151A22;
+  /* The chosen segment of a tabs-style SegmentedControl: a step lighter than --surface-raised. */
+  --control-selected: #232A35;
   --text: #E6E8EB;
   /* Pine for text and icons; lighter and desaturated in dark mode for contrast on --bg (7.7:1). */
   --accent-text: #7FAF9F;
@@ -66,6 +68,7 @@
 :root[data-theme="light"] {
   --surface: var(--bg-light);
   --surface-raised: #FFFFFF;
+  --control-selected: #FFFFFF;
   --text: #0E1116;
   --accent-text: var(--accent);
   --brand-accent-text: var(--brand-accent);
@@ -98,6 +101,18 @@ body {
   background: var(--surface);
   color: var(--text);
   font-family: var(--font-ui);
+}
+
+/*
+ * Browser autofill paints its own yellow background, which ignores the theme. It can't be overridden with
+ * background-color, so cover it with an inset shadow: a faint brand tint that still marks the field as filled.
+ */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text);
+  caret-color: var(--text);
+  box-shadow: 0 0 0 1000px color-mix(in srgb, var(--accent) 12%, var(--surface-raised)) inset;
 }
 
 ::selection {
