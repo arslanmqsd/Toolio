@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { categories } from "@/registry";
 import { themePresets, THEME_TOKENS } from "@/registry/themes";
-import { categoryCss, categoryThemesCss, resolveTheme } from "./category-theme-css";
+import { categoryCss, categoryThemesCss, categoryTint, categoryTintsCss, resolveTheme } from "./category-theme-css";
 
 describe("category themes", () => {
   it("only uses tokens that globals.css defines on :root", () => {
@@ -41,5 +41,21 @@ describe("category themes", () => {
     expect(() => categoryCss("demo", { tokens: { accent: "red;} body{display:none" } })).toThrow(/unsafe/);
     expect(() => categoryCss("demo", { tokens: { accent: "</style><script>" } })).toThrow(/unsafe/);
     expect(() => categoryCss("demo", { tokens: { nope: "1" } as never })).toThrow(/Unknown/);
+  });
+
+  it("derives icon tints from each category's accent, falling back to the brand", () => {
+    expect(categoryTint({ preset: "precise" })).toEqual({ dark: "var(--brand-accent-text)", light: "var(--brand-accent)" });
+    expect(categoryTint({ tokens: { accent: "#256F6F" }, dark: { "accent-text": "#6BC1C1" } })).toEqual({
+      dark: "#6BC1C1",
+      light: "#256F6F",
+    });
+    expect(categoryTint({ preset: "editorial" })).toEqual({ dark: "#B9AAF0", light: "#5B4A9E" });
+  });
+
+  it("sets a tint on :root for every category", () => {
+    const css = categoryTintsCss();
+    for (const id of Object.keys(categories)) {
+      expect(css.match(new RegExp(`--tint-${id}:`, "g")), id).toHaveLength(2);
+    }
   });
 });

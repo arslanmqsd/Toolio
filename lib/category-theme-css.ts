@@ -4,14 +4,20 @@ import { themePresets, THEME_TOKENS, type CategoryTheme, type TokenMap } from "@
 // Values end up inside a <style> tag, so refuse anything that could close a declaration or the tag.
 const UNSAFE_VALUE = /[;{}<>]/;
 
-function declarations(tokens: TokenMap): string {
-  return Object.entries(tokens)
+function customProperties(values: Record<string, string>): string {
+  return Object.entries(values)
     .map(([name, value]) => {
-      if (!(THEME_TOKENS as readonly string[]).includes(name)) throw new Error(`Unknown theme token "${name}".`);
       if (UNSAFE_VALUE.test(value)) throw new Error(`Theme token "${name}" has an unsafe value: ${value}`);
       return `--${name}:${value};`;
     })
     .join("");
+}
+
+function declarations(tokens: TokenMap): string {
+  for (const name of Object.keys(tokens)) {
+    if (!(THEME_TOKENS as readonly string[]).includes(name)) throw new Error(`Unknown theme token "${name}".`);
+  }
+  return customProperties(tokens as Record<string, string>);
 }
 
 /** A theme with its preset merged in: category tokens win over the preset's. */
@@ -48,10 +54,37 @@ export function categoryCss(id: string, theme?: CategoryTheme): string {
     .join("\n");
 }
 
-/** Theme CSS for every category in the registry. */
+/** CSS custom property holding a category's icon tint, e.g. `--tint-developer`. */
+export function tintVar(id: string): string {
+  return `--tint-${id}`;
+}
+
+/**
+ * A category's accent for icons, per scheme: the dark scheme's text accent, the light scheme's fill.
+ * Categories that keep the default accent use the brand green.
+ */
+export function categoryTint(theme?: CategoryTheme): { dark: string; light: string } {
+  const { tokens, dark, light } = resolveTheme(theme);
+  return {
+    dark: dark["accent-text"] ?? tokens["accent-text"] ?? "var(--brand-accent-text)",
+    light: light.accent ?? tokens.accent ?? "var(--brand-accent)",
+  };
+}
+
+/**
+ * Icon tints for every category, on :root so they work outside the category's own pages (home,
+ * search, catalog).
+ */
+export function categoryTintsCss(list: Category[] = Object.values(categories)): string {
+  const tints = list.map((category) => [tintVar(category.id).slice(2), categoryTint(category.theme)] as const);
+  const dark = customProperties(Object.fromEntries(tints.map(([name, tint]) => [name, tint.dark])));
+  const light = customProperties(Object.fromEntries(tints.map(([name, tint]) => [name, tint.light])));
+  return `:root{${dark}}\n:root[data-theme="light"]{${light}}`;
+}
+
+/** Theme CSS for every category in the registry: icon tints plus each category's scoped tokens. */
 export function categoryThemesCss(list: Category[] = Object.values(categories)): string {
-  return list
-    .map((category) => categoryCss(category.id, category.theme))
+  return [categoryTintsCss(list), ...list.map((category) => categoryCss(category.id, category.theme))]
     .filter(Boolean)
     .join("\n");
 }

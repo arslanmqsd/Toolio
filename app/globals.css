@@ -11,6 +11,8 @@
   --bg-light: #F5F6F8;
   /* Pine green for fills, buttons, focus. --on-accent text on it is 6:1. */
   --accent: #2B6E5E;
+  /* Toolio's own green. --accent can change per category; the brand never does. */
+  --brand-accent: #2B6E5E;
   --on-accent: #FFFFFF;
   --accent-warn: #C9A961;
   /* Second color for highlights; editorial themes give it a hue of its own. */
@@ -51,6 +53,7 @@
   --text: #E6E8EB;
   /* Pine for text and icons; lighter in dark mode for contrast on --bg (7.5:1). */
   --accent-text: #5DB39A;
+  --brand-accent-text: #5DB39A;
   /* Readable secondary text. --text-secondary is only ~3:1 on --bg, too dim for body copy in dark mode. */
   --text-muted: #8C95A3;
   /* Gold for text and small marks; --accent-warn itself is too light on --bg-light. */
@@ -65,6 +68,7 @@
   --surface-raised: #FFFFFF;
   --text: #0E1116;
   --accent-text: var(--accent);
+  --brand-accent-text: var(--brand-accent);
   --text-muted: var(--text-secondary);
   --accent-warn-text: #8A6D2B;
   --border: color-mix(in srgb, var(--text-secondary) 28%, transparent);
@@ -82,6 +86,12 @@
   background: var(--surface);
   color: var(--text);
   font-variant-numeric: var(--numeric);
+}
+
+/* Site chrome (header, footer) keeps the brand green inside any category theme. */
+[data-brand] {
+  --accent: var(--brand-accent);
+  --accent-text: var(--brand-accent-text);
 }
 
 body {

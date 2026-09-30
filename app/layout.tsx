@@ -45,7 +45,7 @@ export default function RootLayout({
       <body className="antialiased">
         <WorkbenchProvider>
           <CategoryScope>
-            <header className="sticky top-0 z-30 border-b border-[color:var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_85%,transparent)] backdrop-blur">
+            <header data-brand className="sticky top-0 z-30 border-b border-[color:var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_85%,transparent)] backdrop-blur">
               <div className="mx-auto flex max-w-6xl items-center gap-8 px-4 py-3">
                 <Logo />
                 <nav aria-label="Main" className="hidden gap-6 text-sm text-[color:var(--text-muted)] sm:flex">

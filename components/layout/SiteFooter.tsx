@@ -4,7 +4,7 @@ import { categories } from "@/registry";
 
 export default function SiteFooter() {
   return (
-    <footer className="border-t border-[color:var(--border)]">
+    <footer data-brand className="border-t border-[color:var(--border)]">
       <div className="mx-auto flex max-w-6xl flex-col gap-10 px-4 py-12 sm:flex-row sm:justify-between">
         <div>
           <Logo />
