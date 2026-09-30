@@ -51,9 +51,9 @@
   --surface: var(--bg);
   --surface-raised: #151A22;
   --text: #E6E8EB;
-  /* Pine for text and icons; lighter in dark mode for contrast on --bg (7.5:1). */
-  --accent-text: #5DB39A;
-  --brand-accent-text: #5DB39A;
+  /* Pine for text and icons; lighter and desaturated in dark mode for contrast on --bg (7.7:1). */
+  --accent-text: #7FAF9F;
+  --brand-accent-text: #7FAF9F;
   /* Readable secondary text. --text-secondary is only ~3:1 on --bg, too dim for body copy in dark mode. */
   --text-muted: #8C95A3;
   /* Gold for text and small marks; --accent-warn itself is too light on --bg-light. */
