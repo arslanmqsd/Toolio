@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { ToolIOProvider } from "./tool-io";
 import WorkbenchBanner from "./WorkbenchBanner";
+import PageTitle from "@/components/ui/PageTitle";
 
 interface ToolShellProps {
   toolId: string;
@@ -12,14 +13,16 @@ interface ToolShellProps {
 
 export default function ToolShell({ toolId, title, description, children }: ToolShellProps) {
   return (
-    <main className="mx-auto max-w-6xl px-4 py-10">
+    <main className="mx-auto max-w-[var(--shell-max)] px-4 py-[var(--shell-py)]">
       <header className="mb-8">
-        <h1 className="font-[family-name:var(--font-display)] text-3xl font-semibold">{title}</h1>
+        <PageTitle>{title}</PageTitle>
         <p className="mt-2 text-[color:var(--text-muted)]">{description}</p>
       </header>
       <ToolIOProvider toolId={toolId}>
         <WorkbenchBanner />
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">{children}</div>
+        <div className="grid grid-cols-1 gap-[var(--panel-gap)] lg:grid-cols-[repeat(var(--shell-columns),minmax(0,1fr))]">
+          {children}
+        </div>
       </ToolIOProvider>
     </main>
   );

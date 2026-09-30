@@ -9,8 +9,9 @@
 :root {
   --bg: #0E1116;
   --bg-light: #F5F6F8;
-  /* Brand blue for fills, buttons, focus. White text on it is 5.2:1. */
-  --accent: #2563EB;
+  /* Pine green for fills, buttons, focus. --on-accent text on it is 6:1. */
+  --accent: #2B6E5E;
+  --on-accent: #FFFFFF;
   --accent-warn: #C9A961;
   --error: #E2483D;
   --text-secondary: #5B6472;
@@ -18,18 +19,40 @@
   --font-mono: var(--font-jetbrains-mono), 'JetBrains Mono', monospace;
   --font-ui: var(--font-inter), 'Inter', sans-serif;
   --font-display: var(--font-ui);
+  /* Face for tool output. Mono by default: precise input, precise output. */
+  --font-output: var(--font-mono);
+
+  /* Tool page layout, overridable per category. */
+  --shell-max: 72rem;
+  --shell-py: 2.5rem;
+  --shell-columns: 2;
+  --panel-gap: 1rem;
+  --panel-radius: 0.5rem;
+
+  /* Categorical chart series, in order. Mid-tones that hold 3:1 on both backgrounds. */
+  --chart-1: #3F9A80;
+  --chart-2: #C9A961;
+  --chart-3: #6F8FB8;
+  --chart-4: #B0647A;
+  --chart-5: #8577B8;
+  --chart-6: #7A8594;
+  --chart-positive: var(--accent-text);
+  --chart-negative: var(--error);
+  --chart-grid: var(--border);
+  --chart-axis: var(--text-muted);
 
   /* Theme-dependent tokens. Dark is the default. */
   --surface: var(--bg);
   --surface-raised: #151A22;
   --text: #E6E8EB;
-  /* Blue for text and icons; lighter in dark mode for contrast on --bg. */
-  --accent-text: #60A5FA;
+  /* Pine for text and icons; lighter in dark mode for contrast on --bg (7.5:1). */
+  --accent-text: #5DB39A;
   /* Readable secondary text. --text-secondary is only ~3:1 on --bg, too dim for body copy in dark mode. */
   --text-muted: #8C95A3;
   /* Gold for text and small marks; --accent-warn itself is too light on --bg-light. */
   --accent-warn-text: var(--accent-warn);
-  --border: rgb(255 255 255 / 0.1);
+  /* Slate hairlines, the same hue as secondary text. */
+  --border: color-mix(in srgb, var(--text-secondary) 38%, transparent);
   color-scheme: dark;
 }
 
@@ -40,20 +63,57 @@
   --accent-text: var(--accent);
   --text-muted: var(--text-secondary);
   --accent-warn-text: #8A6D2B;
-  --border: rgb(14 17 22 / 0.12);
+  --border: color-mix(in srgb, var(--text-secondary) 28%, transparent);
   color-scheme: light;
 }
 
 /*
  * Per-category overrides. The root layout wrapper carries
- * data-category="<category id>" on /tools/<category>/... routes.
- * Example once the category exists:
+ * data-category="<category id>" on /tools/<category>/... routes, and paints
+ * its own background so a category can recolor the whole page.
  *
- * [data-category="think-better"] {
- *   --accent: #...;
- *   --font-display: <humanist serif>, serif;
- * }
+ * - developer, fix-my-file: the :root system above (precise input, precise output).
+ * - freelancer: developer's structure plus figures set for tables and charts.
+ * - think-better: warmer and editorial, for reflection rather than execution.
  */
+[data-category] {
+  background: var(--surface);
+  color: var(--text);
+}
+
+[data-category="freelancer"] {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Dusk violet with sky highlights: real color, a humanist serif, and more room. */
+[data-category="think-better"] {
+  --accent: #6A58B0;
+  --accent-2: #79B8D9;
+  --surface: #17151F;
+  --surface-raised: #211E2C;
+  --text: #ECE8F2;
+  --text-muted: #A59FB4;
+  --accent-text: #B9AAF0;
+  --border: color-mix(in srgb, var(--accent) 30%, transparent);
+  --font-display: var(--font-literata), 'Literata', Georgia, serif;
+  --font-output: var(--font-display);
+  --shell-max: 48rem;
+  --shell-py: 4rem;
+  --shell-columns: 1;
+  --panel-gap: 2rem;
+  --panel-radius: 1rem;
+}
+
+:root[data-theme="light"] [data-category="think-better"] {
+  --accent: #5B4A9E;
+  --accent-2: #2F7FA6;
+  --surface: #F6F3FA;
+  --surface-raised: #FFFFFF;
+  --text: #211B2E;
+  --text-muted: #625A73;
+  --accent-text: var(--accent);
+  --border: color-mix(in srgb, var(--accent) 22%, transparent);
+}
 
 body {
   background: var(--surface);
@@ -62,12 +122,13 @@ body {
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 60%, transparent);
 }
 
 /* Zero specificity so components can style their own focus state. */
 :where(:focus-visible) {
-  outline: 2px solid var(--accent);
+  /* --accent-text, not --accent: pine itself is only ~3:1 on the dark background. */
+  outline: 2px solid var(--accent-text);
   outline-offset: 2px;
 }
 

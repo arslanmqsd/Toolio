@@ -3,6 +3,7 @@ import Link from "next/link";
 import CategoryTools from "@/components/catalog/CategoryTools";
 import { IconTile } from "@/components/catalog/icons";
 import { categories } from "@/registry";
+import PageTitle from "@/components/ui/PageTitle";
 
 export const metadata: Metadata = {
   title: "All tools",
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
 export default function AllToolsPage() {
   return (
     <main className="mx-auto max-w-6xl px-4 py-12">
-      <h1 className="text-4xl font-bold tracking-[-0.03em]">All tools</h1>
+      <PageTitle>All tools</PageTitle>
       <div className="mt-12 space-y-14">
         {Object.values(categories).map((category) => (
           <section key={category.id} aria-labelledby={`cat-${category.id}`}>

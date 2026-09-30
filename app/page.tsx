@@ -5,6 +5,7 @@ import RecentTools from "@/components/home/RecentTools";
 import ToolFinder from "@/components/home/ToolFinder";
 import { IconTile } from "@/components/catalog/icons";
 import ToolCard from "@/components/catalog/ToolCard";
+import { buttonClass } from "@/components/ui/Button";
 import { categories, allTools, plannedTools, toolHref } from "@/registry";
 
 const POPULAR_COUNT = 6;
@@ -141,7 +142,7 @@ export default function Home() {
           <p className="mt-2 text-white/75">Pick a tool and start in seconds. No sign-up.</p>
           <Link
             href="/tools"
-            className="mt-6 inline-flex items-center gap-1.5 rounded-lg bg-[color:var(--accent)] px-5 py-2.5 text-sm font-medium text-white hover:bg-[color:color-mix(in_srgb,var(--accent)_88%,white)]"
+            className={`mt-6 ${buttonClass({ variant: "primary", size: "lg" })}`}
           >
             Explore tools
             <ArrowRight aria-hidden className="h-4 w-4" />

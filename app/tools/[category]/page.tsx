@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import CategoryTools from "@/components/catalog/CategoryTools";
 import { IconTile } from "@/components/catalog/icons";
 import { categories, type CategoryId } from "@/registry";
+import PageTitle from "@/components/ui/PageTitle";
 
 interface CategoryPageProps {
   params: { category: string };
@@ -32,7 +33,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
       <div className="flex items-center gap-4">
         <IconTile category={category.id} />
         <div>
-          <h1 className="text-3xl font-bold tracking-[-0.03em]">{category.label}</h1>
+          <PageTitle>{category.label}</PageTitle>
           <p className="mt-1 text-[color:var(--text-muted)]">{category.description}</p>
         </div>
       </div>

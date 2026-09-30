@@ -45,7 +45,7 @@ export default function SegmentedControl<T extends string>({ label, options, val
           onClick={() => onChange(option.id)}
           className={`px-3 py-1.5 text-sm first:rounded-l-md last:rounded-r-md ${
             i === current
-              ? "bg-[color:var(--accent)] text-white"
+              ? "bg-[color:var(--accent)] text-[color:var(--on-accent)]"
               : "text-[color:var(--text-muted)] hover:text-[color:var(--text)]"
           }`}
         >

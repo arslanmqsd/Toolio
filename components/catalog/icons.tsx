@@ -23,14 +23,17 @@ import {
 } from "lucide-react";
 import type { CategoryId } from "@/registry";
 
-/** Hue per category, used for icon tiles. */
+/**
+ * Hue per category, used for icon tiles. Muted mid-tones so they sit beside the pine/brass palette
+ * and keep 3:1 icon contrast on both the dark and the light background.
+ */
 export const categoryTints: Record<CategoryId, string> = {
-  developer: "#3B82F6",
-  files: "#F97316",
-  images: "#8B5CF6",
-  text: "#10B981",
-  data: "#06B6D4",
-  calculators: "#F43F5E",
+  developer: "#3F9A80",
+  files: "#B08A45",
+  images: "#8577B8",
+  text: "#4F8FB0",
+  data: "#3E9494",
+  calculators: "#B0647A",
 };
 
 const categoryIcons: Record<CategoryId, LucideIcon> = {

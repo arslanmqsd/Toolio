@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono, Literata } from "next/font/google";
 import Link from "next/link";
 import CategoryScope from "@/components/layout/CategoryScope";
 import Logo from "@/components/layout/Logo";
@@ -13,6 +13,8 @@ import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains-mono" });
+// Think Better's display serif. Not preloaded: only its pages use it, and the browser fetches it on first use.
+const literata = Literata({ subsets: ["latin"], variable: "--font-literata", preload: false });
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -31,7 +33,7 @@ export default function RootLayout({
     <html
       lang="en"
       data-theme="dark"
-      className={`${inter.variable} ${jetbrainsMono.variable}`}
+      className={`${inter.variable} ${jetbrainsMono.variable} ${literata.variable}`}
       suppressHydrationWarning
     >
       <head>
