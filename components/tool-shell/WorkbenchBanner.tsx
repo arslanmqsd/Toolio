@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { ClipboardPaste, X } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { useWorkbench } from "@/components/workbench/context";
+import { oneLinePreview } from "@/lib/one-line-preview";
 import { dataTypeLabels } from "@/registry";
 import { useToolIO } from "./tool-io";
 
@@ -34,8 +35,7 @@ export default function WorkbenchBanner() {
     );
   }
 
-  const oneLine = value.trim().replace(/\s+/g, " ");
-  const preview = oneLine.length > PREVIEW_LENGTH ? `${oneLine.slice(0, PREVIEW_LENGTH)}…` : oneLine;
+  const preview = oneLinePreview(value, PREVIEW_LENGTH);
 
   return (
     <div aria-live="polite" className="empty:hidden mb-4">

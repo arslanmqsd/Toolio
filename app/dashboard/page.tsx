@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import PasswordForm from "@/components/auth/PasswordForm";
+import DashboardSection from "@/components/dashboard/DashboardSection";
+import FavoriteTools from "@/components/dashboard/FavoriteTools";
+import RecentActivity from "@/components/dashboard/RecentActivity";
+import SavedSnippets from "@/components/dashboard/SavedSnippets";
 import PageTitle from "@/components/ui/PageTitle";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
@@ -22,20 +26,22 @@ export default async function DashboardPage() {
       <p className="mt-2 text-[color:var(--text-muted)]">
         Signed in as <span className="text-[color:var(--text)]">{String(data.claims.email ?? "")}</span>
       </p>
-      <p className="mt-8 max-w-xl text-sm text-[color:var(--text-muted)]">
-        Your favorite tools, recent history and saved snippets will show up here.
-      </p>
 
-      {/* A "Forgot password?" reset link lands here (see RESET_PASSWORD_PATH in SignInDialog). */}
-      <section id="password" aria-labelledby="password-heading" className="mt-12 scroll-mt-24">
-        <h2 id="password-heading" className="text-lg font-semibold tracking-[-0.01em]">
-          Password
-        </h2>
-        <p className="mb-4 mt-1 max-w-xl text-sm text-[color:var(--text-muted)]">
-          Set a password to sign in without waiting for an email link, or change the one you have.
-        </p>
-        <PasswordForm />
-      </section>
+      <div className="mt-10 space-y-12">
+        <FavoriteTools />
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+          <RecentActivity />
+          <SavedSnippets />
+        </div>
+        {/* A "Forgot password?" reset link lands here (see RESET_PASSWORD_PATH in SignInDialog). */}
+        <DashboardSection
+          id="password"
+          title="Password"
+          description="Set a password to sign in without waiting for an email link, or change the one you have."
+        >
+          <PasswordForm />
+        </DashboardSection>
+      </div>
     </main>
   );
 }

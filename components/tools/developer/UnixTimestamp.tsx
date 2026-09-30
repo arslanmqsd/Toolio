@@ -12,13 +12,13 @@ import SegmentedControl from "@/components/ui/SegmentedControl";
 import Select from "@/components/ui/Select";
 import ValueTable from "@/components/ui/ValueTable";
 import { useNow } from "@/lib/hooks/useNow";
+import { relativeTime } from "@/lib/relative-time";
 import {
   formatInTimeZone,
   formatOffset,
   listTimeZones,
   localTimeZone,
   parseTimeInput,
-  relativeTime,
   timeZoneOffsetMs,
   type TimeUnit,
 } from "@/lib/tools/developer/unix-time";

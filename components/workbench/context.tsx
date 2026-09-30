@@ -9,7 +9,9 @@ export type WorkbenchOrigin =
   /** Pasted anywhere on the site. `intoField` pastes already landed in an input on `path`. */
   | { kind: "paste"; path: string; intoField: boolean }
   /** Handed from one tool's output to another tool via "Send to". */
-  | { kind: "send"; from: string; to: string };
+  | { kind: "send"; from: string; to: string }
+  /** A saved snippet loaded from the dashboard into tool `to`. */
+  | { kind: "snippet"; label: string; to: string };
 
 export type WorkbenchState =
   | { type: null; value: ""; origin: null }
