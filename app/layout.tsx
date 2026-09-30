@@ -8,12 +8,13 @@ import SiteFooter from "@/components/layout/SiteFooter";
 import SignInButton from "@/components/layout/SignInButton";
 import ThemeToggle, { themeInitScript } from "@/components/layout/ThemeToggle";
 import { WorkbenchProvider } from "@/components/workbench/context";
+import { categoryThemesCss } from "@/lib/category-theme-css";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains-mono" });
-// Think Better's display serif. Not preloaded: only its pages use it, and the browser fetches it on first use.
+// Display serif for the "editorial" theme. Not preloaded: the browser fetches it only on pages that use it.
 const literata = Literata({ subsets: ["latin"], variable: "--font-literata", preload: false });
 
 export const metadata: Metadata = {
@@ -38,6 +39,8 @@ export default function RootLayout({
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        {/* Per-category token overrides from the registry; values are checked in categoryThemesCss. */}
+        <style dangerouslySetInnerHTML={{ __html: categoryThemesCss() }} />
       </head>
       <body className="antialiased">
         <WorkbenchProvider>

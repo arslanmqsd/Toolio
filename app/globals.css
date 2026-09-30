@@ -13,6 +13,8 @@
   --accent: #2B6E5E;
   --on-accent: #FFFFFF;
   --accent-warn: #C9A961;
+  /* Second color for highlights; editorial themes give it a hue of its own. */
+  --accent-2: var(--accent-warn);
   --error: #E2483D;
   --text-secondary: #5B6472;
   /* --font-jetbrains-mono / --font-inter are set by next/font in app/layout.tsx. */
@@ -21,6 +23,8 @@
   --font-display: var(--font-ui);
   /* Face for tool output. Mono by default: precise input, precise output. */
   --font-output: var(--font-mono);
+  /* font-variant-numeric for tool pages; "tabular-nums" lines figures up. */
+  --numeric: normal;
 
   /* Tool page layout, overridable per category. */
   --shell-max: 72rem;
@@ -69,50 +73,15 @@
 
 /*
  * Per-category overrides. The root layout wrapper carries
- * data-category="<category id>" on /tools/<category>/... routes, and paints
- * its own background so a category can recolor the whole page.
- *
- * - developer, fix-my-file: the :root system above (precise input, precise output).
- * - freelancer: developer's structure plus figures set for tables and charts.
- * - think-better: warmer and editorial, for reflection rather than execution.
+ * data-category="<category id>" on /tools/<category>/... routes. Each
+ * category's tokens come from its `theme` in registry/categories.ts (presets
+ * in registry/themes.ts) and are emitted by lib/category-theme-css.ts. The
+ * wrapper paints its own background so a theme can recolor the whole page.
  */
 [data-category] {
   background: var(--surface);
   color: var(--text);
-}
-
-[data-category="freelancer"] {
-  font-variant-numeric: tabular-nums;
-}
-
-/* Dusk violet with sky highlights: real color, a humanist serif, and more room. */
-[data-category="think-better"] {
-  --accent: #6A58B0;
-  --accent-2: #79B8D9;
-  --surface: #17151F;
-  --surface-raised: #211E2C;
-  --text: #ECE8F2;
-  --text-muted: #A59FB4;
-  --accent-text: #B9AAF0;
-  --border: color-mix(in srgb, var(--accent) 30%, transparent);
-  --font-display: var(--font-literata), 'Literata', Georgia, serif;
-  --font-output: var(--font-display);
-  --shell-max: 48rem;
-  --shell-py: 4rem;
-  --shell-columns: 1;
-  --panel-gap: 2rem;
-  --panel-radius: 1rem;
-}
-
-:root[data-theme="light"] [data-category="think-better"] {
-  --accent: #5B4A9E;
-  --accent-2: #2F7FA6;
-  --surface: #F6F3FA;
-  --surface-raised: #FFFFFF;
-  --text: #211B2E;
-  --text-muted: #625A73;
-  --accent-text: var(--accent);
-  --border: color-mix(in srgb, var(--accent) 22%, transparent);
+  font-variant-numeric: var(--numeric);
 }
 
 body {
