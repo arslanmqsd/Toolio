@@ -21,20 +21,8 @@ import {
   Type,
   type LucideIcon,
 } from "lucide-react";
+import { tintColor } from "@/lib/category-theme-css";
 import type { CategoryId } from "@/registry";
-
-/**
- * Hue per category, used for icon tiles. Muted mid-tones so they sit beside the pine/brass palette
- * and keep 3:1 icon contrast on both the dark and the light background.
- */
-export const categoryTints: Record<CategoryId, string> = {
-  developer: "#3F9A80",
-  files: "#B08A45",
-  images: "#8577B8",
-  text: "#4F8FB0",
-  data: "#3E9494",
-  calculators: "#B0647A",
-};
 
 const categoryIcons: Record<CategoryId, LucideIcon> = {
   developer: Code,
@@ -74,7 +62,7 @@ interface IconTileProps {
 /** Tinted square with a category- or tool-specific icon. */
 export function IconTile({ category, toolId, size = "md" }: IconTileProps) {
   const Icon = (toolId && toolIcons[toolId]) || categoryIcons[category];
-  const tint = categoryTints[category];
+  const tint = tintColor(category);
   return (
     <span
       aria-hidden

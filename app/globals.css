@@ -11,8 +11,12 @@
   --bg-light: #F5F6F8;
   /* Pine green for fills, buttons, focus. --on-accent text on it is 6:1. */
   --accent: #2B6E5E;
+  /* Toolio's own green. --accent can change per category; the brand never does. */
+  --brand-accent: #2B6E5E;
   --on-accent: #FFFFFF;
   --accent-warn: #C9A961;
+  /* Second color for highlights; editorial themes give it a hue of its own. */
+  --accent-2: var(--accent-warn);
   --error: #E2483D;
   --text-secondary: #5B6472;
   /* --font-jetbrains-mono / --font-inter are set by next/font in app/layout.tsx. */
@@ -21,6 +25,8 @@
   --font-display: var(--font-ui);
   /* Face for tool output. Mono by default: precise input, precise output. */
   --font-output: var(--font-mono);
+  /* font-variant-numeric for tool pages; "tabular-nums" lines figures up. */
+  --numeric: normal;
 
   /* Tool page layout, overridable per category. */
   --shell-max: 72rem;
@@ -47,6 +53,7 @@
   --text: #E6E8EB;
   /* Pine for text and icons; lighter in dark mode for contrast on --bg (7.5:1). */
   --accent-text: #5DB39A;
+  --brand-accent-text: #5DB39A;
   /* Readable secondary text. --text-secondary is only ~3:1 on --bg, too dim for body copy in dark mode. */
   --text-muted: #8C95A3;
   /* Gold for text and small marks; --accent-warn itself is too light on --bg-light. */
@@ -61,6 +68,7 @@
   --surface-raised: #FFFFFF;
   --text: #0E1116;
   --accent-text: var(--accent);
+  --brand-accent-text: var(--brand-accent);
   --text-muted: var(--text-secondary);
   --accent-warn-text: #8A6D2B;
   --border: color-mix(in srgb, var(--text-secondary) 28%, transparent);
@@ -69,50 +77,21 @@
 
 /*
  * Per-category overrides. The root layout wrapper carries
- * data-category="<category id>" on /tools/<category>/... routes, and paints
- * its own background so a category can recolor the whole page.
- *
- * - developer, fix-my-file: the :root system above (precise input, precise output).
- * - freelancer: developer's structure plus figures set for tables and charts.
- * - think-better: warmer and editorial, for reflection rather than execution.
+ * data-category="<category id>" on /tools/<category>/... routes. Each
+ * category's tokens come from its `theme` in registry/categories.ts (presets
+ * in registry/themes.ts) and are emitted by lib/category-theme-css.ts. The
+ * wrapper paints its own background so a theme can recolor the whole page.
  */
 [data-category] {
   background: var(--surface);
   color: var(--text);
+  font-variant-numeric: var(--numeric);
 }
 
-[data-category="freelancer"] {
-  font-variant-numeric: tabular-nums;
-}
-
-/* Dusk violet with sky highlights: real color, a humanist serif, and more room. */
-[data-category="think-better"] {
-  --accent: #6A58B0;
-  --accent-2: #79B8D9;
-  --surface: #17151F;
-  --surface-raised: #211E2C;
-  --text: #ECE8F2;
-  --text-muted: #A59FB4;
-  --accent-text: #B9AAF0;
-  --border: color-mix(in srgb, var(--accent) 30%, transparent);
-  --font-display: var(--font-literata), 'Literata', Georgia, serif;
-  --font-output: var(--font-display);
-  --shell-max: 48rem;
-  --shell-py: 4rem;
-  --shell-columns: 1;
-  --panel-gap: 2rem;
-  --panel-radius: 1rem;
-}
-
-:root[data-theme="light"] [data-category="think-better"] {
-  --accent: #5B4A9E;
-  --accent-2: #2F7FA6;
-  --surface: #F6F3FA;
-  --surface-raised: #FFFFFF;
-  --text: #211B2E;
-  --text-muted: #625A73;
-  --accent-text: var(--accent);
-  --border: color-mix(in srgb, var(--accent) 22%, transparent);
+/* Site chrome (header, footer) keeps the brand green inside any category theme. */
+[data-brand] {
+  --accent: var(--brand-accent);
+  --accent-text: var(--brand-accent-text);
 }
 
 body {
