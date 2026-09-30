@@ -1,20 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { IconTile } from "@/components/catalog/icons";
-import { getToolById, toolHref, type ToolConfig } from "@/registry";
-import { readRecentTools } from "@/lib/recent-tools/recent-tools";
+import { getToolById, toolHref } from "@/registry";
+import { useSyncedData } from "@/lib/sync";
 
 /** Renders nothing for visitors with no recorded tool visits. */
 export default function RecentTools() {
-  const [tools, setTools] = useState<ToolConfig[]>([]);
-
-  useEffect(() => {
-    setTools(
-      readRecentTools().flatMap((id) => getToolById(id) ?? []),
-    );
-  }, []);
+  const [ids] = useSyncedData("recents");
+  const tools = (ids ?? []).flatMap((id) => getToolById(id) ?? []);
 
   if (tools.length === 0) return null;
 

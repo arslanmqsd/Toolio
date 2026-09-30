@@ -7,19 +7,23 @@ export function addRecent(ids: string[], id: string, max = MAX_RECENT_TOOLS): st
 }
 
 /** Tool ids, most recent first. Empty when storage is unavailable or corrupt. */
-export function readRecentTools(): string[] {
+export function readRecentTools(key = RECENT_TOOLS_KEY): string[] {
   try {
-    const parsed: unknown = JSON.parse(localStorage.getItem(RECENT_TOOLS_KEY) ?? "[]");
+    const parsed: unknown = JSON.parse(localStorage.getItem(key) ?? "[]");
     return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === "string") : [];
   } catch {
     return [];
   }
 }
 
-export function recordToolVisit(id: string): void {
+export function writeRecentTools(ids: string[], key = RECENT_TOOLS_KEY): void {
   try {
-    localStorage.setItem(RECENT_TOOLS_KEY, JSON.stringify(addRecent(readRecentTools(), id)));
+    localStorage.setItem(key, JSON.stringify(ids.slice(0, MAX_RECENT_TOOLS)));
   } catch {
     // Storage unavailable (private mode etc.): recents are a convenience, skip.
   }
+}
+
+export function recordToolVisit(id: string, key = RECENT_TOOLS_KEY): void {
+  writeRecentTools(addRecent(readRecentTools(key), id), key);
 }
