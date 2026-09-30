@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { InputPanel, OutputPanel } from "@/components/tool-shell/ToolPanels";
 import Alert from "@/components/ui/Alert";
+import CodeBlock from "@/components/ui/CodeBlock";
 import { CodeTextArea } from "@/components/ui/CodeField";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import { convertCurl, type Target } from "@/lib/tools/developer/curl-to-code";
@@ -46,7 +47,7 @@ export default function CurlConverter() {
       <OutputPanel label={TARGETS.find((t) => t.id === target)!.label} copyText={result.ok ? result.code : undefined}>
         {result.ok ? (
           <div className="space-y-4">
-            <pre className="whitespace-pre [tab-size:2]">{result.code}</pre>
+            <CodeBlock code={result.code} />
             {result.warnings.length > 0 && (
               <ul className="space-y-1 border-t border-[color:var(--border)] pt-3 font-[family-name:var(--font-ui)] text-xs text-[color:var(--accent-warn-text)]">
                 {result.warnings.map((warning) => (

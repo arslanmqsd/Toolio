@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { InputPanel, OutputPanel } from "@/components/tool-shell/ToolPanels";
 import Alert from "@/components/ui/Alert";
+import CodeBlock from "@/components/ui/CodeBlock";
 import { CodeTextArea, codeFieldClass } from "@/components/ui/CodeField";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import { generateTypes, type Language } from "@/lib/tools/developer/json-to-types";
@@ -71,7 +72,7 @@ export default function JsonToTypes() {
 
       <OutputPanel label={LANGUAGES.find((l) => l.id === language)!.label} copyText={result.ok ? result.code : undefined}>
         {result.ok ? (
-          <pre className="whitespace-pre [tab-size:4]">{result.code}</pre>
+          <CodeBlock code={result.code} tabSize={4} />
         ) : (
           <Alert id="json-to-types-error" title="Can't generate types">
             {result.error}

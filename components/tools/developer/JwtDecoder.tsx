@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { InputPanel, OutputPanel } from "@/components/tool-shell/ToolPanels";
 import Alert from "@/components/ui/Alert";
 import { CodeTextArea } from "@/components/ui/CodeField";
+import Section from "@/components/ui/Section";
 import { useNow } from "@/lib/hooks/useNow";
 import { decodeJwt, formatDuration, getExpiry, type ExpiryInfo } from "@/lib/tools/developer/jwt";
 
@@ -12,17 +13,6 @@ const EXAMPLE_TOKEN =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkFkYSBMb3ZlbGFjZSIsImVtYWlsIjoiYWRhQGV4YW1wbGUuY29tIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzM1Njg5NjAwLCJleHAiOjE5MjQ5OTIwMDB9.V-GZZDP_65htbNewPaxGMfEnN_UlGTjctwqp6kot9QY";
 
 const EXPIRING_SOON_MS = 5 * 60 * 1000;
-
-function Section({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <h2 className="mb-2 font-[family-name:var(--font-ui)] text-xs font-medium uppercase tracking-wide text-[color:var(--accent-text)]">
-        {label}
-      </h2>
-      {children}
-    </div>
-  );
-}
 
 function ExpiryDetails({ expiry }: { expiry: ExpiryInfo }) {
   const now = useNow(expiry.kind === "valid");
