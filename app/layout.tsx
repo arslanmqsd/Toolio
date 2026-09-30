@@ -8,14 +8,18 @@ import SiteFooter from "@/components/layout/SiteFooter";
 import SignInButton from "@/components/layout/SignInButton";
 import ThemeToggle, { themeInitScript } from "@/components/layout/ThemeToggle";
 import { WorkbenchProvider } from "@/components/workbench/context";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains-mono" });
 
 export const metadata: Metadata = {
-  title: "Toolio",
+  metadataBase: new URL(SITE_URL),
+  title: { default: SITE_NAME, template: `%s | ${SITE_NAME}` },
   description: "A collection of handy tools.",
+  applicationName: SITE_NAME,
+  openGraph: { type: "website", siteName: SITE_NAME },
 };
 
 export default function RootLayout({

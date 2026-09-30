@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import RecordToolVisit from "@/components/tool-shell/RecordToolVisit";
 import ToolShell from "@/components/tool-shell/ToolShell";
+import { toolMetadata } from "@/lib/seo";
 import { allTools, getTool } from "@/registry";
 
 interface ToolPageProps {
@@ -16,7 +17,7 @@ export function generateStaticParams() {
 
 export function generateMetadata({ params }: ToolPageProps): Metadata {
   const tool = getTool(params.category, params.tool);
-  return tool ? { title: `${tool.title} | Toolio`, description: tool.description } : {};
+  return tool ? toolMetadata(tool) : {};
 }
 
 export default async function ToolPage({ params }: ToolPageProps) {

@@ -20,7 +20,7 @@ function getCategory(id: string) {
 
 export function generateMetadata({ params }: CategoryPageProps): Metadata {
   const category = getCategory(params.category);
-  return category ? { title: `${category.label} tools | Toolio`, description: category.description } : {};
+  return category ? { title: `${category.label} tools`, description: category.description, alternates: { canonical: `/tools/${category.id}` } } : {};
 }
 
 export default function CategoryPage({ params }: CategoryPageProps) {
