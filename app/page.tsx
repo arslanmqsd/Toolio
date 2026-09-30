@@ -1,9 +1,12 @@
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import { ArrowRight, Lock, Monitor, ShieldCheck, Sparkles, UserX, Zap, HardDrive, History } from "lucide-react";
 import HomeSearch from "@/components/home/HomeSearch";
 import RecentTools from "@/components/home/RecentTools";
 import ToolFinder from "@/components/home/ToolFinder";
+import CategoryDot from "@/components/catalog/CategoryDot";
 import { IconTile } from "@/components/catalog/icons";
+import { tintColor } from "@/lib/category-theme-css";
 import ToolCard from "@/components/catalog/ToolCard";
 import { buttonClass } from "@/components/ui/Button";
 import { categories, allTools, plannedTools, toolHref } from "@/registry";
@@ -100,12 +103,14 @@ export default function Home() {
                 <li key={category.id}>
                   <Link
                     href={`/tools/${category.id}`}
-                    className="flex h-full gap-4 rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-raised)] p-5 transition-colors hover:border-[color:var(--accent)]"
+                    style={{ "--card-tint": tintColor(category.id) } as CSSProperties}
+                    className="flex h-full gap-4 rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-raised)] p-5 transition-colors hover:border-[color:var(--card-tint)]"
                   >
                     <IconTile category={category.id} />
                     <span>
                       <span className="block font-semibold">{category.label}</span>
-                      <span className="block text-xs text-[color:var(--text-muted)]">
+                      <span className="flex items-center gap-1.5 text-xs text-[color:var(--text-muted)]">
+                        <CategoryDot category={category.id} />
                         {count > 0 ? `${count} ${count === 1 ? "tool" : "tools"}` : "Coming soon"}
                       </span>
                       <span className="mt-2 block text-sm text-[color:var(--text-muted)]">{category.description}</span>

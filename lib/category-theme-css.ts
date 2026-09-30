@@ -54,9 +54,14 @@ export function categoryCss(id: string, theme?: CategoryTheme): string {
     .join("\n");
 }
 
-/** CSS custom property holding a category's icon tint, e.g. `--tint-developer`. */
+/** CSS custom property holding a category's tint, e.g. `--tint-developer`. */
 export function tintVar(id: string): string {
   return `--tint-${id}`;
+}
+
+/** A category's tint as a CSS color, usable anywhere on the site (it is set on :root). */
+export function tintColor(id: string): string {
+  return `var(${tintVar(id)})`;
 }
 
 /**

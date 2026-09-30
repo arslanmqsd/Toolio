@@ -21,7 +21,7 @@ import {
   Type,
   type LucideIcon,
 } from "lucide-react";
-import { tintVar } from "@/lib/category-theme-css";
+import { tintColor } from "@/lib/category-theme-css";
 import type { CategoryId } from "@/registry";
 
 const categoryIcons: Record<CategoryId, LucideIcon> = {
@@ -62,8 +62,7 @@ interface IconTileProps {
 /** Tinted square with a category- or tool-specific icon. */
 export function IconTile({ category, toolId, size = "md" }: IconTileProps) {
   const Icon = (toolId && toolIcons[toolId]) || categoryIcons[category];
-  // The category's theme accent, set on :root by categoryTintsCss.
-  const tint = `var(${tintVar(category)})`;
+  const tint = tintColor(category);
   return (
     <span
       aria-hidden

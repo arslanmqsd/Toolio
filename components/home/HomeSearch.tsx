@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Search } from "lucide-react";
 import { IconTile } from "@/components/catalog/icons";
 import Button from "@/components/ui/Button";
+import CategoryDot from "@/components/catalog/CategoryDot";
 import { useRouter } from "next/navigation";
 import { categories, toolHref } from "@/registry";
 import { search } from "@/lib/search/search";
@@ -174,7 +175,8 @@ export default function HomeSearch() {
                     <span className="min-w-0 flex-1">
                       <span className="flex items-baseline justify-between gap-4">
                         <span className="font-medium">{tool.title}</span>
-                        <span className="shrink-0 text-xs text-[color:var(--text-muted)]">
+                        <span className="flex shrink-0 items-center gap-1.5 text-xs text-[color:var(--text-muted)]">
+                          <CategoryDot category={tool.category} />
                           {categories[tool.category].label}
                         </span>
                       </span>
