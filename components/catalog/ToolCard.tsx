@@ -13,7 +13,7 @@ interface ToolCardProps {
 }
 
 const cardClass =
-  "flex h-full flex-col rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-raised)] p-5";
+  "flex h-full flex-col rounded-lg border border-[color:var(--border)] bg-[color:var(--surface-raised)] p-5";
 
 export default function ToolCard({ id, category, title, description, href }: ToolCardProps) {
   const body = (

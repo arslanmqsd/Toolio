@@ -3,8 +3,9 @@
 import { useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Sparkles } from "lucide-react";
+import { SearchCheck } from "lucide-react";
 import { IconTile } from "@/components/catalog/icons";
+import Button from "@/components/ui/Button";
 import { search } from "@/lib/search/search";
 import { toolHref } from "@/registry";
 
@@ -23,11 +24,11 @@ export default function ToolFinder() {
   return (
     <section
       aria-labelledby="finder-heading"
-      className="grid grid-cols-1 gap-6 rounded-2xl border border-[color:var(--border)] bg-[color:color-mix(in_srgb,var(--accent)_8%,var(--surface))] p-6 sm:p-8 lg:grid-cols-[1fr_minmax(0,22rem)] lg:items-center"
+      className="grid grid-cols-1 gap-6 rounded-lg border border-[color:var(--border)] bg-[color:color-mix(in_srgb,var(--accent)_8%,var(--surface))] p-6 sm:p-8 lg:grid-cols-[1fr_minmax(0,22rem)] lg:items-center"
     >
       <div className="min-w-0">
         <div className="flex items-start gap-3">
-          <Sparkles aria-hidden className="mt-1 h-6 w-6 shrink-0 text-[color:var(--accent-text)]" />
+          <SearchCheck aria-hidden className="mt-1 h-6 w-6 shrink-0 text-[color:var(--accent-text)]" />
           <div>
             <h2 id="finder-heading" className="text-xl font-semibold tracking-[-0.01em]">
               Don&apos;t know which tool you need?
@@ -44,21 +45,17 @@ export default function ToolFinder() {
             value={task}
             onChange={(e) => setTask(e.target.value)}
             autoComplete="off"
-            className="min-w-0 flex-1 rounded-lg border border-[color:var(--border)] bg-[color:var(--surface-raised)] px-4 py-2.5 text-sm outline-none focus:border-[color:var(--accent)]"
+            className="min-w-0 flex-1 rounded-md border border-[color:var(--border)] bg-[color:var(--surface-raised)] px-4 py-2.5 text-sm outline-none focus:border-[color:var(--accent)]"
           />
-          <button
-            type="submit"
-            disabled={results.length === 0}
-            className="rounded-lg bg-[color:var(--accent)] px-5 py-2.5 text-sm font-medium text-white hover:bg-[color:color-mix(in_srgb,var(--accent)_88%,white)] disabled:opacity-50"
-          >
+          <Button type="submit" variant="primary" size="lg" disabled={results.length === 0}>
             Find a tool
-          </button>
+          </Button>
         </form>
       </div>
 
       <div
         aria-live="polite"
-        className="min-w-0 rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-raised)] p-4"
+        className="min-w-0 rounded-md border border-[color:var(--border)] bg-[color:var(--surface-raised)] p-4"
       >
         {task.trim() === "" ? (
           <p className="text-sm text-[color:var(--text-muted)]">Matching tools appear here.</p>
@@ -76,7 +73,7 @@ export default function ToolFinder() {
                 <li key={tool.id}>
                   <Link
                     href={toolHref(tool)}
-                    className="flex items-center gap-3 rounded-lg p-2 hover:bg-[color:color-mix(in_srgb,var(--accent)_10%,transparent)]"
+                    className="flex items-center gap-3 rounded-md p-2 hover:bg-[color:color-mix(in_srgb,var(--accent)_10%,transparent)]"
                   >
                     <IconTile category={tool.category} toolId={tool.id} size="sm" />
                     <span className="min-w-0">

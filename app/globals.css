@@ -9,8 +9,9 @@
 :root {
   --bg: #0E1116;
   --bg-light: #F5F6F8;
-  /* Brand blue for fills, buttons, focus. White text on it is 5.2:1. */
-  --accent: #2563EB;
+  /* Pine green for fills, buttons, focus. --on-accent text on it is 6:1. */
+  --accent: #2B6E5E;
+  --on-accent: #FFFFFF;
   --accent-warn: #C9A961;
   --error: #E2483D;
   --text-secondary: #5B6472;
@@ -23,13 +24,14 @@
   --surface: var(--bg);
   --surface-raised: #151A22;
   --text: #E6E8EB;
-  /* Blue for text and icons; lighter in dark mode for contrast on --bg. */
-  --accent-text: #60A5FA;
+  /* Pine for text and icons; lighter in dark mode for contrast on --bg (7.5:1). */
+  --accent-text: #5DB39A;
   /* Readable secondary text. --text-secondary is only ~3:1 on --bg, too dim for body copy in dark mode. */
   --text-muted: #8C95A3;
   /* Gold for text and small marks; --accent-warn itself is too light on --bg-light. */
   --accent-warn-text: var(--accent-warn);
-  --border: rgb(255 255 255 / 0.1);
+  /* Slate hairlines, the same hue as secondary text. */
+  --border: color-mix(in srgb, var(--text-secondary) 38%, transparent);
   color-scheme: dark;
 }
 
@@ -40,7 +42,7 @@
   --accent-text: var(--accent);
   --text-muted: var(--text-secondary);
   --accent-warn-text: #8A6D2B;
-  --border: rgb(14 17 22 / 0.12);
+  --border: color-mix(in srgb, var(--text-secondary) 28%, transparent);
   color-scheme: light;
 }
 
@@ -62,12 +64,13 @@ body {
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 60%, transparent);
 }
 
 /* Zero specificity so components can style their own focus state. */
 :where(:focus-visible) {
-  outline: 2px solid var(--accent);
+  /* --accent-text, not --accent: pine itself is only ~3:1 on the dark background. */
+  outline: 2px solid var(--accent-text);
   outline-offset: 2px;
 }
 

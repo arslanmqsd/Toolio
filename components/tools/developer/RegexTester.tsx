@@ -264,7 +264,7 @@ export default function RegexTester() {
                 onClick={() => toggleFlag(flag)}
                 className={`h-8 w-8 rounded-md border font-[family-name:var(--font-mono)] text-sm ${
                   flags.includes(flag)
-                    ? "border-[color:var(--accent)] bg-[color:var(--accent)] text-white"
+                    ? "border-[color:var(--accent)] bg-[color:var(--accent)] text-[color:var(--on-accent)]"
                     : "border-[color:var(--border)] text-[color:var(--text-muted)] hover:text-[color:var(--text)]"
                 }`}
               >

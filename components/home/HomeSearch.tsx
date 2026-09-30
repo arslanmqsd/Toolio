@@ -4,6 +4,7 @@ import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 
 import Link from "next/link";
 import { Search } from "lucide-react";
 import { IconTile } from "@/components/catalog/icons";
+import Button from "@/components/ui/Button";
 import { useRouter } from "next/navigation";
 import { categories, toolHref } from "@/registry";
 import { search } from "@/lib/search/search";
@@ -110,7 +111,7 @@ export default function HomeSearch() {
 
   return (
     <div className="relative mx-auto max-w-2xl text-left">
-      <div className="flex items-center gap-2 rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-raised)] p-2 pl-4 transition-colors focus-within:border-[color:var(--accent)]">
+      <div className="flex items-center gap-2 rounded-lg border border-[color:var(--border)] bg-[color:var(--surface-raised)] p-1.5 pl-4 transition-colors focus-within:border-[color:var(--accent)]">
         <Search aria-hidden className="h-5 w-5 shrink-0 text-[color:var(--text-muted)]" />
         <div className="relative min-w-0 flex-1">
           <input
@@ -146,17 +147,13 @@ export default function HomeSearch() {
             {shortcut}
           </kbd>
         )}
-        <button
-          type="button"
-          onClick={openActive}
-          className="shrink-0 rounded-xl bg-[color:var(--accent)] px-4 py-2.5 text-sm font-medium text-white hover:bg-[color:color-mix(in_srgb,var(--accent)_88%,white)] sm:px-6"
-        >
+        <Button variant="primary" size="lg" onClick={openActive} className="shrink-0">
           Search
-        </button>
+        </Button>
       </div>
 
       {hasQuery && (
-        <div className="absolute inset-x-0 top-full z-20 mt-2 overflow-hidden rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-raised)]">
+        <div className="absolute inset-x-0 top-full z-20 mt-2 overflow-hidden rounded-lg border border-[color:var(--border)] bg-[color:var(--surface-raised)]">
           {results.length === 0 ? (
             <p className="px-5 py-4 text-sm text-[color:var(--text-muted)]">
               No tool does that yet. Try describing it another way, or browse the categories below.
@@ -169,7 +166,7 @@ export default function HomeSearch() {
                     href={toolHref(tool)}
                     tabIndex={-1}
                     onMouseEnter={() => setActive(i)}
-                    className={`flex items-center gap-3 rounded-xl px-3 py-2.5 ${
+                    className={`flex items-center gap-3 rounded-md px-3 py-2.5 ${
                       i === active ? "bg-[color:color-mix(in_srgb,var(--accent)_14%,transparent)]" : ""
                     }`}
                   >

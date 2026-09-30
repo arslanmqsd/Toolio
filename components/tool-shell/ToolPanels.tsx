@@ -7,7 +7,7 @@ import SendToMenu from "./SendToMenu";
 
 const panelClass = "flex min-w-0 flex-col rounded-lg border border-[color:var(--border)]";
 const panelHeaderClass =
-  "flex items-center justify-between border-b border-[color:var(--border)] px-4 py-2 text-xs font-medium uppercase tracking-wide text-[color:var(--text-muted)]";
+  "flex items-center justify-between border-b border-[color:var(--border)] px-4 py-2 text-xs font-medium text-[color:var(--text-muted)]";
 
 interface InputPanelProps {
   label?: string;
