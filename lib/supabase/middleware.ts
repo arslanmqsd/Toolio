@@ -13,8 +13,8 @@ export async function updateSession(request: NextRequest) {
   const hasAuthCookie = request.cookies.getAll().some(({ name }) => name.startsWith("sb-"));
   if (!hasSupabaseEnv || !hasAuthCookie) return response;
 
-  const { url, anonKey } = supabaseEnv();
-  const supabase = createServerClient(url, anonKey, {
+  const { url, key } = supabaseEnv();
+  const supabase = createServerClient(url, key, {
     cookies: {
       getAll() {
         return request.cookies.getAll();

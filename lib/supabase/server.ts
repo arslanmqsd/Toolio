@@ -7,10 +7,10 @@ import { supabaseEnv } from "./env";
  * never share it between requests, since it carries that request's session.
  */
 export function createClient() {
-  const { url, anonKey } = supabaseEnv();
+  const { url, key } = supabaseEnv();
   const cookieStore = cookies();
 
-  return createServerClient(url, anonKey, {
+  return createServerClient(url, key, {
     cookies: {
       getAll() {
         return cookieStore.getAll();
