@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import PasswordForm from "@/components/auth/PasswordForm";
 import PageTitle from "@/components/ui/PageTitle";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
@@ -24,6 +25,17 @@ export default async function DashboardPage() {
       <p className="mt-8 max-w-xl text-sm text-[color:var(--text-muted)]">
         Your favorite tools, recent history and saved snippets will show up here.
       </p>
+
+      {/* A "Forgot password?" reset link lands here (see RESET_PASSWORD_PATH in SignInDialog). */}
+      <section id="password" aria-labelledby="password-heading" className="mt-12 scroll-mt-24">
+        <h2 id="password-heading" className="text-lg font-semibold tracking-[-0.01em]">
+          Password
+        </h2>
+        <p className="mb-4 mt-1 max-w-xl text-sm text-[color:var(--text-muted)]">
+          Set a password to sign in without waiting for an email link, or change the one you have.
+        </p>
+        <PasswordForm />
+      </section>
     </main>
   );
 }

@@ -18,6 +18,9 @@ interface AuthContextValue {
   signOut: () => Promise<void>;
 }
 
+/** Client-side floor for new passwords; the project's Auth settings may ask for more, and its error then shows. */
+export const MIN_PASSWORD_LENGTH = 8;
+
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 /** Tracks the Supabase session in the browser and shares the current user with the whole app. */

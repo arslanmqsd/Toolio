@@ -3,19 +3,37 @@
 import { useState, type FormEvent } from "react";
 import { usePathname } from "next/navigation";
 import { MailCheck } from "lucide-react";
+import { isAuthWeakPasswordError, type AuthError } from "@supabase/supabase-js";
+import { LogoMark } from "@/components/layout/Logo";
 import Button from "@/components/ui/Button";
 import Dialog from "@/components/ui/Dialog";
 import Field from "@/components/ui/Field";
+import FormError from "@/components/ui/FormError";
+import PasswordInput from "@/components/ui/PasswordInput";
+import SegmentedControl from "@/components/ui/SegmentedControl";
 import TextInput from "@/components/ui/TextInput";
-import { useAuth } from "@/lib/auth-context";
+import { MIN_PASSWORD_LENGTH, useAuth } from "@/lib/auth-context";
 import { authCallbackUrl } from "@/lib/auth-redirect";
+import { googleSignInEnabled } from "@/lib/supabase/env";
+
+type Method = "link" | "password";
+
+/** The dialog's screens: the sign-in form, or the "Reset your password" step behind "Forgot password?". */
+type View = "sign-in" | "forgot";
+
+const METHODS = [
+  { id: "link", label: "Email link" },
+  { id: "password", label: "Password" },
+] as const;
 
 type Status =
   | { kind: "idle" }
   | { kind: "sending" }
-  | { kind: "sent"; email: string }
+  /** An email went out: a sign-in link, a new account's confirmation link, or a password reset link. */
+  | { kind: "sent"; email: string; purpose: "sign-in" | "confirm" | "reset" }
   | { kind: "redirecting" }
-  | { kind: "error"; message: string };
+  /** `field`: which input the problem is in, so it gets the error border ("both" for a wrong email/password pair). */
+  | { kind: "error"; message: string; field: "email" | "password" | "both" | null };
 
 function GoogleIcon() {
   return (
@@ -28,31 +46,104 @@ function GoogleIcon() {
   );
 }
 
+/** Where a password reset link lands: signed in, at the dashboard's password form. */
+const RESET_PASSWORD_PATH = "/dashboard#password";
+
+const SENT_MESSAGE = {
+  "sign-in": "We sent a sign-in link to ",
+  confirm: "We sent a link to confirm your account to ",
+  reset: "We sent a link to reset your password to ",
+} as const;
+
+/** The input an error is about. Rate limits, an unconfirmed account and the like aren't about either. */
+const ERROR_FIELD: Record<string, "email" | "password" | "both"> = {
+  invalid_credentials: "both",
+  validation_failed: "both",
+  user_already_exists: "email",
+  email_exists: "email",
+  email_address_invalid: "email",
+  weak_password: "password",
+};
+
+function errorStatus(error: AuthError): Status {
+  return { kind: "error", message: describeError(error), field: ERROR_FIELD[error.code ?? ""] ?? null };
+}
+
 /** Supabase errors are terse; say what happened and what to do. */
-function describeError(error: { message: string; status?: number }): string {
-  if (error.status === 429 || /rate limit|seconds/i.test(error.message)) {
-    return "Too many sign-in emails in a short time. Wait a minute, then try again.";
+function describeError(error: AuthError): string {
+  // Supabase lists every allowed character ("…abcdefghijklmnopqrstuvwxyz, 0123456789"); say it plainly.
+  if (isAuthWeakPasswordError(error)) {
+    return error.reasons.includes("pwned")
+      ? "That password has appeared in a known data breach. Choose a different one."
+      : "That password is too weak. Make it longer and mix upper- and lowercase letters, numbers and symbols.";
   }
+  switch (error.code) {
+    case "invalid_credentials":
+      return "Wrong email or password. Check both, or use “Forgot password?” to set a new one.";
+    case "email_not_confirmed":
+      return "Confirm your email first: open the link we sent when you created the account.";
+    case "email_address_not_authorized":
+      // Supabase's built-in email service only delivers to the project's team; custom SMTP lifts this.
+      return "We can't send email to this address yet. Try again later, or use a different sign-in method.";
+    case "user_already_exists":
+    case "email_exists":
+      return "An account with this email already exists. Sign in instead.";
+  }
+  // Supabase has three limits here, and only the last one clears in about a minute.
+  const wait = /after (\d+) seconds?/i.exec(error.message);
+  if (wait) return `You just asked for an email. Wait ${wait[1]} seconds, then try again.`;
+  if (error.code === "over_email_send_rate_limit") {
+    return "We've sent too many emails in the past hour. Try again later, or sign in with a password if you have one.";
+  }
+  if (error.status === 429) return "Too many attempts in a short time. Wait a minute, then try again.";
   return error.message || "Sign-in failed. Try again.";
 }
+
+const logo = <LogoMark className="h-10 w-10 text-[color:var(--brand-accent-text)]" />;
 
 interface SignInDialogProps {
   open: boolean;
   onClose: () => void;
 }
 
-/** Magic-link and Google sign-in. Both return through /auth/callback to the page the dialog opened on. */
+/**
+ * Magic-link and email + password sign-in, password sign-up and reset, and Google when it's enabled.
+ * Emailed links and Google return through /auth/callback; a password sign-in completes in place.
+ */
 export default function SignInDialog({ open, onClose }: SignInDialogProps) {
   const { supabase } = useAuth();
   const pathname = usePathname();
+  const [view, setView] = useState<View>("sign-in");
+  const [method, setMethod] = useState<Method>("link");
+  const [creating, setCreating] = useState(false);
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const busy = status.kind === "sending" || status.kind === "redirecting";
+  const error = status.kind === "error" ? status : null;
 
   function close() {
     onClose();
-    // Reset once closed, so reopening starts fresh but a sent state survives until then.
-    if (status.kind !== "sent") setStatus({ kind: "idle" });
+    // Reopening always starts at the sign-in form. The email is kept, so it needn't be typed again.
+    setView("sign-in");
+    setCreating(false);
+    setPassword("");
+    setStatus({ kind: "idle" });
+  }
+
+  /** Editing a field clears the error about it. */
+  function clearError() {
+    if (status.kind === "error") setStatus({ kind: "idle" });
+  }
+
+  function showView(next: View) {
+    setView(next);
+    setStatus({ kind: "idle" });
+  }
+
+  function chooseMethod(next: Method) {
+    setMethod(next);
+    setStatus({ kind: "idle" });
   }
 
   async function sendLink(event: FormEvent) {
@@ -63,7 +154,40 @@ export default function SignInDialog({ open, onClose }: SignInDialogProps) {
       email: email.trim(),
       options: { emailRedirectTo: authCallbackUrl(pathname) },
     });
-    setStatus(error ? { kind: "error", message: describeError(error) } : { kind: "sent", email: email.trim() });
+    setStatus(error ? errorStatus(error) : { kind: "sent", email: email.trim(), purpose: "sign-in" });
+  }
+
+  async function submitPassword(event: FormEvent) {
+    event.preventDefault();
+    if (!supabase) return;
+    setStatus({ kind: "sending" });
+    const credentials = { email: email.trim(), password };
+
+    if (creating) {
+      const { data, error } = await supabase.auth.signUp({
+        ...credentials,
+        options: { emailRedirectTo: authCallbackUrl(pathname) },
+      });
+      if (error) return setStatus(errorStatus(error));
+      // With email confirmation on there's no session yet (and, for an address that already has an account,
+      // Supabase answers the same way on purpose, so this can't be used to probe for accounts).
+      if (!data.session) return setStatus({ kind: "sent", email: credentials.email, purpose: "confirm" });
+    } else {
+      const { error } = await supabase.auth.signInWithPassword(credentials);
+      if (error) return setStatus(errorStatus(error));
+    }
+    // Signed in: the auth provider picks up the session and the nav swaps to the user menu.
+    close();
+  }
+
+  async function sendPasswordReset(event: FormEvent) {
+    event.preventDefault();
+    if (!supabase) return;
+    setStatus({ kind: "sending" });
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: authCallbackUrl(RESET_PASSWORD_PATH),
+    });
+    setStatus(error ? errorStatus(error) : { kind: "sent", email: email.trim(), purpose: "reset" });
   }
 
   async function continueWithGoogle() {
@@ -74,21 +198,75 @@ export default function SignInDialog({ open, onClose }: SignInDialogProps) {
       options: { redirectTo: authCallbackUrl(pathname) },
     });
     // On success the browser is already leaving for Google.
-    if (error) setStatus({ kind: "error", message: describeError(error) });
+    if (error) setStatus(errorStatus(error));
   }
 
   if (status.kind === "sent") {
     return (
-      <Dialog open={open} onClose={close} title="Check your email">
+      <Dialog open={open} onClose={close} icon={logo} title="Check your email">
         <div className="space-y-4 text-sm">
           <p className="flex gap-3">
             <MailCheck aria-hidden className="mt-0.5 h-5 w-5 shrink-0 text-[color:var(--accent-text)]" />
             <span>
-              We sent a sign-in link to <strong className="break-all">{status.email}</strong>. Open it in this browser
-              to finish signing in. It expires in an hour.
+              {SENT_MESSAGE[status.purpose]}
+              <strong className="break-all">{status.email}</strong>. Open it in this browser{" "}
+              {status.purpose === "reset" ? "to choose a new password" : "to finish signing in"}. It expires in an hour.
             </span>
           </p>
           <Button onClick={() => setStatus({ kind: "idle" })}>Use a different email</Button>
+        </div>
+      </Dialog>
+    );
+  }
+
+  const emailField = (
+    <Field label="Email" htmlFor="sign-in-email">
+      <TextInput
+        id="sign-in-email"
+        type="email"
+        required
+        autoComplete="email"
+        placeholder="you@example.com"
+        value={email}
+        onChange={(e) => {
+          setEmail(e.target.value);
+          clearError();
+        }}
+        aria-invalid={error?.field === "email" || error?.field === "both" || undefined}
+        aria-describedby={error ? "sign-in-error" : undefined}
+      />
+    </Field>
+  );
+
+  // Sits just above each form's submit button, next to the fields it's about.
+  const errorMessage = error && <FormError id="sign-in-error">{error.message}</FormError>;
+
+  if (view === "forgot") {
+    return (
+      <Dialog
+        open={open}
+        onClose={close}
+        icon={logo}
+        title="Reset your password"
+        description="Enter the email you signed up with and we'll send you a link to choose a new password."
+      >
+        <div className="space-y-5">
+          <form onSubmit={sendPasswordReset} className="space-y-3">
+            {emailField}
+            {errorMessage}
+            <Button type="submit" variant="primary" size="lg" disabled={busy} className="w-full">
+              {status.kind === "sending" ? "Sending link…" : "Send reset link"}
+            </Button>
+            <p className="pt-1 text-center text-sm">
+              <button
+                type="button"
+                onClick={() => showView("sign-in")}
+                className="font-medium text-[color:var(--accent-text)] hover:underline"
+              >
+                Back to sign in
+              </button>
+            </p>
+          </form>
         </div>
       </Dialog>
     );
@@ -98,44 +276,92 @@ export default function SignInDialog({ open, onClose }: SignInDialogProps) {
     <Dialog
       open={open}
       onClose={close}
-      title="Sign in to Toolio"
+      icon={logo}
+      title={method === "password" && creating ? "Create your Toolio account" : "Sign in to Toolio"}
       description="Save favorite tools, history and snippets across devices. Every tool still works without an account."
     >
       <div className="space-y-5">
-        <Button onClick={continueWithGoogle} disabled={busy} size="lg" className="w-full">
-          <GoogleIcon />
-          {status.kind === "redirecting" ? "Opening Google…" : "Continue with Google"}
-        </Button>
+        {googleSignInEnabled && (
+          <>
+            <Button onClick={continueWithGoogle} disabled={busy} size="lg" className="w-full">
+              <GoogleIcon />
+              {status.kind === "redirecting" ? "Opening Google…" : "Continue with Google"}
+            </Button>
 
-        <div className="flex items-center gap-3 text-xs text-[color:var(--text-muted)]">
-          <span className="h-px flex-1 bg-[color:var(--border)]" />
-          or
-          <span className="h-px flex-1 bg-[color:var(--border)]" />
-        </div>
-
-        <form onSubmit={sendLink} className="space-y-3">
-          <Field label="Email" htmlFor="sign-in-email">
-            <TextInput
-              id="sign-in-email"
-              type="email"
-              required
-              autoComplete="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              aria-describedby={status.kind === "error" ? "sign-in-error" : undefined}
-            />
-          </Field>
-          <Button type="submit" variant="primary" size="lg" disabled={busy} className="w-full">
-            {status.kind === "sending" ? "Sending link…" : "Email me a sign-in link"}
-          </Button>
-        </form>
-
-        {status.kind === "error" && (
-          <p id="sign-in-error" role="alert" className="text-sm text-[color:var(--error)]">
-            {status.message}
-          </p>
+            <div className="flex items-center gap-3 text-xs text-[color:var(--text-muted)]">
+              <span className="h-px flex-1 bg-[color:var(--border)]" />
+              or use your email
+              <span className="h-px flex-1 bg-[color:var(--border)]" />
+            </div>
+          </>
         )}
+
+        <SegmentedControl label="Email sign-in method" options={METHODS} value={method} onChange={chooseMethod} variant="tabs" />
+
+        {method === "link" ? (
+          <form onSubmit={sendLink} className="space-y-3">
+            {emailField}
+            {errorMessage}
+            <Button type="submit" variant="primary" size="lg" disabled={busy} className="w-full">
+              {status.kind === "sending" ? "Sending link…" : "Email me a sign-in link"}
+            </Button>
+          </form>
+        ) : (
+          <form onSubmit={submitPassword} className="space-y-3">
+            {emailField}
+            <Field
+              label="Password"
+              htmlFor="sign-in-password"
+              help={creating ? `At least ${MIN_PASSWORD_LENGTH} characters.` : undefined}
+              action={
+                !creating && (
+                  <button
+                    type="button"
+                    onClick={() => showView("forgot")}
+                    disabled={busy}
+                    className="text-sm text-[color:var(--text-muted)] hover:text-[color:var(--text)] hover:underline disabled:opacity-50"
+                  >
+                    Forgot password?
+                  </button>
+                )
+              }
+            >
+              <PasswordInput
+                id="sign-in-password"
+                required
+                minLength={creating ? MIN_PASSWORD_LENGTH : undefined}
+                autoComplete={creating ? "new-password" : "current-password"}
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  clearError();
+                }}
+                aria-invalid={error?.field === "password" || error?.field === "both" || undefined}
+                aria-describedby={error ? "sign-in-error" : undefined}
+              />
+            </Field>
+            {errorMessage}
+            <Button type="submit" variant="primary" size="lg" disabled={busy} className="w-full">
+              {creating
+                ? status.kind === "sending" ? "Creating account…" : "Create account"
+                : status.kind === "sending" ? "Signing in…" : "Sign in"}
+            </Button>
+            <p className="pt-1 text-center text-sm text-[color:var(--text-muted)]">
+              {creating ? "Already have an account? " : "New to Toolio? "}
+              <button
+                type="button"
+                onClick={() => {
+                  setCreating(!creating);
+                  setStatus({ kind: "idle" });
+                }}
+                className="font-medium text-[color:var(--accent-text)] hover:underline"
+              >
+                {creating ? "Sign in" : "Create an account"}
+              </button>
+            </p>
+          </form>
+        )}
+
       </div>
     </Dialog>
   );
