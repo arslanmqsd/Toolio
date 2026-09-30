@@ -62,3 +62,9 @@ create policy "Users manage their own snippets"
   to authenticated
   using ((select auth.uid()) = user_id)
   with check ((select auth.uid()) = user_id);
+
+-- Explicit Data API access, so the tables work with "Automatically expose new
+-- tables" turned off. Signed-in users get row access (still limited to their
+-- own rows by the policies above); signed-out visitors get none.
+revoke all on public.favorites, public.history, public.snippets from anon;
+grant select, insert, update, delete on public.favorites, public.history, public.snippets to authenticated;
