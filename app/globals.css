@@ -38,7 +38,7 @@
   --surface-raised: #FFFFFF;
   --text: #0E1116;
   --accent-text: var(--accent);
-  --text-muted: var(--text-muted);
+  --text-muted: var(--text-secondary);
   --accent-warn-text: #8A6D2B;
   --border: rgb(14 17 22 / 0.12);
   color-scheme: light;
