@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useToolInput } from "@/components/tool-shell/tool-io";
 import { InputPanel, OutputPanel } from "@/components/tool-shell/ToolPanels";
 import Alert from "@/components/ui/Alert";
 import { CodeTextArea } from "@/components/ui/CodeField";
@@ -53,7 +54,7 @@ function ExpiryDetails({ expiry }: { expiry: ExpiryInfo }) {
 const blockClass = "overflow-x-auto whitespace-pre-wrap break-all";
 
 export default function JwtDecoder() {
-  const [token, setToken] = useState(EXAMPLE_TOKEN);
+  const [token, setToken] = useToolInput(EXAMPLE_TOKEN);
   const result = useMemo(() => (token.trim() === "" ? null : decodeJwt(token)), [token]);
 
   const copyText = result?.ok
@@ -82,7 +83,7 @@ export default function JwtDecoder() {
         </p>
       </InputPanel>
 
-      <OutputPanel label="Decoded" copyText={copyText}>
+      <OutputPanel label="Decoded" copyText={copyText} outputType="json">
         {result === null && <p className="text-[color:var(--text-muted)]">Paste a token to decode it.</p>}
 
         {result?.ok === false && (

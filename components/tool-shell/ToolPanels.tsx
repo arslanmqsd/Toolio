@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import type { DataType } from "@/registry";
+import { panelButtonClass } from "./panel-styles";
+import SendToMenu from "./SendToMenu";
 
 const panelClass = "flex min-w-0 flex-col rounded-lg border border-[color:var(--border)]";
 const panelHeaderClass =
@@ -13,7 +16,7 @@ interface InputPanelProps {
 
 export function InputPanel({ label = "Input", children }: InputPanelProps) {
   return (
-    <section className={panelClass} aria-label={label}>
+    <section className={panelClass} aria-label={label} data-tool-input>
       <div className={panelHeaderClass}>
         <span>{label}</span>
       </div>
@@ -26,15 +29,23 @@ interface OutputPanelProps {
   label?: string;
   /** Text placed on the clipboard by the copy button. Omit to disable copying. */
   copyText?: string;
+  /**
+   * What `copyText` is right now, one of the tool's `produces`. Set it to offer "Send to" for
+   * other tools that consume this type.
+   */
+  outputType?: DataType;
   children: ReactNode;
 }
 
-export function OutputPanel({ label = "Output", copyText, children }: OutputPanelProps) {
+export function OutputPanel({ label = "Output", copyText, outputType, children }: OutputPanelProps) {
   return (
     <section className={`${panelClass} font-[family-name:var(--font-mono)]`} aria-label={label}>
       <div className={panelHeaderClass}>
         <span className="font-[family-name:var(--font-ui)]">{label}</span>
-        <CopyButton text={copyText} />
+        <div className="flex items-center gap-2">
+          {outputType && copyText && <SendToMenu value={copyText} type={outputType} />}
+          <CopyButton text={copyText} />
+        </div>
       </div>
       <div className="min-w-0 flex-1 overflow-auto p-4 text-sm">{children}</div>
     </section>
@@ -67,7 +78,7 @@ export function CopyButton({ text }: { text?: string }) {
       type="button"
       onClick={copy}
       disabled={!text}
-      className="rounded border border-[color:var(--border)] px-2 py-0.5 font-[family-name:var(--font-ui)] normal-case tracking-normal hover:text-[color:var(--text)] disabled:opacity-40"
+      className={panelButtonClass}
     >
       <span aria-live="polite">{status === "copied" ? "Copied" : status === "failed" ? "Copy failed" : "Copy"}</span>
     </button>

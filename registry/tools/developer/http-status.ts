@@ -28,8 +28,8 @@ const httpStatus: ToolConfig = {
   ],
   actions: ["inspect"],
   component: () => import("@/components/tools/developer/HttpStatus"),
-  consumes: ["text"],
-  produces: ["text"],
+  consumes: [],
+  produces: [],
 };
 
 export default httpStatus;

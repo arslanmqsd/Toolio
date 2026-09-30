@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useToolInput } from "@/components/tool-shell/tool-io";
 import { InputPanel, OutputPanel } from "@/components/tool-shell/ToolPanels";
 import Alert from "@/components/ui/Alert";
 import CodeBlock from "@/components/ui/CodeBlock";
@@ -34,7 +35,7 @@ const LANGUAGES: { id: Language; label: string }[] = [
 ];
 
 export default function JsonToTypes() {
-  const [json, setJson] = useState(EXAMPLE_JSON);
+  const [json, setJson] = useToolInput(EXAMPLE_JSON);
   const [language, setLanguage] = useState<Language>("typescript");
   const [rootName, setRootName] = useState("User");
   const result = useMemo(() => generateTypes(json, language, rootName), [json, language, rootName]);
@@ -70,7 +71,7 @@ export default function JsonToTypes() {
         </div>
       </InputPanel>
 
-      <OutputPanel label={LANGUAGES.find((l) => l.id === language)!.label} copyText={result.ok ? result.code : undefined}>
+      <OutputPanel label={LANGUAGES.find((l) => l.id === language)!.label} copyText={result.ok ? result.code : undefined} outputType="code">
         {result.ok ? (
           <CodeBlock code={result.code} tabSize={4} />
         ) : (

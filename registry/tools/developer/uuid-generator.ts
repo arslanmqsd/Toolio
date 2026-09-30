@@ -25,7 +25,7 @@ const uuidGenerator: ToolConfig = {
   actions: ["generate"],
   component: () => import("@/components/tools/developer/UuidGenerator"),
   consumes: [],
-  produces: ["text", "uuid"],
+  produces: ["uuid"],
 };
 
 export default uuidGenerator;

@@ -2,6 +2,7 @@
 
 import { useDeferredValue, useEffect, useState } from "react";
 import { X } from "lucide-react";
+import { useToolInput } from "@/components/tool-shell/tool-io";
 import { InputPanel, OutputPanel } from "@/components/tool-shell/ToolPanels";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
@@ -40,7 +41,7 @@ type HashState = { digests: Digests | null; progress: number | null; error: stri
 
 export default function HashGenerator() {
   const [source, setSource] = useState<Source>("text");
-  const [text, setText] = useState(EXAMPLE);
+  const [text, setText] = useToolInput(EXAMPLE, () => setSource("text"));
   const deferredText = useDeferredValue(text);
   const [file, setFile] = useState<File | null>(null);
   const [encoding, setEncoding] = useState<DigestEncoding>("hex");
@@ -127,7 +128,7 @@ export default function HashGenerator() {
         </div>
       </InputPanel>
 
-      <OutputPanel label="Hashes" copyText={rows.find((row) => row.key === "sha256")?.value}>
+      <OutputPanel label="Hashes" copyText={rows.find((row) => row.key === "sha256")?.value} outputType="hash">
         {source === "file" && !file && (
           <p className="font-[family-name:var(--font-ui)] text-[color:var(--text-muted)]">Choose a file to see its hashes.</p>
         )}

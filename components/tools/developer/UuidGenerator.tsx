@@ -110,7 +110,7 @@ export default function UuidGenerator() {
         </div>
       </InputPanel>
 
-      <OutputPanel label={count === 1 ? "UUID" : "UUIDs"} copyText={countValid && ids.length ? formatted : undefined}>
+      <OutputPanel label={count === 1 ? "UUID" : "UUIDs"} copyText={countValid && ids.length ? formatted : undefined} outputType="uuid">
         {countValid ? (
           <>
             <pre className="whitespace-pre-wrap break-all">{formatted}</pre>

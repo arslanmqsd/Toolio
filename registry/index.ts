@@ -1,11 +1,13 @@
 import { actionLabels, TOOL_ACTIONS } from "./actions";
 import { categories } from "./categories";
 import { developerTools } from "./tools/developer";
+import type { DataType } from "./data-types";
 import type { ToolConfig } from "./types";
 
 export { actionLabels, categories, TOOL_ACTIONS };
 export type { ToolAction } from "./actions";
 export type { Category, CategoryId } from "./categories";
+export { DATA_TYPES, dataTypeLabels, type DataType } from "./data-types";
 export { plannedTools, type PlannedTool } from "./planned";
 export type { ToolConfig };
 
@@ -27,4 +29,10 @@ export function getToolById(id: string): ToolConfig | undefined {
 
 export function toolHref(tool: ToolConfig): string {
   return `/tools/${tool.category}/${tool.id}`;
+}
+
+/** Other tools that can take `type` as input, when `from` lists it among what it produces. */
+export function sendTargets(from: ToolConfig, type: DataType): ToolConfig[] {
+  if (!from.produces.includes(type)) return [];
+  return allTools.filter((tool) => tool.id !== from.id && tool.consumes.includes(type));
 }

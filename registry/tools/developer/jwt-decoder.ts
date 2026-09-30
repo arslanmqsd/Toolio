@@ -28,7 +28,7 @@ const jwtDecoder: ToolConfig = {
   actions: ["inspect", "extract"],
   component: () => import("@/components/tools/developer/JwtDecoder"),
   consumes: ["jwt"],
-  produces: ["json", "timestamp"],
+  produces: ["json"],
 };
 
 export default jwtDecoder;

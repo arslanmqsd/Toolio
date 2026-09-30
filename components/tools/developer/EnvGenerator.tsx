@@ -2,6 +2,7 @@
 
 import { useDeferredValue, useMemo, useState } from "react";
 import { AlertTriangle, RotateCcw } from "lucide-react";
+import { useToolInput } from "@/components/tool-shell/tool-io";
 import { InputPanel, OutputPanel } from "@/components/tool-shell/ToolPanels";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
@@ -56,7 +57,7 @@ type Language = (typeof LANGUAGES)[number]["id"];
 type Override = Partial<Pick<EnvField, "type" | "required" | "secret">>;
 
 export default function EnvGenerator() {
-  const [text, setText] = useState(EXAMPLE);
+  const [text, setText] = useToolInput(EXAMPLE);
   const deferredText = useDeferredValue(text);
   const [language, setLanguage] = useState<Language>("ts");
   const [tsStyle, setTsStyle] = useState<(typeof TS_STYLES)[number]["id"]>("zod");
@@ -202,7 +203,7 @@ export default function EnvGenerator() {
         </div>
       </InputPanel>
 
-      <OutputPanel label={FILE_NAMES[target]} copyText={code || undefined}>
+      <OutputPanel label={FILE_NAMES[target]} copyText={code || undefined} outputType={target === "example" ? "env" : "code"}>
         <div className="mb-4 flex flex-wrap items-center gap-3 font-[family-name:var(--font-ui)]">
           <SegmentedControl label="Output" options={LANGUAGES} value={language} onChange={setLanguage} />
           {language === "ts" && <SegmentedControl label="TypeScript style" options={TS_STYLES} value={tsStyle} onChange={setTsStyle} />}

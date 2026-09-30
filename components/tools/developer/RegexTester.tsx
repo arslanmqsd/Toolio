@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useToolInput } from "@/components/tool-shell/tool-io";
 import { InputPanel, OutputPanel } from "@/components/tool-shell/ToolPanels";
 import Alert from "@/components/ui/Alert";
 import { CodeTextArea } from "@/components/ui/CodeField";
@@ -184,7 +185,7 @@ function matchesToJson(matches: RegexMatch[]): string {
 export default function RegexTester() {
   const [pattern, setPattern] = useState(EXAMPLE_PATTERN);
   const [flags, setFlags] = useState("g");
-  const [text, setText] = useState(EXAMPLE_TEXT);
+  const [text, setText] = useToolInput(EXAMPLE_TEXT);
   const [view, setView] = useState<(typeof VIEWS)[number]["id"]>("matches");
 
   const syntaxError = useMemo(() => {
@@ -281,7 +282,7 @@ export default function RegexTester() {
         </div>
       </InputPanel>
 
-      <OutputPanel label="Result" copyText={copyText}>
+      <OutputPanel label="Result" copyText={copyText} outputType={view === "matches" ? "json" : "text"}>
         <div className="mb-4 font-[family-name:var(--font-ui)]">
           <SegmentedControl label="View" options={VIEWS} value={view} onChange={setView} />
         </div>

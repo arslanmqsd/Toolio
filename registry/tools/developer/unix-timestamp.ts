@@ -26,8 +26,8 @@ const unixTimestamp: ToolConfig = {
   ],
   actions: ["convert", "inspect"],
   component: () => import("@/components/tools/developer/UnixTimestamp"),
-  consumes: ["text", "timestamp", "date"],
-  produces: ["text", "timestamp", "date"],
+  consumes: ["timestamp", "date"],
+  produces: ["timestamp", "date"],
 };
 
 export default unixTimestamp;

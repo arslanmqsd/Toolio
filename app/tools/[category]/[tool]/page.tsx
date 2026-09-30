@@ -25,7 +25,7 @@ export default async function ToolPage({ params }: ToolPageProps) {
 
   const { default: ToolComponent } = await tool.component();
   return (
-    <ToolShell title={tool.title} description={tool.description}>
+    <ToolShell toolId={tool.id} title={tool.title} description={tool.description}>
       <RecordToolVisit id={tool.id} />
       <ToolComponent />
     </ToolShell>

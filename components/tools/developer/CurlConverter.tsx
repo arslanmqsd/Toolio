@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useToolInput } from "@/components/tool-shell/tool-io";
 import { InputPanel, OutputPanel } from "@/components/tool-shell/ToolPanels";
 import Alert from "@/components/ui/Alert";
 import CodeBlock from "@/components/ui/CodeBlock";
@@ -21,7 +22,7 @@ const TARGETS = [
 ] as const;
 
 export default function CurlConverter() {
-  const [command, setCommand] = useState(EXAMPLE);
+  const [command, setCommand] = useToolInput(EXAMPLE);
   const [target, setTarget] = useState<Target>("fetch");
   const result = useMemo(() => convertCurl(command, target), [command, target]);
 
@@ -44,7 +45,7 @@ export default function CurlConverter() {
         </div>
       </InputPanel>
 
-      <OutputPanel label={TARGETS.find((t) => t.id === target)!.label} copyText={result.ok ? result.code : undefined}>
+      <OutputPanel label={TARGETS.find((t) => t.id === target)!.label} copyText={result.ok ? result.code : undefined} outputType="code">
         {result.ok ? (
           <div className="space-y-4">
             <CodeBlock code={result.code} />

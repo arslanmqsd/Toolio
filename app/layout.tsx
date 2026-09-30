@@ -7,6 +7,7 @@ import SearchHotkey from "@/components/layout/SearchHotkey";
 import SiteFooter from "@/components/layout/SiteFooter";
 import SignInButton from "@/components/layout/SignInButton";
 import ThemeToggle, { themeInitScript } from "@/components/layout/ThemeToggle";
+import { WorkbenchProvider } from "@/components/workbench/context";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -33,28 +34,30 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="antialiased">
-        <CategoryScope>
-          <header className="sticky top-0 z-30 border-b border-[color:var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_85%,transparent)] backdrop-blur">
-            <div className="mx-auto flex max-w-6xl items-center gap-8 px-4 py-3">
-              <Logo />
-              <nav aria-label="Main" className="hidden gap-6 text-sm text-[color:var(--text-muted)] sm:flex">
-                <Link href="/tools" className="hover:text-[color:var(--text)]">
-                  Tools
-                </Link>
-                <Link href="/#categories" className="hover:text-[color:var(--text)]">
-                  Categories
-                </Link>
-              </nav>
-              <div className="ml-auto flex items-center gap-2">
-                <ThemeToggle />
-                <SignInButton />
+        <WorkbenchProvider>
+          <CategoryScope>
+            <header className="sticky top-0 z-30 border-b border-[color:var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_85%,transparent)] backdrop-blur">
+              <div className="mx-auto flex max-w-6xl items-center gap-8 px-4 py-3">
+                <Logo />
+                <nav aria-label="Main" className="hidden gap-6 text-sm text-[color:var(--text-muted)] sm:flex">
+                  <Link href="/tools" className="hover:text-[color:var(--text)]">
+                    Tools
+                  </Link>
+                  <Link href="/#categories" className="hover:text-[color:var(--text)]">
+                    Categories
+                  </Link>
+                </nav>
+                <div className="ml-auto flex items-center gap-2">
+                  <ThemeToggle />
+                  <SignInButton />
+                </div>
               </div>
-            </div>
-          </header>
-          {children}
-          <SiteFooter />
-        </CategoryScope>
-        <SearchHotkey />
+            </header>
+            {children}
+            <SiteFooter />
+          </CategoryScope>
+          <SearchHotkey />
+        </WorkbenchProvider>
       </body>
     </html>
   );

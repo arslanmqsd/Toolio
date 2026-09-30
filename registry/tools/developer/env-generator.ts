@@ -26,8 +26,8 @@ const envGenerator: ToolConfig = {
   ],
   actions: ["generate", "convert"],
   component: () => import("@/components/tools/developer/EnvGenerator"),
-  consumes: ["text", "env"],
-  produces: ["code", "text"],
+  consumes: ["env"],
+  produces: ["code", "env"],
 };
 
 export default envGenerator;

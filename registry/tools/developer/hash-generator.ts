@@ -26,7 +26,7 @@ const hashGenerator: ToolConfig = {
   actions: ["generate", "compare"],
   component: () => import("@/components/tools/developer/HashGenerator"),
   consumes: ["text", "file"],
-  produces: ["text", "hash"],
+  produces: ["hash"],
 };
 
 export default hashGenerator;

@@ -27,7 +27,7 @@ const jsonToTypes: ToolConfig = {
   actions: ["convert", "generate"],
   component: () => import("@/components/tools/developer/JsonToTypes"),
   consumes: ["json"],
-  produces: ["typescript", "python", "go"],
+  produces: ["code"],
 };
 
 export default jsonToTypes;

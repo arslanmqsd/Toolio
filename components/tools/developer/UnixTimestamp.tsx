@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Clock } from "lucide-react";
+import { useToolInput } from "@/components/tool-shell/tool-io";
 import { InputPanel, OutputPanel } from "@/components/tool-shell/ToolPanels";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
@@ -47,7 +48,7 @@ function groupZones(zones: string[], at: number): [string, { zone: string; label
 
 export default function UnixTimestamp() {
   const now = useNow();
-  const [text, setText] = useState(EXAMPLE);
+  const [text, setText] = useToolInput(EXAMPLE);
   const [unit, setUnit] = useState<TimeUnit | "auto">("auto");
   // Zone data differs between server and browser, so it's filled in after mount.
   const [zone, setZone] = useState("UTC");
@@ -147,7 +148,7 @@ export default function UnixTimestamp() {
         </div>
       </InputPanel>
 
-      <OutputPanel label={result.ok && result.kind === "date" ? "Timestamp" : "Date"} copyText={copyText}>
+      <OutputPanel label={result.ok && result.kind === "date" ? "Timestamp" : "Date"} copyText={copyText} outputType={result.ok && result.kind === "timestamp" ? "date" : "timestamp"}>
         {result.ok && view ? (
           <>
             <p className="font-[family-name:var(--font-ui)] text-lg font-semibold">

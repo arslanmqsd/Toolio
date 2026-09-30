@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { ArrowDownUp } from "lucide-react";
+import { useToolInput } from "@/components/tool-shell/tool-io";
 import { InputPanel, OutputPanel } from "@/components/tool-shell/ToolPanels";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
@@ -73,7 +74,7 @@ function Breakdown({ parts }: { parts: UrlParts }) {
 
 export default function UrlEncoder() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const [text, setText] = useState(EXAMPLE);
+  const [text, setText] = useToolInput(EXAMPLE);
   const [mode, setMode] = useState<Mode>("encode");
   const [scheme, setScheme] = useState<UrlScheme>("component");
 
@@ -119,7 +120,7 @@ export default function UrlEncoder() {
         </div>
       </InputPanel>
 
-      <OutputPanel label={mode === "encode" ? "Encoded" : "Decoded"} copyText={result.ok ? result.output : undefined}>
+      <OutputPanel label={mode === "encode" ? "Encoded" : "Decoded"} copyText={result.ok ? result.output : undefined} outputType="text">
         {result.ok ? (
           <>
             <pre className="whitespace-pre-wrap break-all">

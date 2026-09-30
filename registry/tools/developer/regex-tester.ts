@@ -25,7 +25,7 @@ const regexTester: ToolConfig = {
   actions: ["inspect", "extract"],
   component: () => import("@/components/tools/developer/RegexTester"),
   consumes: ["regex", "text"],
-  produces: ["json"],
+  produces: ["json", "text"],
 };
 
 export default regexTester;

@@ -1,0 +1,35 @@
+/** Kinds of data a tool can take in (`consumes`) or hand on (`produces`). */
+export const DATA_TYPES = [
+  "text",
+  "json",
+  "jwt",
+  "curl",
+  "timestamp",
+  "date",
+  "url",
+  "uuid",
+  "hash",
+  "regex",
+  "file",
+  "env",
+  "code",
+] as const;
+
+export type DataType = (typeof DATA_TYPES)[number];
+
+/** How a data type reads mid-sentence: "Use pasted JWT", "Send JSON to…". */
+export const dataTypeLabels: Record<DataType, string> = {
+  text: "text",
+  json: "JSON",
+  jwt: "JWT",
+  curl: "cURL command",
+  timestamp: "timestamp",
+  date: "date",
+  url: "URL",
+  uuid: "UUIDs",
+  hash: "hash",
+  regex: "regex",
+  file: "file",
+  env: ".env",
+  code: "code",
+};

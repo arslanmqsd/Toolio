@@ -1,6 +1,7 @@
 "use client";
 
 import { useDeferredValue, useMemo, useRef, useState } from "react";
+import { useToolInput } from "@/components/tool-shell/tool-io";
 import { InputPanel, OutputPanel } from "@/components/tool-shell/ToolPanels";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
@@ -68,7 +69,7 @@ function Summary({ stats, input, output }: { stats: JsonStats; input: string; ou
 
 export default function JsonFormatter() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const [text, setText] = useState(EXAMPLE);
+  const [text, setText] = useToolInput(EXAMPLE);
   const [mode, setMode] = useState<Mode>("format");
   const [indent, setIndent] = useState<Indent>("2");
   const [sortKeys, setSortKeys] = useState(false);
@@ -112,7 +113,7 @@ export default function JsonFormatter() {
         </div>
       </InputPanel>
 
-      <OutputPanel label={mode === "minify" ? "Minified" : "Formatted"} copyText={result.ok ? result.output : undefined}>
+      <OutputPanel label={mode === "minify" ? "Minified" : "Formatted"} copyText={result.ok ? result.output : undefined} outputType="json">
         {result.ok ? (
           <>
             <Summary stats={result.stats} input={deferredText} output={result.output} />

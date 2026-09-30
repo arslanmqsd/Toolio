@@ -23,7 +23,7 @@ const curlConverter: ToolConfig = {
   actions: ["convert", "generate"],
   component: () => import("@/components/tools/developer/CurlConverter"),
   consumes: ["curl"],
-  produces: ["javascript", "python"],
+  produces: ["code"],
 };
 
 export default curlConverter;
