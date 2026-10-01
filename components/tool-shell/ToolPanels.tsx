@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import type { DataType } from "@/registry";
 import { panelButtonClass } from "./panel-styles";
+import SaveSnippetButton from "./SaveSnippetButton";
 import SendToMenu from "./SendToMenu";
 
 const panelClass = "flex min-w-0 flex-col rounded-[var(--panel-radius)] border border-[color:var(--border)]";
@@ -19,6 +20,7 @@ export function InputPanel({ label = "Input", children }: InputPanelProps) {
     <section className={panelClass} aria-label={label} data-tool-input>
       <div className={panelHeaderClass}>
         <span>{label}</span>
+        <SaveSnippetButton />
       </div>
       <div className="flex-1 p-4">{children}</div>
     </section>

@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-import { recordToolVisit } from "@/lib/recent-tools/recent-tools";
+import { useSync } from "@/lib/sync";
 
 export default function RecordToolVisit({ id }: { id: string }) {
+  const { ready, recordToolUse } = useSync();
   useEffect(() => {
-    recordToolVisit(id);
-  }, [id]);
+    if (ready) void recordToolUse(id);
+  }, [ready, recordToolUse, id]);
   return null;
 }

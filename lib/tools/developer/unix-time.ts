@@ -200,21 +200,6 @@ export function formatInTimeZone(ms: number, timeZone: string): ZonedTime {
   return { date, time, offset, abbr: p.abbr, weekday: p.weekday, iso: `${date}T${time}${isUtc ? "Z" : offset}` };
 }
 
-const relativeFormat = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
-
-/** Rough distance from `now`, like "3 days ago" or "in 2 hours". */
-export function relativeTime(ms: number, now: number): string {
-  const seconds = (ms - now) / 1000;
-  const abs = Math.abs(seconds);
-  if (abs < 60) return relativeFormat.format(Math.round(seconds), "second");
-  if (abs < 3600) return relativeFormat.format(Math.round(seconds / 60), "minute");
-  if (abs < 86_400) return relativeFormat.format(Math.round(seconds / 3600), "hour");
-  const days = seconds / 86_400;
-  if (Math.abs(days) < 30) return relativeFormat.format(Math.round(days), "day");
-  if (Math.abs(days) < 365) return relativeFormat.format(Math.round(days / 30.44), "month");
-  return relativeFormat.format(Math.round(days / 365.25), "year");
-}
-
 /** IANA zones the runtime knows, UTC first. */
 export function listTimeZones(): string[] {
   const zones = (Intl as { supportedValuesOf?: (key: string) => string[] }).supportedValuesOf?.("timeZone") ?? [];

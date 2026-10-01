@@ -5,7 +5,6 @@ import {
   formatOffset,
   listTimeZones,
   parseTimeInput,
-  relativeTime,
   timeZoneOffsetMs,
   type ParsedTime,
 } from "./unix-time";
@@ -159,21 +158,6 @@ describe("formatInTimeZone", () => {
     const d = new Date(0);
     d.setUTCFullYear(12, 0, 1);
     expect(formatInTimeZone(d.getTime(), "UTC").iso).toBe("0012-01-01T00:00:00Z");
-  });
-});
-
-describe("relativeTime", () => {
-  it.each([
-    [0, "now"],
-    [-30_000, "30 seconds ago"],
-    [90_000, "in 2 minutes"],
-    [-3 * HOUR, "3 hours ago"],
-    [-24 * HOUR, "yesterday"],
-    [5 * 24 * HOUR, "in 5 days"],
-    [-60 * 24 * HOUR, "2 months ago"],
-    [800 * 24 * HOUR, "in 2 years"],
-  ])("%d ms → %s", (delta, text) => {
-    expect(relativeTime(T + delta, T)).toBe(text);
   });
 });
 

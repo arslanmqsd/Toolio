@@ -7,6 +7,8 @@ import { getToolById, type ToolConfig } from "@/registry";
 interface ToolInput {
   /** Replaces the tool's main input with outside data. */
   fill: (value: string) => void;
+  /** The main input's current value. */
+  read: () => string;
 }
 
 interface ToolIOContextValue {
@@ -15,6 +17,8 @@ interface ToolIOContextValue {
   hasInput: boolean;
   register: (input: ToolInput) => () => void;
   fill: (value: string) => void;
+  /** The main input's current value, or null when the tool has none registered. */
+  read: () => string | null;
 }
 
 const ToolIOContext = createContext<ToolIOContextValue | null>(null);
@@ -37,8 +41,12 @@ export function ToolIOProvider({ toolId, children }: { toolId: string; children:
   }, []);
 
   const fill = useCallback((value: string) => input.current?.fill(value), []);
+  const read = useCallback(() => input.current?.read() ?? null, []);
 
-  const context = useMemo(() => ({ tool, hasInput, register, fill }), [tool, hasInput, register, fill]);
+  const context = useMemo(
+    () => ({ tool, hasInput, register, fill, read }),
+    [tool, hasInput, register, fill, read],
+  );
   return <ToolIOContext.Provider value={context}>{children}</ToolIOContext.Provider>;
 }
 
@@ -49,14 +57,17 @@ export function useToolIO(): ToolIOContextValue | null {
 
 /**
  * State for a tool's main input, like `useState(initial)`, that the workbench can fill: from a
- * "Use pasted …" banner, or straight away when another tool sent data here. `onFill` runs on
+ * "Use pasted …" banner, or straight away when another tool sent data here or a saved snippet was loaded. `onFill` runs on
  * outside fills, e.g. to switch the tool back to the mode that shows this input.
  */
 export function useToolInput(initial: string, onFill?: () => void) {
   const io = useToolIO();
   const { workbench, clearWorkbench } = useWorkbench();
+  const origin = workbench.origin;
   const sentHere =
-    workbench.origin?.kind === "send" && io !== null && workbench.origin.to === io.tool.id ? workbench.value : null;
+    (origin?.kind === "send" || origin?.kind === "snippet") && io !== null && origin.to === io.tool.id
+      ? workbench.value
+      : null;
 
   const [value, setValue] = useState(() => sentHere ?? initial);
 
@@ -73,6 +84,8 @@ export function useToolInput(initial: string, onFill?: () => void) {
 
   const onFillRef = useRef(onFill);
   onFillRef.current = onFill;
+  const valueRef = useRef(value);
+  valueRef.current = value;
   const register = io?.register;
   useEffect(
     () =>
@@ -81,6 +94,7 @@ export function useToolInput(initial: string, onFill?: () => void) {
           setValue(next);
           onFillRef.current?.();
         },
+        read: () => valueRef.current,
       }),
     [register],
   );
