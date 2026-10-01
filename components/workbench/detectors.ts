@@ -1,8 +1,9 @@
+import { parseCron } from "@/lib/tools/developer/cron";
 import { decodeJwt } from "@/lib/tools/developer/jwt";
 import type { DataType } from "@/registry/data-types";
 
 /** The subset of data types a raw paste can be recognised as. */
-export type PasteType = Extract<DataType, "curl" | "jwt" | "json" | "text">;
+export type PasteType = Extract<DataType, "curl" | "jwt" | "json" | "cron" | "text">;
 
 const JWT_SHAPE = /^(?:Bearer\s+)?[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*$/i;
 
@@ -19,6 +20,9 @@ export function detectType(pastedText: string): PasteType {
     const result = decodeJwt(text);
     if (result.ok && isObject(result.jwt.header)) return "jwt";
   }
+
+  // Five plain numbers could be anything, so a cron line needs a macro, a * or a step.
+  if (!text.includes("\n") && /^@|[*/]/.test(text) && parseCron(text).ok) return "cron";
 
   // Bare numbers, strings and booleans are valid JSON too, but pasting "42" isn't asking for a JSON tool.
   if (/^[[{]/.test(text)) {

@@ -13,6 +13,7 @@ export const DATA_TYPES = [
   "file",
   "env",
   "code",
+  "cron",
 ] as const;
 
 export type DataType = (typeof DATA_TYPES)[number];
@@ -32,4 +33,5 @@ export const dataTypeLabels: Record<DataType, string> = {
   file: "file",
   env: ".env",
   code: "code",
+  cron: "cron expression",
 };
