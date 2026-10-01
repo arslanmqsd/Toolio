@@ -1,6 +1,7 @@
 import {
   Braces,
   Calculator,
+  CalendarClock,
   Clock,
   Code,
   FileArchive,
@@ -49,6 +50,7 @@ const toolIcons: Record<string, LucideIcon> = {
   "hash-generator": Hash,
   "http-status": Globe,
   "env-generator": FileCog,
+  "cron-builder": CalendarClock,
   "word-counter": Type,
   "unit-converter": Ruler,
 };

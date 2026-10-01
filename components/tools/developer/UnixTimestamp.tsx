@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Clock } from "lucide-react";
 import { useToolInput } from "@/components/tool-shell/tool-io";
 import { InputPanel, OutputPanel } from "@/components/tool-shell/ToolPanels";
@@ -9,19 +9,13 @@ import Button from "@/components/ui/Button";
 import { CodeInput } from "@/components/ui/CodeField";
 import Field from "@/components/ui/Field";
 import SegmentedControl from "@/components/ui/SegmentedControl";
-import Select from "@/components/ui/Select";
+import TimeZoneSelect from "@/components/ui/TimeZoneSelect";
 import ValueTable from "@/components/ui/ValueTable";
 import { useNow } from "@/lib/hooks/useNow";
+import { useTimeZone } from "@/lib/hooks/useTimeZone";
 import { relativeTime } from "@/lib/relative-time";
-import {
-  formatInTimeZone,
-  formatOffset,
-  listTimeZones,
-  localTimeZone,
-  parseTimeInput,
-  timeZoneOffsetMs,
-  type TimeUnit,
-} from "@/lib/tools/developer/unix-time";
+import { formatInTimeZone } from "@/lib/time-zone";
+import { parseTimeInput, type TimeUnit } from "@/lib/tools/developer/unix-time";
 
 const EXAMPLE = "1700000000";
 
@@ -35,35 +29,11 @@ const UNITS = [
 
 const UNIT_NAMES: Record<TimeUnit, string> = { s: "seconds", ms: "milliseconds", us: "microseconds", ns: "nanoseconds" };
 
-/** Zones grouped by region ("America", "Europe", …), each labelled with its current offset. */
-function groupZones(zones: string[], at: number): [string, { zone: string; label: string }[]][] {
-  const groups = new Map<string, { zone: string; label: string }[]>();
-  for (const zone of zones) {
-    const region = zone.includes("/") ? zone.split("/")[0] : "Other";
-    const label = `${zone.replace(/_/g, " ")} (UTC${formatOffset(timeZoneOffsetMs(at, zone))})`;
-    groups.set(region, [...(groups.get(region) ?? []), { zone, label }]);
-  }
-  return [...groups];
-}
-
 export default function UnixTimestamp() {
   const now = useNow();
   const [text, setText] = useToolInput(EXAMPLE);
   const [unit, setUnit] = useState<TimeUnit | "auto">("auto");
-  // Zone data differs between server and browser, so it's filled in after mount.
-  const [zone, setZone] = useState("UTC");
-  const [localZone, setLocalZone] = useState("UTC");
-  const [zones, setZones] = useState<string[]>(["UTC"]);
-
-  useEffect(() => {
-    const local = localTimeZone();
-    const all = listTimeZones();
-    setLocalZone(local);
-    setZone(local);
-    setZones(all.includes(local) ? all : [...all, local]);
-  }, []);
-
-  const zoneGroups = useMemo(() => groupZones(zones, Date.now()), [zones]);
+  const { zone, setZone, localZone, zones } = useTimeZone();
   const result = useMemo(() => parseTimeInput(text, zone, unit), [text, zone, unit]);
 
   const view = useMemo(() => {
@@ -112,25 +82,7 @@ export default function UnixTimestamp() {
             htmlFor="unix-timezone"
             help="Results are shown in this zone. Dates typed without an offset, like 2026-09-29 14:30, are read in it too."
           >
-            <div className="flex flex-wrap items-center gap-2">
-              <Select id="unix-timezone" value={zone} onChange={(e) => setZone(e.target.value)} className="flex-1 basis-56">
-                {zoneGroups.map(([region, items]) => (
-                  <optgroup key={region} label={region}>
-                    {items.map((item) => (
-                      <option key={item.zone} value={item.zone}>
-                        {item.label}
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
-              </Select>
-              <Button onClick={() => setZone(localZone)} aria-pressed={zone === localZone}>
-                Local
-              </Button>
-              <Button onClick={() => setZone("UTC")} aria-pressed={zone === "UTC"}>
-                UTC
-              </Button>
-            </div>
+            <TimeZoneSelect id="unix-timezone" value={zone} onChange={setZone} zones={zones} localZone={localZone} />
           </Field>
 
           {now !== null && (
