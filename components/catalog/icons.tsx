@@ -11,6 +11,7 @@ import {
   FileJson,
   FileText,
   Fingerprint,
+  GitBranch,
   Globe,
   Hash,
   Image,
@@ -55,6 +56,7 @@ const toolIcons: Record<string, LucideIcon> = {
   "cron-builder": CalendarClock,
   "sql-formatter": Database,
   "sql-to-mongo": ArrowRightLeft,
+  "git-command-builder": GitBranch,
   "word-counter": Type,
   "unit-converter": Ruler,
 };
