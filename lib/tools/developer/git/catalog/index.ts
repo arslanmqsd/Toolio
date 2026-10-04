@@ -1,6 +1,8 @@
 import type { GitCategoryId, Task } from "../types";
 import { branchTasks } from "./branches";
 import { commitTasks } from "./commits";
+import { remoteTasks } from "./remote";
+import { undoTasks } from "./undo";
 
 /** Display order for chips and list groups. TASKS follows the same order. */
 export const GIT_CATEGORIES: { id: GitCategoryId; label: string }[] = [
@@ -15,7 +17,7 @@ export const GIT_CATEGORIES: { id: GitCategoryId; label: string }[] = [
   { id: "cleanup", label: "Cleanup" },
 ];
 
-export const TASKS: Task[] = [...branchTasks, ...commitTasks];
+export const TASKS: Task[] = [...branchTasks, ...commitTasks, ...remoteTasks, ...undoTasks];
 
 const tasksById = new Map(TASKS.map((task) => [task.id, task]));
 
