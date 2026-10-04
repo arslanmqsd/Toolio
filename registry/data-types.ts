@@ -14,6 +14,8 @@ export const DATA_TYPES = [
   "env",
   "code",
   "cron",
+  "sql",
+  "mongodb",
 ] as const;
 
 export type DataType = (typeof DATA_TYPES)[number];
@@ -34,4 +36,6 @@ export const dataTypeLabels: Record<DataType, string> = {
   env: ".env",
   code: "code",
   cron: "cron expression",
+  sql: "SQL",
+  mongodb: "MongoDB query",
 };

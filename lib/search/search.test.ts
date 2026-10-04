@@ -40,12 +40,21 @@ describe("search", () => {
     ["minify json", "json-formatter"],
     ["convert this curl to python", "curl-converter"],
     ["curl to fetch", "curl-converter"],
+    ["Format messy SQL", "sql-formatter"],
+    ["clean up query", "sql-formatter"],
+    ["sql beautifier", "sql-formatter"],
+    ["minify sql", "sql-formatter"],
+    ["pretty print sql", "sql-formatter"],
+    ["sql to mongodb", "sql-to-mongo"],
+    ["convert sql query to mongo", "sql-to-mongo"],
+    ["mongodb query from sql", "sql-to-mongo"],
+    ["sql to nosql", "sql-to-mongo"],
   ])("ranks %j → %s first", (query, id) => {
     expect(topId(query)).toBe(id);
   });
 
   it("returns nothing for tasks no tool covers", () => {
-    expect(search("Format messy SQL")).toEqual([]);
+    expect(search("resize a photo")).toEqual([]);
     expect(search("compare two files")).toEqual([]);
     expect(search("xyz")).toEqual([]);
   });

@@ -1,9 +1,11 @@
 import {
+  ArrowRightLeft,
   Braces,
   Calculator,
   CalendarClock,
   Clock,
   Code,
+  Database,
   FileArchive,
   FileCog,
   FileJson,
@@ -51,6 +53,8 @@ const toolIcons: Record<string, LucideIcon> = {
   "http-status": Globe,
   "env-generator": FileCog,
   "cron-builder": CalendarClock,
+  "sql-formatter": Database,
+  "sql-to-mongo": ArrowRightLeft,
   "word-counter": Type,
   "unit-converter": Ruler,
 };
