@@ -7,7 +7,7 @@ describe("sendTargets", () => {
   it("lists other tools that consume the output type", () => {
     expect(ids(sendTargets(getToolById("jwt-decoder")!, "json"))).toEqual(["json-formatter", "json-to-types"]);
     expect(ids(sendTargets(getToolById("json-formatter")!, "json"))).toEqual(["json-to-types"]);
-    expect(ids(sendTargets(getToolById("url-encoder")!, "text"))).toEqual(["hash-generator", "regex-tester"]);
+    expect(ids(sendTargets(getToolById("url-encoder")!, "text"))).toEqual(["hash-generator", "regex-tester", "text-diff-checker"]);
   });
 
   it("ignores types the tool doesn't declare in produces", () => {

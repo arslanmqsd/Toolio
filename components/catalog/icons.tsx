@@ -6,6 +6,7 @@ import {
   Clock,
   Code,
   Database,
+  Diff,
   FileArchive,
   FileCog,
   FileJson,
@@ -57,6 +58,7 @@ const toolIcons: Record<string, LucideIcon> = {
   "sql-formatter": Database,
   "sql-to-mongo": ArrowRightLeft,
   "git-command-builder": GitBranch,
+  "text-diff-checker": Diff,
   "word-counter": Type,
   "unit-converter": Ruler,
 };
