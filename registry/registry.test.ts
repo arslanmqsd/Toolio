@@ -7,7 +7,16 @@ describe("sendTargets", () => {
   it("lists other tools that consume the output type", () => {
     expect(ids(sendTargets(getToolById("jwt-decoder")!, "json"))).toEqual(["json-formatter", "json-to-types"]);
     expect(ids(sendTargets(getToolById("json-formatter")!, "json"))).toEqual(["json-to-types"]);
-    expect(ids(sendTargets(getToolById("url-encoder")!, "text"))).toEqual(["hash-generator", "regex-tester", "text-diff-checker"]);
+    expect(ids(sendTargets(getToolById("url-encoder")!, "text"))).toEqual([
+      "git-diff-viewer",
+      "hash-generator",
+      "regex-tester",
+      "text-diff-checker",
+    ]);
+  });
+
+  it("sends the text diff checker's patch to the git diff viewer", () => {
+    expect(ids(sendTargets(getToolById("text-diff-checker")!, "diff"))).toEqual(["git-diff-viewer"]);
   });
 
   it("ignores types the tool doesn't declare in produces", () => {

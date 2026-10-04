@@ -9,6 +9,7 @@ import {
   Diff,
   FileArchive,
   FileCog,
+  FileDiff,
   FileJson,
   FileText,
   Fingerprint,
@@ -59,6 +60,7 @@ const toolIcons: Record<string, LucideIcon> = {
   "sql-to-mongo": ArrowRightLeft,
   "git-command-builder": GitBranch,
   "text-diff-checker": Diff,
+  "git-diff-viewer": FileDiff,
   "word-counter": Type,
   "unit-converter": Ruler,
 };
