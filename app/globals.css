@@ -62,6 +62,25 @@
   --accent-warn-text: var(--accent-warn);
   /* Slate hairlines, the same hue as secondary text. */
   --border: color-mix(in srgb, var(--text-secondary) 38%, transparent);
+  /* Diff rows and changed words. */
+  --diff-add-bg: color-mix(in srgb, #3F9A80 18%, transparent);
+  --diff-add-word: color-mix(in srgb, #3F9A80 45%, transparent);
+  --diff-remove-bg: color-mix(in srgb, var(--error) 16%, transparent);
+  --diff-remove-word: color-mix(in srgb, var(--error) 42%, transparent);
+  --diff-add-text: #6FC2A6;
+  --diff-remove-text: #F08A80;
+  --diff-empty: color-mix(in srgb, var(--text-secondary) 10%, transparent);
+  /* Syntax colors for highlighted code. */
+  --syntax-keyword: #C39BD3;
+  --syntax-string: #9CCB8F;
+  --syntax-number: #E0B36A;
+  --syntax-comment: #7A8594;
+  --syntax-title: #7FB3E0;
+  --syntax-attr: #E0B36A;
+  --syntax-type: #7FC8C8;
+  --syntax-meta: #8C95A3;
+  --syntax-variable: #E88C8C;
+  --syntax-tag: #7FB3E0;
   color-scheme: dark;
 }
 
@@ -75,6 +94,23 @@
   --text-muted: var(--text-secondary);
   --accent-warn-text: #8A6D2B;
   --border: color-mix(in srgb, var(--text-secondary) 28%, transparent);
+  --diff-add-bg: color-mix(in srgb, #3F9A80 14%, transparent);
+  --diff-add-word: color-mix(in srgb, #3F9A80 34%, transparent);
+  --diff-remove-bg: color-mix(in srgb, var(--error) 12%, transparent);
+  --diff-remove-word: color-mix(in srgb, var(--error) 30%, transparent);
+  --diff-add-text: #1E7259;
+  --diff-remove-text: #B3261E;
+  --diff-empty: color-mix(in srgb, var(--text-secondary) 8%, transparent);
+  --syntax-keyword: #7A3E9D;
+  --syntax-string: #2E7D32;
+  --syntax-number: #9A6200;
+  --syntax-comment: #6A737D;
+  --syntax-title: #1F5FAD;
+  --syntax-attr: #9A6200;
+  --syntax-type: #00727A;
+  --syntax-meta: #5B6472;
+  --syntax-variable: #B3261E;
+  --syntax-tag: #1F5FAD;
   color-scheme: light;
 }
 
@@ -141,3 +177,17 @@ input:-webkit-autofill:focus {
     animation: none;
   }
 }
+
+/* highlight.js classes, as rendered by the diff tools (no highlight.js theme is loaded). */
+.hljs-keyword, .hljs-selector-tag, .hljs-doctag { color: var(--syntax-keyword); }
+.hljs-string, .hljs-regexp { color: var(--syntax-string); }
+.hljs-number, .hljs-literal, .hljs-symbol { color: var(--syntax-number); }
+.hljs-comment, .hljs-quote { color: var(--syntax-comment); font-style: italic; }
+.hljs-title, .hljs-section, .hljs-selector-id, .hljs-selector-class { color: var(--syntax-title); }
+.hljs-attr, .hljs-attribute, .hljs-property { color: var(--syntax-attr); }
+.hljs-built_in, .hljs-type { color: var(--syntax-type); }
+.hljs-meta, .hljs-bullet { color: var(--syntax-meta); }
+.hljs-variable, .hljs-template-variable { color: var(--syntax-variable); }
+.hljs-tag, .hljs-name { color: var(--syntax-tag); }
+.hljs-emphasis { font-style: italic; }
+.hljs-strong { font-weight: 600; }
