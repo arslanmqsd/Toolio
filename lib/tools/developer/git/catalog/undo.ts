@@ -109,15 +109,22 @@ export const undoTasks: Task[] = [
     id: "reset-to-remote",
     category: "undo",
     title: "Make a branch match the remote",
-    summary: "Throws away local commits and changes so the branch is identical to the remote one.",
+    summary: "Throws away local commits and changes so the current branch is identical to a remote branch.",
     synonyms: ["reset to origin", "discard local commits", "match remote", "start over from remote", "reset hard origin"],
-    fields: [remoteField(), refField("branch", "Branch", { default: "main", placeholder: "branch" })],
+    fields: [
+      remoteField(),
+      refField("branch", "Remote branch", {
+        default: "main",
+        placeholder: "branch",
+        help: "Resets the current branch, so switch to it first. Usually it matches its own remote branch.",
+      }),
+    ],
     build: (a) => [
       step("safe", [part("git fetch", "Download the remote's latest commits."), part(a.q("remote"), "The remote.")]),
       step(
         "destructive",
         [
-          part("git reset --hard", "Move the branch and make every file match, discarding all changes."),
+          part("git reset --hard", "Move the current branch and make every file match, discarding all changes."),
           part(`${a.q("remote")}/${a.q("branch")}`, "The remote branch to match."),
         ],
         {

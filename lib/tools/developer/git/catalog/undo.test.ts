@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { commandText } from "../build";
+import { getTask } from ".";
 import { command, danger, resolve } from "./test-helpers";
 
 describe("undo tasks", () => {
@@ -27,6 +28,14 @@ describe("undo tasks", () => {
     const r = resolve("reset-soft", { count: "" });
     expect(r.status).toBe("incomplete");
     if (r.status === "incomplete") expect(commandText(r.steps)).toBe("git reset --soft HEAD~<n>");
+  });
+
+  it("says the remote reset acts on the current branch", () => {
+    const task = getTask("reset-to-remote")!;
+    expect(task.summary).toMatch(/current branch/);
+    expect(task.fields.find((f) => f.id === "branch")?.help).toMatch(/current branch/);
+    const r = resolve("reset-to-remote");
+    expect(r.status === "ready" && r.steps[1].parts[0].explain).toMatch(/current branch/);
   });
 
   it("reverts, restores and recovers", () => {
