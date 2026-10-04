@@ -36,16 +36,19 @@ interface OutputPanelProps {
    * other tools that consume this type.
    */
   outputType?: DataType;
+  /** Adds a button that saves `copyText` as this file. */
+  download?: { filename: string; mimeType: string };
   children: ReactNode;
 }
 
-export function OutputPanel({ label = "Output", copyText, outputType, children }: OutputPanelProps) {
+export function OutputPanel({ label = "Output", copyText, outputType, download, children }: OutputPanelProps) {
   return (
     <section className={`${panelClass} font-[family-name:var(--font-output)]`} aria-label={label}>
       <div className={panelHeaderClass}>
         <span className="font-[family-name:var(--font-ui)]">{label}</span>
         <div className="flex items-center gap-2">
           {outputType && copyText && <SendToMenu value={copyText} type={outputType} />}
+          {download && <DownloadButton text={copyText} {...download} />}
           <CopyButton text={copyText} />
         </div>
       </div>
@@ -83,6 +86,25 @@ export function CopyButton({ text }: { text?: string }) {
       className={panelButtonClass}
     >
       <span aria-live="polite">{status === "copied" ? "Copied" : status === "failed" ? "Copy failed" : "Copy"}</span>
+    </button>
+  );
+}
+
+export function DownloadButton({ text, filename, mimeType }: { text?: string; filename: string; mimeType: string }) {
+  function save() {
+    if (!text) return;
+    const url = URL.createObjectURL(new Blob([text], { type: mimeType }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+    // Revoke after the click has started the download; revoking straight away can cancel it in some browsers.
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
+
+  return (
+    <button type="button" onClick={save} disabled={!text} className={panelButtonClass} aria-label={`Download ${filename}`}>
+      Download
     </button>
   );
 }
