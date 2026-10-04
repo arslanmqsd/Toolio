@@ -16,6 +16,7 @@ export const DATA_TYPES = [
   "cron",
   "sql",
   "mongodb",
+  "git",
 ] as const;
 
 export type DataType = (typeof DATA_TYPES)[number];
@@ -38,4 +39,5 @@ export const dataTypeLabels: Record<DataType, string> = {
   cron: "cron expression",
   sql: "SQL",
   mongodb: "MongoDB query",
+  git: "Git command",
 };
