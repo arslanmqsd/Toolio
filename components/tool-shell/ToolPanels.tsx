@@ -12,12 +12,14 @@ const panelHeaderClass =
 
 interface InputPanelProps {
   label?: string;
+  /** Span every column of the tool layout, for tools whose input needs the full width. */
+  wide?: boolean;
   children: ReactNode;
 }
 
-export function InputPanel({ label = "Input", children }: InputPanelProps) {
+export function InputPanel({ label = "Input", wide = false, children }: InputPanelProps) {
   return (
-    <section className={panelClass} aria-label={label} data-tool-input>
+    <section className={`${panelClass} ${wide ? "lg:col-span-full" : ""}`} aria-label={label} data-tool-input>
       <div className={panelHeaderClass}>
         <span>{label}</span>
         <SaveSnippetButton />
@@ -38,12 +40,14 @@ interface OutputPanelProps {
   outputType?: DataType;
   /** Adds a button that saves `copyText` as this file. */
   download?: { filename: string; mimeType: string };
+  /** Span every column of the tool layout, for wide output like a diff. */
+  wide?: boolean;
   children: ReactNode;
 }
 
-export function OutputPanel({ label = "Output", copyText, outputType, download, children }: OutputPanelProps) {
+export function OutputPanel({ label = "Output", copyText, outputType, download, wide = false, children }: OutputPanelProps) {
   return (
-    <section className={`${panelClass} font-[family-name:var(--font-output)]`} aria-label={label}>
+    <section className={`${panelClass} ${wide ? "lg:col-span-full" : ""} font-[family-name:var(--font-output)]`} aria-label={label}>
       <div className={panelHeaderClass}>
         <span className="font-[family-name:var(--font-ui)]">{label}</span>
         <div className="flex items-center gap-2">

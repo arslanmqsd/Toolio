@@ -27,6 +27,11 @@ describe("detectType", () => {
     ['{"a": 1', "text"],
     ["curly braces", "text"],
     ["hello world", "text"],
+    ["diff --git a/x.ts b/x.ts\nindex 1..2 100644\n", "diff"],
+    ["commit 0123456789abcdef0123456789abcdef01234567\nAuthor: A\n\ndiff --git a/x b/x\n", "diff"],
+    ["--- a/x\n+++ b/x\n@@ -1 +1 @@\n-a\n+b", "diff"],
+    ["---\ntitle: front matter\n---", "text"],
+    ["commit 0123456 has no diff", "text"],
     ["   ", "text"],
   ])("%j → %s", (input, expected) => {
     expect(detectType(input)).toBe(expected);

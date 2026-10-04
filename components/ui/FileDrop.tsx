@@ -10,10 +10,18 @@ interface FileDropProps {
   multiple?: boolean;
   /** Short description of what to drop, e.g. "a file" or "images". */
   what?: string;
+  /** One slim row instead of a tall zone, for sitting under a text field. */
+  compact?: boolean;
 }
 
 /** Drop zone plus file picker. Files never leave the browser. */
-export default function FileDrop({ onFiles, accept, multiple = false, what = multiple ? "files" : "a file" }: FileDropProps) {
+export default function FileDrop({
+  onFiles,
+  accept,
+  multiple = false,
+  what = multiple ? "files" : "a file",
+  compact = false,
+}: FileDropProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
 
@@ -30,6 +38,7 @@ export default function FileDrop({ onFiles, accept, multiple = false, what = mul
 
   return (
     <div
+      title={compact ? "Processed in your browser. Nothing is uploaded." : undefined}
       onDragOver={(e) => {
         e.preventDefault();
         setDragging(true);
@@ -44,11 +53,13 @@ export default function FileDrop({ onFiles, accept, multiple = false, what = mul
         const target = e.target as HTMLElement;
         if (target !== inputRef.current && !target.closest("button")) inputRef.current?.click();
       }}
-      className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-md border border-dashed p-8 text-center text-sm ${
+      className={`flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed text-center text-sm ${
+        compact ? "px-3 py-2" : "flex-col p-8"
+      } ${
         dragging ? "border-[color:var(--accent)] bg-[color:color-mix(in_srgb,var(--accent)_8%,transparent)]" : "border-[color:var(--border)]"
       }`}
     >
-      <Upload aria-hidden className="h-6 w-6 text-[color:var(--text-muted)]" />
+      <Upload aria-hidden className={`${compact ? "h-4 w-4" : "h-6 w-6"} text-[color:var(--text-muted)]`} />
       <p>
         Drop {what} here or{" "}
         <button
@@ -61,7 +72,7 @@ export default function FileDrop({ onFiles, accept, multiple = false, what = mul
           choose {multiple ? "files" : "one"}
         </button>
       </p>
-      <p className="text-xs text-[color:var(--text-muted)]">Processed in your browser. Nothing is uploaded.</p>
+      {!compact && <p className="text-xs text-[color:var(--text-muted)]">Processed in your browser. Nothing is uploaded.</p>}
       <input
         ref={inputRef}
         type="file"

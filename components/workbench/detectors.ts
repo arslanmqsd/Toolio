@@ -3,9 +3,19 @@ import { decodeJwt } from "@/lib/tools/developer/jwt";
 import type { DataType } from "@/registry/data-types";
 
 /** The subset of data types a raw paste can be recognised as. */
-export type PasteType = Extract<DataType, "curl" | "jwt" | "json" | "cron" | "text">;
+export type PasteType = Extract<DataType, "curl" | "jwt" | "json" | "cron" | "diff" | "text">;
 
 const JWT_SHAPE = /^(?:Bearer\s+)?[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*$/i;
+
+const GIT_COMMIT_HEADER = /^(?:commit|From) [0-9a-f]{7,40}\b/;
+const UNIFIED_HUNK = /^--- .*\r?\n\+\+\+ .*\r?\n@@ /m;
+
+/** `git diff` / `git show` / `git format-patch` output, or any unified diff. */
+function isDiff(text: string): boolean {
+  if (text.startsWith("diff --git ")) return true;
+  if (GIT_COMMIT_HEADER.test(text) && /^diff --git /m.test(text)) return true;
+  return UNIFIED_HUNK.test(text);
+}
 
 /** Guesses what a pasted snippet is so tools can offer to open it. */
 export function detectType(pastedText: string): PasteType {
@@ -14,6 +24,8 @@ export function detectType(pastedText: string): PasteType {
 
   // Terminal copies often keep the prompt: "$ curl …".
   if (/^(?:\$\s+)?curl\s/.test(text)) return "curl";
+
+  if (isDiff(text)) return "diff";
 
   // Dotted strings like hostnames and version numbers share the shape, so the header must decode to JSON.
   if (JWT_SHAPE.test(text)) {
