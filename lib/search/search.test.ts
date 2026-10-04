@@ -11,6 +11,8 @@ describe("search", () => {
     ["python", "json-to-types"],
     ["typscript", "json-to-types"],
     ["Decode a JWT", "jwt-decoder"],
+    ["compare two files", "text-diff-checker"],
+    ["paste git diff", "git-diff-viewer"],
     ["read token payload", "jwt-decoder"],
     ["is my token expired", "jwt-decoder"],
     ["check when token expires", "jwt-decoder"],
@@ -55,7 +57,6 @@ describe("search", () => {
 
   it("returns nothing for tasks no tool covers", () => {
     expect(search("resize a photo")).toEqual([]);
-    expect(search("compare two files")).toEqual([]);
     expect(search("xyz")).toEqual([]);
   });
 
