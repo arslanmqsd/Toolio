@@ -1,6 +1,8 @@
 import type { GitCategoryId, Task } from "../types";
 import { branchTasks } from "./branches";
+import { cleanupTasks } from "./cleanup";
 import { commitTasks } from "./commits";
+import { inspectTasks } from "./inspect";
 import { mergeRebaseTasks } from "./merge-rebase";
 import { remoteTasks } from "./remote";
 import { stashTasks } from "./stash";
@@ -20,7 +22,17 @@ export const GIT_CATEGORIES: { id: GitCategoryId; label: string }[] = [
   { id: "cleanup", label: "Cleanup" },
 ];
 
-export const TASKS: Task[] = [...branchTasks, ...commitTasks, ...remoteTasks, ...undoTasks, ...stashTasks, ...mergeRebaseTasks, ...tagTasks];
+export const TASKS: Task[] = [
+  ...branchTasks,
+  ...commitTasks,
+  ...remoteTasks,
+  ...undoTasks,
+  ...stashTasks,
+  ...mergeRebaseTasks,
+  ...tagTasks,
+  ...inspectTasks,
+  ...cleanupTasks,
+];
 
 const tasksById = new Map(TASKS.map((task) => [task.id, task]));
 
