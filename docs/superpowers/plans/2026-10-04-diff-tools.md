@@ -341,7 +341,7 @@ describe("wordRanges", () => {
       ],
       new: [
         { start: 14, end: 15 },
-        { start: 20, end: 28 },
+        { start: 20, end: 29 },
       ],
     });
   });
@@ -651,7 +651,7 @@ describe("computeDiff", () => {
     ]);
     expect(rows[3].words).toEqual([
       { start: 14, end: 15 },
-      { start: 20, end: 28 },
+      { start: 20, end: 29 },
     ]);
   });
 
