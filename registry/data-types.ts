@@ -17,6 +17,7 @@ export const DATA_TYPES = [
   "sql",
   "mongodb",
   "git",
+  "diff",
 ] as const;
 
 export type DataType = (typeof DATA_TYPES)[number];
@@ -40,4 +41,5 @@ export const dataTypeLabels: Record<DataType, string> = {
   sql: "SQL",
   mongodb: "MongoDB query",
   git: "Git command",
+  diff: "diff",
 };
