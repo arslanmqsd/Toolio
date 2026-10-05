@@ -7,6 +7,7 @@ import gitDiffViewer from "./git-diff-viewer";
 import hashGenerator from "./hash-generator";
 import httpStatus from "./http-status";
 import jsonFormatter from "./json-formatter";
+import jsonJsonlConverter from "./json-jsonl-converter";
 import jsonToTypes from "./json-to-types";
 import jwtDecoder from "./jwt-decoder";
 import regexTester from "./regex-tester";
@@ -17,4 +18,4 @@ import unixTimestamp from "./unix-timestamp";
 import urlEncoder from "./url-encoder";
 import uuidGenerator from "./uuid-generator";
 
-export const developerTools: ToolConfig[] = [jsonFormatter, jwtDecoder, regexTester, jsonToTypes, curlConverter, urlEncoder, unixTimestamp, uuidGenerator, hashGenerator, httpStatus, envGenerator, cronBuilder, sqlFormatter, sqlToMongo, gitCommandBuilder, textDiffChecker, gitDiffViewer];
+export const developerTools: ToolConfig[] = [jsonFormatter, jwtDecoder, regexTester, jsonToTypes, curlConverter, urlEncoder, unixTimestamp, uuidGenerator, hashGenerator, httpStatus, envGenerator, cronBuilder, sqlFormatter, sqlToMongo, gitCommandBuilder, textDiffChecker, gitDiffViewer, jsonJsonlConverter];
