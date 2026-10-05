@@ -1,6 +1,7 @@
 "use client";
 
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import ExamplePicker from "@/components/tool-shell/ExamplePicker";
 import { useToolInput } from "@/components/tool-shell/tool-io";
 import { InputPanel, OutputPanel } from "@/components/tool-shell/ToolPanels";
 import { detectType } from "@/components/workbench/detectors";
@@ -70,8 +71,6 @@ See the [docs](https://example.com/docs) for more. Licensed under **MIT**.
 `,
   },
 ] as const;
-
-type Example = (typeof EXAMPLES)[number];
 
 const DIRECTIONS = [
   { id: "md-to-html", label: "Markdown → HTML" },
@@ -203,7 +202,6 @@ export default function MarkdownHtmlConverter() {
   });
   const [direction, setDirection] = useState<Direction>("md-to-html");
   const [view, setView] = useState<View>("code");
-  const [pendingExample, setPendingExample] = useState<Example | null>(null);
   const [fileBase, setFileBase] = useState<string | null>(null);
   const [fileError, setFileError] = useState<string>();
 
@@ -237,17 +235,6 @@ export default function MarkdownHtmlConverter() {
     // Carry the result over so the round trip is one click.
     if (result.ok && result.output) setText(result.output);
     setDirection(next);
-    setPendingExample(null);
-  }
-
-  function loadExample(example: Example) {
-    if (!isDisposable(text)) {
-      setPendingExample(example);
-      return;
-    }
-    setText(exampleText(example, direction));
-    setFileBase(null);
-    setPendingExample(null);
   }
 
   async function loadFile(file: File) {
@@ -260,7 +247,6 @@ export default function MarkdownHtmlConverter() {
     setText(read.text);
     setFileBase(file.name.replace(/\.[^.]+$/, "") || null);
     setDirection(directionForFile(file.name) ?? directionFor(read.text));
-    setPendingExample(null);
   }
 
   return (
@@ -274,33 +260,14 @@ export default function MarkdownHtmlConverter() {
             </span>
           </div>
 
-          <div role="group" aria-label="Examples" className="flex flex-wrap items-center gap-2">
-            <span className="text-xs text-[color:var(--text-muted)]">Examples:</span>
-            {EXAMPLES.map((example) => (
-              <Button key={example.id} size="sm" onClick={() => loadExample(example)}>
-                {example.label}
-              </Button>
-            ))}
-          </div>
-          {pendingExample && (
-            <div role="alert" className="flex flex-wrap items-center gap-2 rounded-md border border-[color:var(--border)] p-3 text-sm">
-              <span className="mr-auto">Replace your text with the {pendingExample.label} example?</span>
-              <Button
-                size="sm"
-                variant="primary"
-                onClick={() => {
-                  setText(exampleText(pendingExample, direction));
-                  setFileBase(null);
-                  setPendingExample(null);
-                }}
-              >
-                Replace
-              </Button>
-              <Button size="sm" onClick={() => setPendingExample(null)}>
-                Cancel
-              </Button>
-            </div>
-          )}
+          <ExamplePicker
+            examples={EXAMPLES}
+            hasUserInput={() => !isDisposable(text)}
+            onLoad={(example) => {
+              setText(exampleText(example, direction));
+              setFileBase(null);
+            }}
+          />
 
           <div className="space-y-2">
             <CodeTextArea
