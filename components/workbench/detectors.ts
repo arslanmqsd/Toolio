@@ -3,7 +3,7 @@ import { decodeJwt } from "@/lib/tools/developer/jwt";
 import type { DataType } from "@/registry/data-types";
 
 /** The subset of data types a raw paste can be recognised as. */
-export type PasteType = Extract<DataType, "curl" | "jwt" | "json" | "jsonl" | "cron" | "diff" | "html" | "text">;
+export type PasteType = Extract<DataType, "curl" | "jwt" | "json" | "jsonl" | "cron" | "diff" | "html" | "url" | "text">;
 
 const JWT_SHAPE = /^(?:Bearer\s+)?[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*$/i;
 
@@ -44,6 +44,9 @@ export function detectType(pastedText: string): PasteType {
   if (/^(?:\$\s+)?curl\s/.test(text)) return "curl";
 
   if (isDiff(text)) return "diff";
+
+  // One web address on its own; anything around it makes it text that mentions a URL.
+  if (/^https?:\/\/[^\s/?#]+[^\s]*$/i.test(text)) return "url";
 
   // Dotted strings like hostnames and version numbers share the shape, so the header must decode to JSON.
   if (JWT_SHAPE.test(text)) {

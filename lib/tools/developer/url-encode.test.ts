@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decodeUrl, encodeUrl, looksEncoded, parseUrlParts, type UrlScheme } from "./url-encode";
+import { decodeUrl, encodeUrl, looksEncoded, type UrlScheme } from "./url-encode";
 
 const out = (result: ReturnType<typeof encodeUrl>) => {
   if (!result.ok) throw new Error(result.error);
@@ -94,29 +94,5 @@ describe("looksEncoded", () => {
     expect(looksEncoded("caf%25C3%25A9")).toBe(true);
     expect(looksEncoded("100% sure")).toBe(false);
     expect(looksEncoded("plain")).toBe(false);
-  });
-});
-
-describe("parseUrlParts", () => {
-  it("breaks a URL into parts with decoded parameters", () => {
-    expect(parseUrlParts(" https://ada@example.com:8080/a%20b/c?q=caf%C3%A9+au+lait&tag=a&tag=b#top ")).toEqual({
-      protocol: "https",
-      username: "ada",
-      host: "example.com",
-      port: "8080",
-      pathname: "/a%20b/c",
-      params: [
-        ["q", "café au lait"],
-        ["tag", "a"],
-        ["tag", "b"],
-      ],
-      hash: "top",
-    });
-  });
-
-  it("returns null for things that aren't absolute URLs", () => {
-    expect(parseUrlParts("example.com/path")).toBeNull();
-    expect(parseUrlParts("caf%C3%A9")).toBeNull();
-    expect(parseUrlParts("https://exa mple.com")).toBeNull();
   });
 });

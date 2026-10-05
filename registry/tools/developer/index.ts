@@ -17,6 +17,7 @@ import sqlToMongo from "./sql-to-mongo";
 import textDiffChecker from "./text-diff-checker";
 import unixTimestamp from "./unix-timestamp";
 import urlEncoder from "./url-encoder";
+import urlParser from "./url-parser";
 import uuidGenerator from "./uuid-generator";
 
-export const developerTools: ToolConfig[] = [jsonFormatter, jwtDecoder, regexTester, jsonToTypes, curlConverter, urlEncoder, unixTimestamp, uuidGenerator, hashGenerator, httpStatus, envGenerator, cronBuilder, sqlFormatter, sqlToMongo, gitCommandBuilder, textDiffChecker, gitDiffViewer, jsonJsonlConverter, markdownHtmlConverter];
+export const developerTools: ToolConfig[] = [jsonFormatter, jwtDecoder, regexTester, jsonToTypes, curlConverter, urlEncoder, unixTimestamp, uuidGenerator, hashGenerator, httpStatus, envGenerator, cronBuilder, sqlFormatter, sqlToMongo, gitCommandBuilder, textDiffChecker, gitDiffViewer, jsonJsonlConverter, markdownHtmlConverter, urlParser];

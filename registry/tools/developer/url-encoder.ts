@@ -20,8 +20,6 @@ const urlEncoder: ToolConfig = {
     "query string",
     "form urlencoded",
     "what does %20 mean",
-    "parse url",
-    "url query parameters",
   ],
   actions: ["convert", "inspect"],
   component: () => import("@/components/tools/developer/UrlEncoder"),
