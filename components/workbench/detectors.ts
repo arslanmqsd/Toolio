@@ -3,7 +3,7 @@ import { decodeJwt } from "@/lib/tools/developer/jwt";
 import type { DataType } from "@/registry/data-types";
 
 /** The subset of data types a raw paste can be recognised as. */
-export type PasteType = Extract<DataType, "curl" | "jwt" | "json" | "jsonl" | "cron" | "diff" | "text">;
+export type PasteType = Extract<DataType, "curl" | "jwt" | "json" | "jsonl" | "cron" | "diff" | "html" | "text">;
 
 const JWT_SHAPE = /^(?:Bearer\s+)?[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*$/i;
 
@@ -30,6 +30,10 @@ function isJsonl(text: string): boolean {
     }
   });
 }
+
+const HTML_DOCUMENT = /^(?:<!doctype html|<html[\s>])/i;
+// Opens with a tag and closes with one, like "<p>…</p>" or "<div><img src=x></div>".
+const HTML_FRAGMENT = /^<[a-z][a-z0-9-]*(?:\s[^>]*)?>[\s\S]*<\/[a-z][a-z0-9-]*>$/i;
 
 /** Guesses what a pasted snippet is so tools can offer to open it. */
 export function detectType(pastedText: string): PasteType {
@@ -60,6 +64,8 @@ export function detectType(pastedText: string): PasteType {
       if (isJsonl(text)) return "jsonl";
     }
   }
+
+  if (HTML_DOCUMENT.test(text) || HTML_FRAGMENT.test(text)) return "html";
 
   return "text";
 }
