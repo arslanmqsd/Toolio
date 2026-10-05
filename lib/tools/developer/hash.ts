@@ -1,3 +1,5 @@
+import { bytesToBase64 } from "@/lib/encoding/base64";
+
 export type HashAlgorithm = "md5" | "sha1" | "sha256";
 
 export const HASH_ALGORITHMS: readonly { id: HashAlgorithm; label: string; note?: string }[] = [
@@ -90,7 +92,7 @@ export async function hashBytes(bytes: Uint8Array, algorithm: HashAlgorithm): Pr
 }
 
 export function encodeDigest(digest: Uint8Array, encoding: DigestEncoding): string {
-  if (encoding === "base64") return btoa(String.fromCharCode(...digest));
+  if (encoding === "base64") return bytesToBase64(digest);
   const hex = Array.from(digest, (b) => b.toString(16).padStart(2, "0")).join("");
   return encoding === "HEX" ? hex.toUpperCase() : hex;
 }

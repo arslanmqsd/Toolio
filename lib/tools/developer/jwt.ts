@@ -1,3 +1,5 @@
+import { base64ToBytes, bytesToText } from "@/lib/encoding/base64";
+
 export type JwtPart = "header" | "payload";
 
 export interface DecodedJwt {
@@ -20,15 +22,10 @@ export function base64UrlDecode(input: string): string {
   if (input.length % 4 === 1) {
     throw new Error("has an invalid base64url length");
   }
-  const base64 = input.replace(/-/g, "+").replace(/_/g, "/");
-  const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
-  const binary = atob(padded);
-  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
-  try {
-    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
-  } catch {
-    throw new Error("is not valid UTF-8");
-  }
+  const decoded = base64ToBytes(input);
+  const text = decoded.ok ? bytesToText(decoded.bytes) : null;
+  if (text === null) throw new Error("is not valid UTF-8");
+  return text;
 }
 
 function decodePart(segment: string, part: JwtPart): unknown {

@@ -1,3 +1,5 @@
+import { textToBase64 } from "@/lib/encoding/base64";
+
 export type Target = "fetch" | "axios" | "python";
 
 // ---------------------------------------------------------------------------
@@ -444,11 +446,6 @@ function jsFormLines(fields: FormField[]): string[] {
   return lines;
 }
 
-function base64(text: string): string {
-  const bytes = new TextEncoder().encode(text);
-  return btoa(Array.from(bytes, (b) => String.fromCharCode(b)).join(""));
-}
-
 function emitFetch(req: CurlRequest): { code: string; warnings: string[] } {
   const warnings: string[] = [];
   const pre: string[] = [];
@@ -456,7 +453,7 @@ function emitFetch(req: CurlRequest): { code: string; warnings: string[] } {
   const headers = [...req.headers];
 
   if (req.auth && headerIndex(headers, "authorization") === -1) {
-    headers.push(["Authorization", `Basic ${base64(`${req.auth.username}:${req.auth.password}`)}`]);
+    headers.push(["Authorization", `Basic ${textToBase64(`${req.auth.username}:${req.auth.password}`)}`]);
   }
   if (req.method !== "GET") opts.push(`method: ${str(req.method)}`);
   if (headers.length) opts.push(`headers: ${jsHeaders(headers, 1)}`);
