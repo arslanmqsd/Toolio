@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { ArrowDownUp } from "lucide-react";
 import { useToolInput } from "@/components/tool-shell/tool-io";
 import { InputPanel, OutputPanel } from "@/components/tool-shell/ToolPanels";
@@ -8,7 +9,7 @@ import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import { CodeTextArea } from "@/components/ui/CodeField";
 import SegmentedControl from "@/components/ui/SegmentedControl";
-import { decodeUrl, encodeUrl, looksEncoded, parseUrlParts, type UrlParts, type UrlScheme } from "@/lib/tools/developer/url-encode";
+import { decodeUrl, encodeUrl, looksEncoded, type UrlScheme } from "@/lib/tools/developer/url-encode";
 
 const EXAMPLE = "https://example.com/search?q=café & crème&tags=a/b#results";
 
@@ -31,47 +32,6 @@ const SCHEME_HELP: Record<UrlScheme, string> = {
 
 type Mode = (typeof MODES)[number]["id"];
 
-function Breakdown({ parts }: { parts: UrlParts }) {
-  const rows: [string, string][] = [
-    ["Protocol", parts.protocol],
-    ...(parts.username ? ([["User", parts.username]] as [string, string][]) : []),
-    ["Host", parts.host],
-    ...(parts.port ? ([["Port", parts.port]] as [string, string][]) : []),
-    ["Path", parts.pathname],
-    ...(parts.hash ? ([["Fragment", parts.hash]] as [string, string][]) : []),
-  ];
-  return (
-    <div className="mt-6 border-t border-[color:var(--border)] pt-4">
-      <h3 className="mb-3 font-[family-name:var(--font-ui)] text-sm font-semibold">URL breakdown</h3>
-      <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-sm">
-        {rows.map(([label, value]) => (
-          <div key={label} className="contents">
-            <dt className="font-[family-name:var(--font-ui)] text-[color:var(--text-muted)]">{label}</dt>
-            <dd className="break-all">{value}</dd>
-          </div>
-        ))}
-      </dl>
-      {parts.params.length > 0 && (
-        <>
-          <h4 className="mb-2 mt-4 font-[family-name:var(--font-ui)] text-xs text-[color:var(--text-muted)]">
-            Query parameters (decoded)
-          </h4>
-          <table className="w-full text-sm">
-            <tbody>
-              {parts.params.map(([key, value], k) => (
-                <tr key={k} className="border-t border-[color:var(--border)]">
-                  <td className="py-1.5 pr-4 align-top text-[color:var(--accent-text)]">{key}</td>
-                  <td className="break-all py-1.5">{value === "" ? <em className="text-[color:var(--text-muted)]">(empty)</em> : value}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </>
-      )}
-    </div>
-  );
-}
-
 export default function UrlEncoder() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [text, setText] = useToolInput(EXAMPLE);
@@ -79,11 +39,6 @@ export default function UrlEncoder() {
   const [scheme, setScheme] = useState<UrlScheme>("component");
 
   const result = useMemo(() => (mode === "encode" ? encodeUrl(text, scheme) : decodeUrl(text, scheme)), [text, mode, scheme]);
-  // Break down whichever side is the readable URL.
-  const parts = useMemo(
-    () => parseUrlParts(text) ?? (result.ok ? parseUrlParts(result.output) : null),
-    [text, result],
-  );
   const stillEncoded = mode === "decode" && result.ok && looksEncoded(result.output);
 
   function swap() {
@@ -114,6 +69,13 @@ export default function UrlEncoder() {
             <SegmentedControl label="Encoding" options={SCHEMES} value={scheme} onChange={setScheme} />
           </div>
           <p className="text-xs text-[color:var(--text-muted)]">{SCHEME_HELP[scheme]}</p>
+          <p className="text-xs text-[color:var(--text-muted)]">
+            To break a URL into its host, path and query parameters, use the{" "}
+            <Link href="/tools/developer/url-parser" className="text-[color:var(--accent-text)] underline">
+              URL Parser
+            </Link>
+            .
+          </p>
           <Button icon={ArrowDownUp} onClick={swap} disabled={!result.ok}>
             Use result as input
           </Button>
@@ -134,7 +96,6 @@ export default function UrlEncoder() {
                 </Button>
               </div>
             )}
-            {parts && <Breakdown parts={parts} />}
           </>
         ) : (
           <Alert title={mode === "encode" ? "Can't encode this text" : "Can't decode this text"}>

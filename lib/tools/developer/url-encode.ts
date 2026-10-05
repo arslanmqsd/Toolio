@@ -68,34 +68,3 @@ export function decodeUrl(text: string, scheme: UrlScheme): UrlResult {
 export function looksEncoded(text: string): boolean {
   return /%[0-9a-fA-F]{2}/.test(text) && findMalformed(text) === null;
 }
-
-export interface UrlParts {
-  protocol: string;
-  username: string;
-  host: string;
-  port: string;
-  pathname: string;
-  params: [string, string][];
-  hash: string;
-}
-
-/** Breaks an absolute URL into parts, with query parameters decoded. Null if it isn't one. */
-export function parseUrlParts(text: string): UrlParts | null {
-  const trimmed = text.trim();
-  if (!/^[a-z][a-z0-9+.-]*:\/\/\S+$/i.test(trimmed)) return null;
-  let url: URL;
-  try {
-    url = new URL(trimmed);
-  } catch {
-    return null;
-  }
-  return {
-    protocol: url.protocol.replace(/:$/, ""),
-    username: decodeURIComponent(url.username),
-    host: url.hostname,
-    port: url.port,
-    pathname: url.pathname,
-    params: [...url.searchParams.entries()],
-    hash: url.hash.replace(/^#/, ""),
-  };
-}
