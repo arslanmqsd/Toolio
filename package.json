@@ -10,25 +10,32 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@joplin/turndown-plugin-gfm": "^1.0.68",
     "@supabase/ssr": "0.12.7",
     "@supabase/supabase-js": "2.117.2",
     "diff": "^9.0.0",
     "diff2html": "^3.4.56",
+    "dompurify": "^3.4.16",
     "fuse.js": "^7.5.0",
     "highlight.js": "^11.12.0",
     "lucide-react": "^1.48.0",
+    "marked": "^18.1.0",
     "next": "14.2.35",
     "node-sql-parser": "^5.4.0",
     "react": "^18",
     "react-dom": "^18",
-    "sql-formatter": "^15.9.0"
+    "sql-formatter": "^15.9.0",
+    "turndown": "^7.2.4"
   },
   "devDependencies": {
+    "@types/jsdom": "^30.0.0",
     "@types/node": "^22.20.4",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@types/turndown": "^5.0.6",
     "eslint": "^8",
     "eslint-config-next": "14.2.35",
+    "jsdom": "^28.1.0",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "typescript": "^5",
