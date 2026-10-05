@@ -2,7 +2,7 @@ import type { ToolConfig } from "@/registry/types";
 
 const textDiffChecker: ToolConfig = {
   id: "text-diff-checker",
-  category: "developer",
+  category: "text",
   title: "Text Diff Checker",
   description: "Compare two texts or files and see every changed line and word, side by side or as a patch.",
   keywords: [

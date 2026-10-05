@@ -2,7 +2,7 @@ import type { ToolConfig } from "@/registry/types";
 
 const markdownHtmlConverter: ToolConfig = {
   id: "markdown-html-converter",
-  category: "developer",
+  category: "text",
   title: "Markdown to HTML Converter",
   description: "Convert Markdown to HTML and HTML to Markdown, with a safe live preview.",
   keywords: [

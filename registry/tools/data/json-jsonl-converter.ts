@@ -2,7 +2,7 @@ import type { ToolConfig } from "@/registry/types";
 
 const jsonJsonlConverter: ToolConfig = {
   id: "json-jsonl-converter",
-  category: "developer",
+  category: "data",
   title: "JSON to JSONL Converter",
   description: "Convert JSON arrays to JSON Lines and back, and find the exact line that breaks a JSONL file.",
   keywords: [
