@@ -10,6 +10,7 @@ import jsonFormatter from "./json-formatter";
 import jsonJsonlConverter from "./json-jsonl-converter";
 import jsonToTypes from "./json-to-types";
 import jwtDecoder from "./jwt-decoder";
+import markdownHtmlConverter from "./markdown-html-converter";
 import regexTester from "./regex-tester";
 import sqlFormatter from "./sql-formatter";
 import sqlToMongo from "./sql-to-mongo";
@@ -18,4 +19,4 @@ import unixTimestamp from "./unix-timestamp";
 import urlEncoder from "./url-encoder";
 import uuidGenerator from "./uuid-generator";
 
-export const developerTools: ToolConfig[] = [jsonFormatter, jwtDecoder, regexTester, jsonToTypes, curlConverter, urlEncoder, unixTimestamp, uuidGenerator, hashGenerator, httpStatus, envGenerator, cronBuilder, sqlFormatter, sqlToMongo, gitCommandBuilder, textDiffChecker, gitDiffViewer, jsonJsonlConverter];
+export const developerTools: ToolConfig[] = [jsonFormatter, jwtDecoder, regexTester, jsonToTypes, curlConverter, urlEncoder, unixTimestamp, uuidGenerator, hashGenerator, httpStatus, envGenerator, cronBuilder, sqlFormatter, sqlToMongo, gitCommandBuilder, textDiffChecker, gitDiffViewer, jsonJsonlConverter, markdownHtmlConverter];
