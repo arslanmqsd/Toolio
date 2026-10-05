@@ -3,7 +3,7 @@ import { decodeJwt } from "@/lib/tools/developer/jwt";
 import type { DataType } from "@/registry/data-types";
 
 /** The subset of data types a raw paste can be recognised as. */
-export type PasteType = Extract<DataType, "curl" | "jwt" | "json" | "jsonl" | "cron" | "diff" | "html" | "url" | "text">;
+export type PasteType = Extract<DataType, "curl" | "jwt" | "json" | "jsonl" | "cron" | "diff" | "html" | "url" | "base64" | "text">;
 
 const JWT_SHAPE = /^(?:Bearer\s+)?[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*$/i;
 
@@ -29,6 +29,22 @@ function isJsonl(text: string): boolean {
       return false;
     }
   });
+}
+
+const BASE64_DATA_URL = /^data:[^,]*;base64,/i;
+const BASE64_BLOCK = /^[A-Za-z0-9+/_-]+(?:\r?\n[A-Za-z0-9+/_-]+)*={0,2}$/;
+
+/**
+ * A Base64 blob. Plain words fit the alphabet too, so it must be long, and padded or mixing upper
+ * case, lower case and digits. That leaves out hex hashes and UUIDs.
+ */
+function isBase64(text: string): boolean {
+  if (BASE64_DATA_URL.test(text)) return true;
+  if (text.length < 16 || !BASE64_BLOCK.test(text)) return false;
+  const body = text.replace(/\s/g, "");
+  if (/[+/]/.test(body) && /[-_]/.test(body)) return false;
+  if (body.endsWith("=")) return body.length % 4 === 0;
+  return /[A-Z]/.test(body) && /[a-z]/.test(body) && /[0-9]/.test(body) && body.length % 4 !== 1;
 }
 
 const HTML_DOCUMENT = /^(?:<!doctype html|<html[\s>])/i;
@@ -69,6 +85,8 @@ export function detectType(pastedText: string): PasteType {
   }
 
   if (HTML_DOCUMENT.test(text) || HTML_FRAGMENT.test(text)) return "html";
+
+  if (isBase64(text)) return "base64";
 
   return "text";
 }
