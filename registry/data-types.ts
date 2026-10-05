@@ -2,6 +2,7 @@
 export const DATA_TYPES = [
   "text",
   "json",
+  "jsonl",
   "jwt",
   "curl",
   "timestamp",
@@ -26,6 +27,7 @@ export type DataType = (typeof DATA_TYPES)[number];
 export const dataTypeLabels: Record<DataType, string> = {
   text: "text",
   json: "JSON",
+  jsonl: "JSONL",
   jwt: "JWT",
   curl: "cURL command",
   timestamp: "timestamp",

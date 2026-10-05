@@ -3,7 +3,7 @@ import { decodeJwt } from "@/lib/tools/developer/jwt";
 import type { DataType } from "@/registry/data-types";
 
 /** The subset of data types a raw paste can be recognised as. */
-export type PasteType = Extract<DataType, "curl" | "jwt" | "json" | "cron" | "diff" | "text">;
+export type PasteType = Extract<DataType, "curl" | "jwt" | "json" | "jsonl" | "cron" | "diff" | "text">;
 
 const JWT_SHAPE = /^(?:Bearer\s+)?[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*$/i;
 
@@ -15,6 +15,20 @@ function isDiff(text: string): boolean {
   if (text.startsWith("diff --git ")) return true;
   if (GIT_COMMIT_HEADER.test(text) && /^diff --git /m.test(text)) return true;
   return UNIFIED_HUNK.test(text);
+}
+
+/** Two or more lines that each hold one JSON object or array. Bad lines still count, so a broken file is recognised too. */
+function isJsonl(text: string): boolean {
+  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  if (lines.length < 2 || !lines.every((line) => /^(?:\{.*\}|\[.*\])$/.test(line))) return false;
+  return lines.some((line) => {
+    try {
+      JSON.parse(line);
+      return true;
+    } catch {
+      return false;
+    }
+  });
 }
 
 /** Guesses what a pasted snippet is so tools can offer to open it. */
@@ -42,7 +56,8 @@ export function detectType(pastedText: string): PasteType {
       JSON.parse(text);
       return "json";
     } catch {
-      // Fall through: malformed JSON is still text.
+      // Not one JSON document; it may be JSON Lines. Otherwise malformed JSON is still text.
+      if (isJsonl(text)) return "jsonl";
     }
   }
 

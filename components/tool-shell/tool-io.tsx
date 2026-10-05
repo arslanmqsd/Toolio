@@ -58,9 +58,9 @@ export function useToolIO(): ToolIOContextValue | null {
 /**
  * State for a tool's main input, like `useState(initial)`, that the workbench can fill: from a
  * "Use pasted …" banner, or straight away when another tool sent data here or a saved snippet was loaded. `onFill` runs on
- * outside fills, e.g. to switch the tool back to the mode that shows this input.
+ * outside fills, with the new value, e.g. to switch the tool back to the mode that shows this input.
  */
-export function useToolInput(initial: string, onFill?: () => void) {
+export function useToolInput(initial: string, onFill?: (value: string) => void) {
   const io = useToolIO();
   const { workbench, clearWorkbench } = useWorkbench();
   const origin = workbench.origin;
@@ -76,7 +76,7 @@ export function useToolInput(initial: string, onFill?: () => void) {
   useEffect(() => {
     if (!consumedSend.current) return;
     consumedSend.current = false;
-    onFill?.();
+    onFill?.(value);
     clearWorkbench();
     // Runs once on mount, for the value read in the initializer above.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -92,7 +92,7 @@ export function useToolInput(initial: string, onFill?: () => void) {
       register?.({
         fill: (next) => {
           setValue(next);
-          onFillRef.current?.();
+          onFillRef.current?.(next);
         },
         read: () => valueRef.current,
       }),
