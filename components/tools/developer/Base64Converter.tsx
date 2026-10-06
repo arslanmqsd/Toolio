@@ -17,7 +17,7 @@ import ValueTable from "@/components/ui/ValueTable";
 import { base64ToBytes, bytesToBase64, bytesToText, wrapLines, type Base64Variant } from "@/lib/encoding/base64";
 import { formatBytes } from "@/lib/format-bytes";
 import { detectFileKind, downloadName, hexDump, parseDataUrl, toDataUrl, type FileKind } from "@/lib/tools/developer/base64";
-import { readTextFile } from "@/lib/tools/developer/diff/text-file";
+import { readTextFile } from "@/lib/files/text-file";
 
 const HELLO = "Hello, World! 👋";
 // The 5×5 red dot from Wikipedia's data URL article.

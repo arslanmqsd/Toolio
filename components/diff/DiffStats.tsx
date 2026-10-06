@@ -1,4 +1,4 @@
-import type { Stats } from "@/lib/tools/developer/diff/model";
+import type { Stats } from "@/lib/diff/model";
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 

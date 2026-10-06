@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { LanguageFn } from "highlight.js";
-import { parseHighlighted, plainPieces, type Highlight } from "@/lib/tools/developer/diff/highlight";
-import type { LanguageId } from "@/lib/tools/developer/diff/language";
+import { parseHighlighted, plainPieces, type Highlight } from "@/lib/diff/highlight";
+import type { LanguageId } from "@/lib/diff/language";
 
 const LOADERS: Record<LanguageId, () => Promise<{ default: LanguageFn }>> = {
   javascript: () => import("highlight.js/lib/languages/javascript"),

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseJson, printJson, type JsonNode } from "./json-format";
+import { parseJson, printJson, type JsonNode } from "@/lib/tools/developer/json-format";
 import {
   convertRecords,
   fieldNames,

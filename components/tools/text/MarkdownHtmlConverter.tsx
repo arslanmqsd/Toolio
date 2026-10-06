@@ -11,7 +11,7 @@ import { CodeTextArea } from "@/components/ui/CodeField";
 import FileDrop from "@/components/ui/FileDrop";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import { formatBytes } from "@/lib/format-bytes";
-import { readTextFile } from "@/lib/tools/developer/diff/text-file";
+import { readTextFile } from "@/lib/files/text-file";
 import {
   convert,
   markdownToHtml,
@@ -20,7 +20,7 @@ import {
   textStats,
   type Direction,
   type LossReport,
-} from "@/lib/tools/developer/markdown-html";
+} from "@/lib/tools/text/markdown-html";
 
 const HELLO = "# Hello\nThis is **Toolio**.";
 
