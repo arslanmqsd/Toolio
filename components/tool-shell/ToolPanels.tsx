@@ -63,7 +63,11 @@ export function OutputPanel({ label = "Output", copyText, outputType, download, 
 
 type CopyStatus = "idle" | "copied" | "failed";
 
-export function CopyButton({ text }: { text?: string }) {
+/**
+ * `what` names what's copied for screen readers ("Copy" + " path $.a"), for when several copy
+ * buttons share a view.
+ */
+export function CopyButton({ text, what }: { text?: string; what?: string }) {
   const [status, setStatus] = useState<CopyStatus>("idle");
 
   useEffect(() => {
@@ -90,6 +94,7 @@ export function CopyButton({ text }: { text?: string }) {
       className={panelButtonClass}
     >
       <span aria-live="polite">{status === "copied" ? "Copied" : status === "failed" ? "Copy failed" : "Copy"}</span>
+      {what && <span className="sr-only"> {what}</span>}
     </button>
   );
 }

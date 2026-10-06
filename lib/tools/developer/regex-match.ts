@@ -61,5 +61,4 @@ export function findMatches(pattern: string, flags: string, text: string, limit 
   return { matches, truncated: false };
 }
 
-export type WorkerRequest = { id: number; pattern: string; flags: string; text: string };
-export type WorkerResponse = { id: number } & ({ ok: true; result: MatchResult } | { ok: false; error: string });
+export type MatchRequest = { pattern: string; flags: string; text: string };
