@@ -8,6 +8,7 @@ describe("sendTargets", () => {
     expect(ids(sendTargets(getToolById("jwt-decoder")!, "json"))).toEqual(["json-formatter", "json-jsonl-converter", "json-to-types"]);
     expect(ids(sendTargets(getToolById("json-formatter")!, "json"))).toEqual(["json-jsonl-converter", "json-to-types"]);
     expect(ids(sendTargets(getToolById("url-encoder")!, "text"))).toEqual([
+      "base64-converter",
       "git-diff-viewer",
       "hash-generator",
       "regex-tester",

@@ -1,4 +1,5 @@
 import type { ToolConfig } from "@/registry/types";
+import base64Converter from "./base64-converter";
 import cronBuilder from "./cron-builder";
 import curlConverter from "./curl-converter";
 import envGenerator from "./env-generator";
@@ -7,17 +8,14 @@ import gitDiffViewer from "./git-diff-viewer";
 import hashGenerator from "./hash-generator";
 import httpStatus from "./http-status";
 import jsonFormatter from "./json-formatter";
-import jsonJsonlConverter from "./json-jsonl-converter";
 import jsonToTypes from "./json-to-types";
 import jwtDecoder from "./jwt-decoder";
-import markdownHtmlConverter from "./markdown-html-converter";
 import regexTester from "./regex-tester";
 import sqlFormatter from "./sql-formatter";
 import sqlToMongo from "./sql-to-mongo";
-import textDiffChecker from "./text-diff-checker";
 import unixTimestamp from "./unix-timestamp";
 import urlEncoder from "./url-encoder";
 import urlParser from "./url-parser";
 import uuidGenerator from "./uuid-generator";
 
-export const developerTools: ToolConfig[] = [jsonFormatter, jwtDecoder, regexTester, jsonToTypes, curlConverter, urlEncoder, unixTimestamp, uuidGenerator, hashGenerator, httpStatus, envGenerator, cronBuilder, sqlFormatter, sqlToMongo, gitCommandBuilder, textDiffChecker, gitDiffViewer, jsonJsonlConverter, markdownHtmlConverter, urlParser];
+export const developerTools: ToolConfig[] = [jsonFormatter, jwtDecoder, regexTester, jsonToTypes, curlConverter, urlEncoder, unixTimestamp, uuidGenerator, hashGenerator, httpStatus, envGenerator, cronBuilder, sqlFormatter, sqlToMongo, gitCommandBuilder, gitDiffViewer, urlParser, base64Converter];

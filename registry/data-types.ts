@@ -21,6 +21,7 @@ export const DATA_TYPES = [
   "diff",
   "markdown",
   "html",
+  "base64",
 ] as const;
 
 export type DataType = (typeof DATA_TYPES)[number];
@@ -48,4 +49,5 @@ export const dataTypeLabels: Record<DataType, string> = {
   diff: "diff",
   markdown: "Markdown",
   html: "HTML",
+  base64: "Base64",
 };

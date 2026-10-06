@@ -1,5 +1,6 @@
 import {
   ArrowRightLeft,
+  Binary,
   Braces,
   Calculator,
   CalendarClock,
@@ -56,6 +57,7 @@ const toolIcons: Record<string, LucideIcon> = {
   "csv-cleaner": Sheet,
   "url-encoder": Link,
   "url-parser": ListTree,
+  "base64-converter": Binary,
   "unix-timestamp": Clock,
   "uuid-generator": Fingerprint,
   "hash-generator": Hash,

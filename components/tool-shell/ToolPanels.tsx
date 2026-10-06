@@ -38,8 +38,8 @@ interface OutputPanelProps {
    * other tools that consume this type.
    */
   outputType?: DataType;
-  /** Adds a button that saves `copyText` as this file. */
-  download?: { filename: string; mimeType: string };
+  /** Adds a button that saves this file: `content` when given (e.g. binary bytes), otherwise `copyText`. */
+  download?: { filename: string; mimeType: string; content?: Uint8Array<ArrayBuffer> };
   /** Span every column of the tool layout, for wide output like a diff. */
   wide?: boolean;
   children: ReactNode;
@@ -52,7 +52,7 @@ export function OutputPanel({ label = "Output", copyText, outputType, download, 
         <span className="font-[family-name:var(--font-ui)]">{label}</span>
         <div className="flex items-center gap-2">
           {outputType && copyText && <SendToMenu value={copyText} type={outputType} />}
-          {download && <DownloadButton text={copyText} {...download} />}
+          {download && <DownloadButton content={download.content ?? copyText} filename={download.filename} mimeType={download.mimeType} />}
           <CopyButton text={copyText} />
         </div>
       </div>
@@ -94,10 +94,18 @@ export function CopyButton({ text }: { text?: string }) {
   );
 }
 
-export function DownloadButton({ text, filename, mimeType }: { text?: string; filename: string; mimeType: string }) {
+interface DownloadButtonProps {
+  content?: string | Uint8Array<ArrayBuffer>;
+  filename: string;
+  mimeType: string;
+}
+
+export function DownloadButton({ content, filename, mimeType }: DownloadButtonProps) {
+  const empty = !content?.length;
+
   function save() {
-    if (!text) return;
-    const url = URL.createObjectURL(new Blob([text], { type: mimeType }));
+    if (!content?.length) return;
+    const url = URL.createObjectURL(new Blob([content], { type: mimeType }));
     const link = document.createElement("a");
     link.href = url;
     link.download = filename;
@@ -107,7 +115,7 @@ export function DownloadButton({ text, filename, mimeType }: { text?: string; fi
   }
 
   return (
-    <button type="button" onClick={save} disabled={!text} className={panelButtonClass} aria-label={`Download ${filename}`}>
+    <button type="button" onClick={save} disabled={empty} className={panelButtonClass} aria-label={`Download ${filename}`}>
       Download
     </button>
   );
