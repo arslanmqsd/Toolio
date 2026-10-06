@@ -22,7 +22,7 @@ const jsonJsonlConverter: ToolConfig = {
     "remove json fields",
   ],
   actions: ["convert", "format", "clean"],
-  component: () => import("@/components/tools/developer/JsonJsonlConverter"),
+  component: () => import("@/components/tools/data/JsonJsonlConverter"),
   consumes: ["json", "jsonl"],
   produces: ["json", "jsonl"],
 };

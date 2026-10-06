@@ -10,8 +10,8 @@ import Checkbox from "@/components/ui/Checkbox";
 import { CodeTextArea } from "@/components/ui/CodeField";
 import FileDrop from "@/components/ui/FileDrop";
 import SegmentedControl from "@/components/ui/SegmentedControl";
-import { readTextFile } from "@/lib/tools/developer/diff/text-file";
-import { convertRecords, type Direction, type LineError } from "@/lib/tools/developer/json-jsonl";
+import { readTextFile } from "@/lib/files/text-file";
+import { convertRecords, type Direction, type LineError } from "@/lib/tools/data/json-jsonl";
 
 const EXAMPLE = `[
   { "id": 1, "name": "Ada", "team": { "name": "Core" } },

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { filePath, MAX_GIT_DIFF_BYTES, parseGitDiff } from "./git-parse";
 import { GIT_DIFF_SAMPLE } from "./git-sample";
-import type { DiffFile, Row } from "./model";
+import type { DiffFile, Row } from "@/lib/diff/model";
 
 function files(text: string): DiffFile[] {
   const result = parseGitDiff(text);

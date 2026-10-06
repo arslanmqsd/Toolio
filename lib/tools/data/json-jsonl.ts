@@ -4,7 +4,7 @@
  * and error messages read the same in every browser.
  */
 
-import { parseJson, printJson, type JsonNode, type JsonSyntaxError } from "./json-format";
+import { parseJson, printJson, type JsonNode, type JsonSyntaxError } from "@/lib/tools/developer/json-format";
 
 export type Direction = "json-to-jsonl" | "jsonl-to-json";
 

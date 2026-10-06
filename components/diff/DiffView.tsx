@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import Button from "@/components/ui/Button";
-import { collapseRows } from "@/lib/tools/developer/diff/hunks";
-import { markChanged, plainPieces, type SideHighlights } from "@/lib/tools/developer/diff/highlight";
-import type { Hunk, Row } from "@/lib/tools/developer/diff/model";
-import { toSplitLines } from "@/lib/tools/developer/diff/split";
+import { collapseRows } from "@/lib/diff/hunks";
+import { markChanged, plainPieces, type SideHighlights } from "@/lib/diff/highlight";
+import type { Hunk, Row } from "@/lib/diff/model";
+import { toSplitLines } from "@/lib/diff/split";
 
 export type DiffLayout = "split" | "unified";
 

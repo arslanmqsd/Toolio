@@ -9,15 +9,15 @@ import { CodeTextArea } from "@/components/ui/CodeField";
 import FileDrop from "@/components/ui/FileDrop";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import { useMediaQuery } from "@/lib/hooks/useMediaQuery";
-import { filePath, languagePath, MAX_GIT_DIFF_BYTES, parseGitDiff } from "@/lib/tools/developer/diff/git-parse";
-import { GIT_DIFF_SAMPLE } from "@/lib/tools/developer/diff/git-sample";
-import { highlightHunks, HIGHLIGHT_LINE_LIMIT, type SideHighlights } from "@/lib/tools/developer/diff/highlight";
-import { languageForFile, type LanguageId } from "@/lib/tools/developer/diff/language";
-import type { DiffFile, FileStatus, Stats } from "@/lib/tools/developer/diff/model";
-import { readTextFile } from "@/lib/tools/developer/diff/text-file";
-import DiffStats from "./diff/DiffStats";
-import DiffView, { SPLIT_QUERY, type DiffLayout } from "./diff/DiffView";
-import { useHighlighters } from "./diff/useHighlighters";
+import { filePath, languagePath, MAX_GIT_DIFF_BYTES, parseGitDiff } from "@/lib/tools/developer/git-diff/git-parse";
+import { GIT_DIFF_SAMPLE } from "@/lib/tools/developer/git-diff/git-sample";
+import { highlightHunks, HIGHLIGHT_LINE_LIMIT, type SideHighlights } from "@/lib/diff/highlight";
+import { languageForFile, type LanguageId } from "@/lib/diff/language";
+import type { DiffFile, FileStatus, Stats } from "@/lib/diff/model";
+import { readTextFile } from "@/lib/files/text-file";
+import DiffStats from "@/components/diff/DiffStats";
+import DiffView, { SPLIT_QUERY, type DiffLayout } from "@/components/diff/DiffView";
+import { useHighlighters } from "@/components/diff/useHighlighters";
 
 /** Files longer than this start collapsed, so one huge file doesn't bury the rest. */
 const COLLAPSE_ROWS = 500;

@@ -1,7 +1,7 @@
 import { parse } from "diff2html/lib/diff-parser";
 import { LineType, type DiffBlock, type DiffFile as ParsedFile, type DiffLine } from "diff2html/lib/types";
-import { statsOf, type DiffFile, type FileStatus, type Hunk, type Row } from "./model";
-import { pairChanges } from "./words";
+import { statsOf, type DiffFile, type FileStatus, type Hunk, type Row } from "@/lib/diff/model";
+import { pairChanges } from "@/lib/diff/words";
 
 export const MAX_GIT_DIFF_BYTES = 5 * 1024 * 1024;
 
