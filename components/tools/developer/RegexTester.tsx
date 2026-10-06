@@ -1,13 +1,14 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Fragment, useMemo, useState, type ReactNode } from "react";
 import { useToolInput } from "@/components/tool-shell/tool-io";
 import { InputPanel, OutputPanel } from "@/components/tool-shell/ToolPanels";
 import Alert from "@/components/ui/Alert";
 import { CodeTextArea } from "@/components/ui/CodeField";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import { explainFlags, explainRegex, explanationToText, type ExplainLine } from "@/lib/tools/developer/regex-explain";
-import type { MatchResult, RegexMatch, WorkerRequest, WorkerResponse } from "@/lib/tools/developer/regex-match";
+import { useWorkerJob, type WorkerJobState } from "@/lib/hooks/useWorkerJob";
+import type { MatchRequest, MatchResult, RegexMatch } from "@/lib/tools/developer/regex-match";
 
 const EXAMPLE_PATTERN = String.raw`(?<year>\d{4})-(?<month>0[1-9]|1[0-2])-(?<day>\d{2})`;
 const EXAMPLE_TEXT = "Released 2024-03-15, patched 2024-11-02.\nNot dates: 2024-13-01 and 24-03-15.";
@@ -29,59 +30,10 @@ const VIEWS = [
 const TIMEOUT_MS = 1000;
 const DEBOUNCE_MS = 120;
 
-type MatchState =
-  | { status: "done"; result: MatchResult }
-  | { status: "timeout" }
-  | { status: "error"; error: string }
-  | { status: "pending" };
+type MatchState = WorkerJobState<MatchResult>;
 
-/** Matches in a Web Worker, killing it if a pattern backtracks for too long. */
-function useRegexMatches(pattern: string, flags: string, text: string, enabled: boolean): MatchState {
-  const [state, setState] = useState<MatchState>({ status: "pending" });
-  const workerRef = useRef<Worker | null>(null);
-  const busyRef = useRef(false);
-  const idRef = useRef(0);
-
-  useEffect(() => () => workerRef.current?.terminate(), []);
-
-  useEffect(() => {
-    if (!enabled) return;
-    const id = ++idRef.current;
-    let timeout: ReturnType<typeof setTimeout> | undefined;
-
-    const debounce = setTimeout(() => {
-      // A busy worker may be stuck on an earlier pattern: replace it.
-      if (busyRef.current) {
-        workerRef.current?.terminate();
-        workerRef.current = null;
-      }
-      const worker =
-        workerRef.current ?? new Worker(new URL("../../../lib/tools/developer/regex.worker.ts", import.meta.url));
-      workerRef.current = worker;
-      worker.onmessage = ({ data }: MessageEvent<WorkerResponse>) => {
-        if (data.id !== idRef.current) return;
-        busyRef.current = false;
-        clearTimeout(timeout);
-        setState(data.ok ? { status: "done", result: data.result } : { status: "error", error: data.error });
-      };
-      busyRef.current = true;
-      worker.postMessage({ id, pattern, flags, text } satisfies WorkerRequest);
-      timeout = setTimeout(() => {
-        if (id !== idRef.current) return;
-        worker.terminate();
-        workerRef.current = null;
-        busyRef.current = false;
-        setState({ status: "timeout" });
-      }, TIMEOUT_MS);
-    }, DEBOUNCE_MS);
-
-    return () => {
-      clearTimeout(debounce);
-      clearTimeout(timeout);
-    };
-  }, [pattern, flags, text, enabled]);
-
-  return state;
+function createMatchWorker() {
+  return new Worker(new URL("../../../lib/tools/developer/regex.worker.ts", import.meta.url));
 }
 
 function Highlighted({ text, matches }: { text: string; matches: RegexMatch[] }) {
@@ -206,7 +158,12 @@ export default function RegexTester() {
     }
   }, [pattern, flags, syntaxError]);
 
-  const state = useRegexMatches(pattern, flags, text, syntaxError === null);
+  // Matching runs in a worker, stopped if a pattern backtracks for too long.
+  const request = useMemo<MatchRequest | null>(
+    () => (syntaxError === null ? { pattern, flags, text } : null),
+    [pattern, flags, text, syntaxError],
+  );
+  const state = useWorkerJob<MatchRequest, MatchResult>(createMatchWorker, request, { timeoutMs: TIMEOUT_MS, debounceMs: DEBOUNCE_MS });
 
   function toggleFlag(flag: string) {
     const next = flags.includes(flag) ? flags.replace(flag, "") : flags + flag;

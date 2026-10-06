@@ -7,6 +7,7 @@ import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
 import { CodeTextArea } from "@/components/ui/CodeField";
+import ErrorCaret from "@/components/ui/ErrorCaret";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import { formatBytes } from "@/lib/format-bytes";
 import { formatJson, type JsonStats } from "@/lib/tools/developer/json-format";
@@ -132,13 +133,7 @@ export default function JsonFormatter() {
                 <p className="mt-3 text-xs text-[color:var(--text-muted)]">
                   Line {result.error.line}, column {result.error.column}
                 </p>
-                <pre className="mt-2 overflow-x-auto whitespace-pre font-[family-name:var(--font-mono)] text-xs text-[color:var(--text)]">
-                  {errorLine}
-                  {"\n"}
-                  <span className="text-[color:var(--error)]">
-                    {errorLine.slice(0, result.error.column - 1).replace(/[^\t]/g, " ")}^
-                  </span>
-                </pre>
+                <ErrorCaret line={errorLine} column={result.error.column} className="mt-2" />
                 <Button size="sm" onClick={() => showError(result.error.offset)} className="mt-3">
                   Show in input
                 </Button>
