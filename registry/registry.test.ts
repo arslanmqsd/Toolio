@@ -10,6 +10,7 @@ describe("sendTargets", () => {
     expect(ids(sendTargets(getToolById("url-encoder")!, "text"))).toEqual([
       "base64-converter",
       "git-diff-viewer",
+      "gitignore-generator",
       "hash-generator",
       "regex-tester",
       "text-diff-checker",
