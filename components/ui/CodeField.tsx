@@ -50,3 +50,12 @@ export const CodeInput = forwardRef<HTMLInputElement, CodeInputProps>(function C
     />
   );
 });
+
+/** Focuses a text field and selects one line of it (counting from 1), e.g. to show where an error is. */
+export function selectLine(field: HTMLTextAreaElement | null, line: number) {
+  if (!field) return;
+  const lines = field.value.split("\n");
+  const start = lines.slice(0, line - 1).reduce((sum, l) => sum + l.length + 1, 0);
+  field.focus();
+  field.setSelectionRange(start, start + (lines[line - 1]?.length ?? 0));
+}

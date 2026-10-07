@@ -7,7 +7,7 @@ import { detectType } from "@/components/workbench/detectors";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
-import { CodeTextArea } from "@/components/ui/CodeField";
+import { CodeTextArea, selectLine } from "@/components/ui/CodeField";
 import FileDrop from "@/components/ui/FileDrop";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import { readTextFile } from "@/lib/files/text-file";
@@ -160,15 +160,6 @@ export default function JsonJsonlConverter() {
     setDirection(directionForFile(file.name) ?? (detectType(read.text) === "jsonl" ? "jsonl-to-json" : "json-to-jsonl"));
   }
 
-  function selectLine(line: number) {
-    const input = inputRef.current;
-    if (!input) return;
-    const lines = text.split("\n");
-    const start = lines.slice(0, line - 1).reduce((sum, l) => sum + l.length + 1, 0);
-    input.focus();
-    input.setSelectionRange(start, start + (lines[line - 1]?.length ?? 0));
-  }
-
   const invalid = (!result.ok && !empty) || hasLineErrors;
 
   return (
@@ -225,7 +216,7 @@ export default function JsonJsonlConverter() {
         {result.ok ? (
           <>
             {hasLineErrors ? (
-              <LineErrors errors={result.errors} lines={result.lines} onShow={selectLine} />
+              <LineErrors errors={result.errors} lines={result.lines} onShow={(line) => selectLine(inputRef.current, line)} />
             ) : (
               <p className="mb-4 border-b border-[color:var(--border)] pb-4 font-[family-name:var(--font-ui)] text-xs">
                 <span className="text-[color:var(--text-muted)]">
@@ -256,7 +247,7 @@ export default function JsonJsonlConverter() {
             <p className="mt-3 text-xs text-[color:var(--text-muted)]">
               Line {result.error.line}, column {result.error.column}
             </p>
-            <Button size="sm" onClick={() => selectLine(result.error.line)} className="mt-3">
+            <Button size="sm" onClick={() => selectLine(inputRef.current, result.error.line)} className="mt-3">
               Show in input
             </Button>
             {resultToJsonl && detectType(deferredText) === "jsonl" && (
