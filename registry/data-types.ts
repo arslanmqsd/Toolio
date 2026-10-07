@@ -23,6 +23,7 @@ export const DATA_TYPES = [
   "html",
   "base64",
   "gitignore",
+  "yaml",
 ] as const;
 
 export type DataType = (typeof DATA_TYPES)[number];
@@ -52,4 +53,5 @@ export const dataTypeLabels: Record<DataType, string> = {
   html: "HTML",
   base64: "Base64",
   gitignore: ".gitignore",
+  yaml: "YAML",
 };

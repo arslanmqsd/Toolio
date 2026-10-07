@@ -27,7 +27,8 @@
     "react-dom": "^18",
     "semver": "^7.8.5",
     "sql-formatter": "^15.9.0",
-    "turndown": "^7.2.4"
+    "turndown": "^7.2.4",
+    "yaml": "^2.9.1"
   },
   "devDependencies": {
     "@types/jsdom": "^30.0.0",
