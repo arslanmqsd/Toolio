@@ -13,6 +13,7 @@ describe("sendTargets", () => {
       "gitignore-generator",
       "hash-generator",
       "regex-tester",
+      "semver-calculator",
       "text-diff-checker",
     ]);
   });
