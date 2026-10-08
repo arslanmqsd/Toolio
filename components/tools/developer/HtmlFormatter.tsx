@@ -14,15 +14,8 @@ import SegmentedControl from "@/components/ui/SegmentedControl";
 import { formatBytes } from "@/lib/format-bytes";
 import { readTextFile } from "@/lib/files/text-file";
 import { useWorkerJob } from "@/lib/hooks/useWorkerJob";
-import {
-  DEFAULT_FORMAT,
-  DEFAULT_MINIFY,
-  type FormatOptions,
-  type HtmlJobResult,
-  type HtmlRequest,
-  type HtmlSizes,
-  type MinifyOptions,
-} from "@/lib/tools/developer/html-format";
+import type { HtmlJobResult, HtmlRequest, HtmlSizes } from "@/lib/tools/developer/html-format";
+import { DEFAULT_FORMAT, DEFAULT_MINIFY, type FormatOptions, type MinifyOptions } from "@/lib/tools/developer/html-format-options";
 
 const EXAMPLE = `<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><title>Toolio</title>
