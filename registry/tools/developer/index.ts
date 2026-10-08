@@ -7,6 +7,7 @@ import gitCommandBuilder from "./git-command-builder";
 import gitDiffViewer from "./git-diff-viewer";
 import gitignoreGenerator from "./gitignore-generator";
 import hashGenerator from "./hash-generator";
+import htmlFormatter from "./html-formatter";
 import httpStatus from "./http-status";
 import jsonFormatter from "./json-formatter";
 import jsonPathTester from "./json-path-tester";
@@ -21,4 +22,4 @@ import urlEncoder from "./url-encoder";
 import urlParser from "./url-parser";
 import uuidGenerator from "./uuid-generator";
 
-export const developerTools: ToolConfig[] = [jsonFormatter, jwtDecoder, regexTester, jsonToTypes, curlConverter, urlEncoder, unixTimestamp, uuidGenerator, hashGenerator, httpStatus, envGenerator, cronBuilder, sqlFormatter, sqlToMongo, gitCommandBuilder, gitDiffViewer, urlParser, base64Converter, gitignoreGenerator, jsonPathTester, semverCalculator];
+export const developerTools: ToolConfig[] = [jsonFormatter, jwtDecoder, regexTester, jsonToTypes, curlConverter, urlEncoder, unixTimestamp, uuidGenerator, hashGenerator, httpStatus, envGenerator, cronBuilder, sqlFormatter, sqlToMongo, gitCommandBuilder, gitDiffViewer, urlParser, base64Converter, gitignoreGenerator, jsonPathTester, semverCalculator, htmlFormatter];
