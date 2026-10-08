@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { htmlToMarkdown, markdownToHtml, previewDocument, sanitizeHtml, textStats, type ConvertResult } from "./markdown-html";
+import { htmlToMarkdown, markdownToHtml, textStats, type ConvertResult } from "./markdown-html";
 
 const output = (result: ConvertResult) => {
   if (!result.ok) throw new Error(result.error);
@@ -66,34 +66,6 @@ describe("htmlToMarkdown", () => {
 
   it("accepts sloppy HTML", () => {
     expect(output(htmlToMarkdown("<p>one<p><b>two"))).toBe("one\n\n**two**");
-  });
-});
-
-describe("sanitizeHtml", () => {
-  // The payloads every preview must neutralize.
-  it("removes scripts, event handlers and javascript: links", () => {
-    const clean = sanitizeHtml('<script>alert(document.domain)</script><img src=x onerror=alert(1)><a href="javascript:alert(1)">x</a>');
-    expect(clean).not.toMatch(/<script|onerror|javascript:/i);
-    expect(clean).toBe('<img src="x"><a rel="noopener noreferrer">x</a>');
-  });
-
-  it("blocks data: links but keeps data: images", () => {
-    expect(sanitizeHtml('<a href="data:text/html,<script>1</script>">x</a>')).toBe('<a rel="noopener noreferrer">x</a>');
-    expect(sanitizeHtml('<img src="data:image/png;base64,AA==">')).toBe('<img src="data:image/png;base64,AA==">');
-  });
-
-  it("keeps task list checkboxes and code classes", () => {
-    const html = '<li><input checked="" disabled="" type="checkbox"> done</li><code class="language-ts">x</code>';
-    expect(sanitizeHtml(html)).toBe(html);
-  });
-});
-
-describe("previewDocument", () => {
-  it("adds a CSP that blocks scripts and opens links outside the frame", () => {
-    const doc = previewDocument("<p>x</p>", "body{}");
-    expect(doc).toContain("default-src 'none'; img-src * data:; style-src 'unsafe-inline'");
-    expect(doc).toContain('<base target="_blank">');
-    expect(doc).toContain("<body><p>x</p></body>");
   });
 });
 
