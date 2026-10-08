@@ -1,12 +1,11 @@
 /**
  * Markdown ↔ HTML in the browser: marked (GitHub Flavored Markdown) one way, turndown with the GFM
- * plugin the other, and DOMPurify for the live preview. Nothing leaves the page.
+ * plugin the other. Nothing leaves the page.
  *
- * The HTML side needs a DOM (DOMParser, DOMPurify), so call these from the client or a jsdom test.
+ * The HTML side needs a DOM (DOMParser), so call these from the client or a jsdom test.
  */
 
 import { gfm } from "@joplin/turndown-plugin-gfm";
-import DOMPurify from "dompurify";
 import { Marked } from "marked";
 import TurndownService from "turndown";
 
@@ -162,42 +161,6 @@ export function htmlToMarkdown(html: string): ConvertResult {
 
 export function convert(text: string, direction: Direction): ConvertResult {
   return direction === "md-to-html" ? markdownToHtml(text) : htmlToMarkdown(text);
-}
-
-let purifier: ReturnType<typeof DOMPurify> | undefined;
-
-/**
- * Cleans HTML for the preview: no <script>, no on* handlers, no javascript: links. DOMPurify's
- * default URL rules also block data: in links but allow data: images, which can't run code.
- * Only the preview is cleaned; the copyable output stays exactly as converted.
- */
-export function sanitizeHtml(html: string): string {
-  if (!purifier) {
-    // An instance of our own, so the hook doesn't change DOMPurify for anything else on the page.
-    purifier = DOMPurify(window);
-    purifier.addHook("afterSanitizeAttributes", (node) => {
-      if (node.localName === "a") node.setAttribute("rel", "noopener noreferrer");
-    });
-  }
-  return purifier.sanitize(html);
-}
-
-/**
- * A complete page for a sandboxed iframe's srcdoc. The CSP is a third layer after DOMPurify and the
- * sandbox: no scripts, no frames, nothing fetched except images. `css` styles the page.
- */
-export function previewDocument(sanitizedHtml: string, css: string): string {
-  return `<!doctype html>
-<html>
-<head>
-<meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src * data:; style-src 'unsafe-inline'">
-<meta name="referrer" content="no-referrer">
-<base target="_blank">
-<style>${css}</style>
-</head>
-<body>${sanitizedHtml}</body>
-</html>`;
 }
 
 export interface TextStats {
