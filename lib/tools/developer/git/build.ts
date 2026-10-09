@@ -1,4 +1,4 @@
-import { quote } from "./quote";
+import { quote } from "@/lib/shell-quote";
 import type { Args, Danger, Field, FieldValues, Step, Task } from "./types";
 
 export type Resolved =

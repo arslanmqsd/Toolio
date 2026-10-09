@@ -1,4 +1,5 @@
-import { escapeEre, quote } from "../quote";
+import { quote } from "@/lib/shell-quote";
+import { escapeEre } from "../quote";
 import type { Task } from "../types";
 import { part, refField, remoteField, step, when } from "./helpers";
 

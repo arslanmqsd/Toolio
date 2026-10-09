@@ -10,6 +10,7 @@ import { CodeTextArea, selectLine } from "@/components/ui/CodeField";
 import ErrorCaret from "@/components/ui/ErrorCaret";
 import FileDrop from "@/components/ui/FileDrop";
 import HtmlPreview from "@/components/ui/HtmlPreview";
+import LabelledControl from "@/components/ui/LabelledControl";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import { formatBytes } from "@/lib/format-bytes";
 import { readTextFile } from "@/lib/files/text-file";
@@ -77,18 +78,6 @@ const TIMEOUT_MS = 15_000;
 const DEBOUNCE_MS = 200;
 const MAX_FILE_BYTES = 20 * 1024 * 1024;
 const ERROR_ID = "html-format-error";
-
-/** A segmented control with its name shown beside it, for options whose choices don't explain themselves. */
-function Labelled({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-wrap items-center gap-2">
-      <span aria-hidden="true" className="text-sm text-[color:var(--text-muted)]">
-        {label}
-      </span>
-      {children}
-    </div>
-  );
-}
 
 function createWorker() {
   return new Worker(new URL("../../../lib/tools/developer/html-format.worker.ts", import.meta.url));
@@ -178,17 +167,17 @@ export default function HtmlFormatter() {
           {mode === "format" ? (
             <div className="space-y-3">
               <div className="flex flex-wrap items-center gap-3">
-                <Labelled label="Indent">
+                <LabelledControl label="Indent">
                   <SegmentedControl label="Indent" options={INDENTS} value={format.indent} onChange={(v) => setFormatOption("indent", v)} />
-                </Labelled>
-                <Labelled label="Line width">
+                </LabelledControl>
+                <LabelledControl label="Line width">
                   <SegmentedControl
                     label="Line width"
                     options={WIDTHS}
                     value={String(format.printWidth) as (typeof WIDTHS)[number]["id"]}
                     onChange={(v) => setFormatOption("printWidth", Number(v))}
                   />
-                </Labelled>
+                </LabelledControl>
               </div>
               <Checkbox checked={format.formatEmbedded} onChange={(v) => setFormatOption("formatEmbedded", v)}>
                 Format the CSS and JavaScript in &lt;style&gt; and &lt;script&gt;
@@ -197,9 +186,9 @@ export default function HtmlFormatter() {
           ) : (
             <div className="space-y-3">
               <div className="space-y-1.5">
-                <Labelled label="Whitespace">
+                <LabelledControl label="Whitespace">
                   <SegmentedControl label="Whitespace" options={WHITESPACE} value={minify.whitespace} onChange={(v) => setMinifyOption("whitespace", v)} />
-                </Labelled>
+                </LabelledControl>
                 <p className="text-xs text-[color:var(--text-muted)]">{WHITESPACE_HELP[minify.whitespace]}</p>
               </div>
               <Checkbox checked={minify.removeComments} onChange={(v) => setMinifyOption("removeComments", v)}>
