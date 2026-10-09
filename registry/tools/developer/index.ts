@@ -1,5 +1,6 @@
 import type { ToolConfig } from "@/registry/types";
 import base64Converter from "./base64-converter";
+import chmodCalculator from "./chmod-calculator";
 import cronBuilder from "./cron-builder";
 import curlConverter from "./curl-converter";
 import envGenerator from "./env-generator";
@@ -22,4 +23,4 @@ import urlEncoder from "./url-encoder";
 import urlParser from "./url-parser";
 import uuidGenerator from "./uuid-generator";
 
-export const developerTools: ToolConfig[] = [jsonFormatter, jwtDecoder, regexTester, jsonToTypes, curlConverter, urlEncoder, unixTimestamp, uuidGenerator, hashGenerator, httpStatus, envGenerator, cronBuilder, sqlFormatter, sqlToMongo, gitCommandBuilder, gitDiffViewer, urlParser, base64Converter, gitignoreGenerator, jsonPathTester, semverCalculator, htmlFormatter];
+export const developerTools: ToolConfig[] = [jsonFormatter, jwtDecoder, regexTester, jsonToTypes, curlConverter, urlEncoder, unixTimestamp, uuidGenerator, hashGenerator, httpStatus, envGenerator, cronBuilder, sqlFormatter, sqlToMongo, gitCommandBuilder, gitDiffViewer, urlParser, base64Converter, gitignoreGenerator, jsonPathTester, semverCalculator, htmlFormatter, chmodCalculator];
