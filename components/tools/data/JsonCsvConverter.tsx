@@ -12,8 +12,7 @@ import ErrorLocation from "@/components/ui/ErrorLocation";
 import FileDrop from "@/components/ui/FileDrop";
 import LabelledControl from "@/components/ui/LabelledControl";
 import SegmentedControl from "@/components/ui/SegmentedControl";
-import TablePreview from "@/components/ui/TablePreview";
-import ResultNotices from "@/components/ui/ResultNotices";
+import TabularOutput, { type TabularView } from "@/components/ui/TabularOutput";
 import { readTextFile } from "@/lib/files/text-file";
 import { useWorkerJob } from "@/lib/hooks/useWorkerJob";
 import {
@@ -117,7 +116,7 @@ export default function JsonCsvConverter() {
   const [indent, setIndent] = useState<JsonIndent>("2");
   const [writeOptions, setWriteOptions] = useState<JsonToCsvOptions>(DEFAULT_JSON_TO_CSV);
   const [bom, setBom] = useState(false);
-  const [view, setView] = useState<"text" | "table">("text");
+  const [view, setView] = useState<TabularView>("text");
   const [fileBase, setFileBase] = useState<string | null>(null);
   const [fileError, setFileError] = useState<string>();
 
@@ -290,8 +289,8 @@ interface ConversionResultProps {
   inputType: string;
   inputText: string;
   inputRef: React.RefObject<HTMLTextAreaElement>;
-  view: "text" | "table";
-  onView: (view: "text" | "table") => void;
+  view: TabularView;
+  onView: (view: TabularView) => void;
 }
 
 function ConversionResult({ state, result, inputType, inputText, inputRef, view, onView }: ConversionResultProps) {
@@ -325,26 +324,21 @@ function ConversionResult({ state, result, inputType, inputText, inputRef, view,
   const toCsv = result.direction === "json-to-csv";
   const { table } = result;
   const delimiter: Delimiter | null = "delimiter" in result ? result.delimiter : null;
-  const views = [
-    { id: "text", label: toCsv ? "CSV" : "JSON" },
-    { id: "table", label: "Table" },
-  ] as const;
-
   return (
-    <>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 font-[family-name:var(--font-ui)]">
-        <p className="text-xs tabular-nums text-[color:var(--text-muted)]">
+    <TabularOutput
+      summary={
+        <>
           {count(table.rowCount, "row", "rows")} × {count(table.columnCount, "column", "columns")}
           {delimiter && <> · {delimiterNames[delimiter]}-separated</>}
-        </p>
-        <SegmentedControl label="Output view" options={views} value={view} onChange={onView} />
-      </div>
-      <ResultNotices notices={result.notices} />
-      {view === "table" ? (
-        <TablePreview header={table.header} rows={table.rows} rowCount={table.rowCount} columnCount={table.columnCount} label={toCsv ? "CSV output" : "CSV input"} />
-      ) : (
-        <pre className="whitespace-pre [tab-size:8]">{result.output}</pre>
-      )}
-    </>
+        </>
+      }
+      notices={result.notices}
+      textLabel={toCsv ? "CSV" : "JSON"}
+      text={result.output}
+      table={table}
+      tableLabel={toCsv ? "CSV output" : "CSV input"}
+      view={view}
+      onView={onView}
+    />
   );
 }

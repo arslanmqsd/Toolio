@@ -139,6 +139,35 @@ export function detectDelimiter(text: string): Delimiter {
   return best;
 }
 
+/**
+ * Names columns from a header: an empty name becomes column_N and a repeat gets _2, _3 and so on.
+ * `add` names a column added later, past the header.
+ */
+export function columnNamer(header: string[]) {
+  const names: string[] = [];
+  const used = new Set<string>();
+  const repeated = new Set<string>();
+  const add = (wanted: string) => {
+    let name = wanted === "" ? `column_${names.length + 1}` : wanted;
+    if (used.has(name)) {
+      repeated.add(name);
+      let k = 2;
+      while (used.has(`${name}_${k}`)) k++;
+      name = `${name}_${k}`;
+    }
+    used.add(name);
+    names.push(name);
+  };
+  header.forEach(add);
+  const unnamed = header.filter((h) => h === "").length;
+  /** What was renamed. Repeats are a warning when they hide which column is which, info when renaming is the point. */
+  const notices = (repeats: Notice["kind"]): Notice[] => [
+    ...(repeated.size > 0 ? [{ kind: repeats, message: `${some([...repeated])} ${repeated.size === 1 ? "appears" : "appear"} more than once in the header, so the repeats get _2, _3 and so on.` }] : []),
+    ...(unnamed > 0 ? [{ kind: "info" as const, message: `${plural(unnamed, "column has", "columns have")} no name in the header, so ${unnamed === 1 ? "it's" : "they're"} named by position, like column_${header.indexOf("") + 1}.` }] : []),
+  ];
+  return { names, add, notices };
+}
+
 /** The most fields in any row. A loop, since spreading a million rows into Math.max overflows the stack. */
 const widest = (rows: string[][], start = 0) => rows.reduce((max, r) => Math.max(max, r.length), start);
 
@@ -192,29 +221,13 @@ export function csvToJson(text: string, options: CsvToJsonOptions): CsvToJsonRes
     const items = dataRows.map((r): JsonNode => ({ type: "array", items: r.map(value) }));
     output = printJson({ type: "array", items }, { indent: options.indent, sortKeys: false });
   } else {
-    const names: string[] = [];
-    const used = new Set<string>();
-    const repeated = new Set<string>();
-    const nameColumn = (wanted: string, index: number) => {
-      let name = wanted === "" ? `column_${index + 1}` : wanted;
-      if (used.has(name)) {
-        repeated.add(name);
-        let k = 2;
-        while (used.has(`${name}_${k}`)) k++;
-        name = `${name}_${k}`;
-      }
-      used.add(name);
-      names.push(name);
-    };
-    header.forEach((h, i) => nameColumn(h, i));
-    const unnamed = header.filter((h) => h === "").length;
-    if (repeated.size > 0) notices.push({ kind: "warning", message: `${some([...repeated])} ${repeated.size === 1 ? "appears" : "appear"} more than once in the header, so the repeats get _2, _3 and so on.` });
-    if (unnamed > 0) notices.push({ kind: "info", message: `${plural(unnamed, "column has", "columns have")} no name in the header, so ${unnamed === 1 ? "it's" : "they're"} named by position, like column_${header.indexOf("") + 1}.` });
+    const { names, add: nameColumn, notices: headerNotices } = columnNamer(header);
+    notices.push(...headerNotices("warning"));
 
     const ragged: string[] = [];
     dataRows.forEach((r, i) => {
       if (r.length !== header.length) ragged.push(`line ${dataLines[i]} has ${plural(r.length, "field", "fields")}`);
-      while (names.length < r.length) nameColumn("", names.length);
+      while (names.length < r.length) nameColumn("");
     });
     if (ragged.length > 0) {
       const text = some(ragged);
@@ -288,6 +301,19 @@ export type JsonToCsvResult = { ok: true; output: string; table: TablePreview; n
 const FORMULA_START = /^[=+\-@\t\r]/;
 const PLAIN_NUMBER = /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/;
 
+/** Whether a spreadsheet would run this cell as a formula. */
+export const isFormulaCell = (cell: string) => FORMULA_START.test(cell) && !PLAIN_NUMBER.test(cell);
+
+/** What to say about cells that start like a formula: escaped with ', or a warning that they would run. */
+export function formulaNotice(count: number, escaped: boolean): Notice {
+  return escaped
+    ? { kind: "info", message: `${plural(count, "cell starts", "cells start")} with ', so a spreadsheet opens ${count === 1 ? "it" : "them"} as text rather than running a formula.` }
+    : {
+        kind: "warning",
+        message: `${plural(count, "cell starts", "cells start")} with =, +, -, @ or a tab, so Excel or Sheets would run ${count === 1 ? "it" : "them"} as a formula. If this data came from someone else, turn on escaping before opening it in a spreadsheet.`,
+      };
+}
+
 function cellText(node: JsonNode): string {
   if (node.type === "string") return JSON.parse(node.raw) as string;
   if (node.type === "null") return "";
@@ -295,7 +321,8 @@ function cellText(node: JsonNode): string {
   return node.raw;
 }
 
-function writeCsv(rows: string[][], delimiter: Delimiter, crlf: boolean): string {
+/** Quotes only the fields that need it. */
+export function writeCsv(rows: string[][], delimiter: Delimiter, crlf: boolean): string {
   const newline = crlf ? "\r\n" : "\n";
   const field = (cell: string) => (cell.includes(delimiter) || /["\n\r]/.test(cell) ? `"${cell.replace(/"/g, '""')}"` : cell);
   return rows.map((r) => r.map(field).join(delimiter) + newline).join("");
@@ -359,22 +386,13 @@ export function jsonToCsv(text: string, options: JsonToCsvOptions): JsonToCsvRes
   let formulas = 0;
   const escape = (r: string[]) =>
     r.map((cell) => {
-      if (!FORMULA_START.test(cell) || PLAIN_NUMBER.test(cell)) return cell;
+      if (!isFormulaCell(cell)) return cell;
       formulas++;
       return options.escapeFormulas ? `'${cell}` : cell;
     });
   const written = [...(header ? [header] : []), ...body].map(escape);
   const writtenBody = header ? written.slice(1) : written;
-  if (formulas > 0) {
-    notices.push(
-      options.escapeFormulas
-        ? { kind: "info", message: `${plural(formulas, "cell starts", "cells start")} with ', so a spreadsheet opens ${formulas === 1 ? "it" : "them"} as text rather than running a formula.` }
-        : {
-            kind: "warning",
-            message: `${plural(formulas, "cell starts", "cells start")} with =, +, -, @ or a tab, so Excel or Sheets would run ${formulas === 1 ? "it" : "them"} as a formula. If this data came from someone else, turn on escaping before opening it in a spreadsheet.`,
-          },
-    );
-  }
+  if (formulas > 0) notices.push(formulaNotice(formulas, options.escapeFormulas));
 
   return {
     ok: true,
