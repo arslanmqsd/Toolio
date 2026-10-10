@@ -3,14 +3,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   DEFAULT_LOREM,
   LOREM_LIMITS,
-  createRng,
   generate,
   generateParagraph,
   generateSentence,
   generateWords,
-  randomSeed,
   type LoremOptions,
 } from "./lorem-ipsum";
+import { createRng, randomSeed } from "@/lib/random/seeded";
 import { LOREM_OPENING, LOREM_WORDS } from "./lorem-words";
 
 const gen = (options: Partial<LoremOptions> = {}) => generate({ ...DEFAULT_LOREM, ...options });
@@ -24,21 +23,6 @@ describe("lorem-words", () => {
     expect(LOREM_WORDS.length).toBeGreaterThanOrEqual(150);
     expect(LOREM_WORDS.length).toBeLessThanOrEqual(200);
     expect(LOREM_WORDS.every((w) => /^[a-z]+$/.test(w))).toBe(true);
-  });
-});
-
-describe("createRng", () => {
-  it("is reproducible from a seed and stays in [0, 1)", () => {
-    const a = createRng(42);
-    const b = createRng(42);
-    const values = Array.from({ length: 100 }, () => a());
-    expect(values).toEqual(Array.from({ length: 100 }, () => b()));
-    expect(values.every((v) => v >= 0 && v < 1)).toBe(true);
-  });
-
-  it("picks a 32-bit seed", () => {
-    const seed = randomSeed();
-    expect(Number.isInteger(seed) && seed >= 0 && seed <= 0xffffffff).toBe(true);
   });
 });
 

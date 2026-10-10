@@ -9,15 +9,15 @@ import Checkbox from "@/components/ui/Checkbox";
 import { CodeInput } from "@/components/ui/CodeField";
 import Field from "@/components/ui/Field";
 import ResultNotices from "@/components/ui/ResultNotices";
+import SeedField from "@/components/ui/SeedField";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import Select from "@/components/ui/Select";
 import { plural } from "@/lib/notices";
+import { MAX_SEED, parseSeed, randomSeed } from "@/lib/random/seeded";
 import {
   DEFAULT_LOREM,
   LOREM_LIMITS,
-  MAX_SEED,
   generate,
-  randomSeed,
   unitNames,
   type LoremFormat,
   type LoremUnit,
@@ -58,8 +58,9 @@ export default function LoremIpsumGenerator() {
 
   const count = Number(countText);
   const countValid = /^\s*\d+\s*$/.test(countText);
-  const seed = Number(seedText);
-  const seedValid = /^\s*\d+\s*$/.test(seedText) && seed <= MAX_SEED;
+  const parsedSeed = parseSeed(seedText);
+  const seedValid = parsedSeed !== null;
+  const seed = parsedSeed ?? 0;
 
   const result = useMemo(
     () => (countValid && seedValid ? generate({ unit, count, startWithLorem, format, seed }) : null),
@@ -126,19 +127,7 @@ export default function LoremIpsumGenerator() {
           <details className="text-sm" open={!seedValid || undefined}>
             <summary className="cursor-pointer font-medium">Advanced</summary>
             <div className="mt-3">
-              <Field label="Seed" htmlFor="lorem-seed" help="The same seed and options always make the same text.">
-                <CodeInput
-                  id="lorem-seed"
-                  inputMode="numeric"
-                  autoComplete="off"
-                  spellCheck={false}
-                  value={seedText}
-                  onChange={(e) => setSeedText(e.target.value)}
-                  invalid={!seedValid}
-                  aria-describedby={seedValid ? undefined : SEED_ERROR_ID}
-                  className="max-w-48"
-                />
-              </Field>
+              <SeedField id="lorem-seed" value={seedText} onChange={setSeedText} errorId={SEED_ERROR_ID} />
             </div>
           </details>
 
