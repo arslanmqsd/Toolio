@@ -8,6 +8,8 @@ describe("search", () => {
   it.each([
     ["Convert this JSON to TypeScript", "json-to-types"],
     ["json to go struct", "json-to-types"],
+    ["json to zod", "json-to-types"],
+    ["zod schema", "json-to-types"],
     ["python", "json-to-types"],
     ["typscript", "json-to-types"],
     ["Decode a JWT", "jwt-decoder"],

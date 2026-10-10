@@ -1,4 +1,4 @@
-export type Language = "typescript" | "python" | "go";
+export type Language = "typescript" | "python" | "go" | "zod";
 
 type Primitive = "string" | "integer" | "number" | "boolean" | "null";
 
@@ -333,6 +333,62 @@ function emitGo(root: JType, rootName: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// Zod
+// ---------------------------------------------------------------------------
+
+function emitZod(root: JType, rootName: string): string {
+  const names = nameObjects(root, rootName, false);
+
+  function zod(t: JType): string {
+    switch (t.kind) {
+      case "string":
+        return "z.string()";
+      case "integer":
+        return "z.number().int()";
+      case "number":
+        return "z.number()";
+      case "boolean":
+        return "z.boolean()";
+      case "null":
+        return "z.null()";
+      case "unknown":
+        return "z.unknown()";
+      case "array":
+        return `z.array(${zod(t.items)})`;
+      case "object":
+        return `${names.get(t)}Schema`;
+      case "union": {
+        const nonNull = t.types.filter((m) => m.kind !== "null");
+        const inner = nonNull.length === 1 ? zod(nonNull[0]) : `z.union([${nonNull.map(zod).join(", ")}])`;
+        return nonNull.length < t.types.length ? `${inner}.nullable()` : inner;
+      }
+    }
+  }
+
+  function fieldSchema({ type, optional }: Field): string {
+    const schema = zod(type);
+    if (!optional) return schema;
+    // A key that can be missing or null takes undefined and null both.
+    return schema.endsWith(".nullable()") ? `${schema.slice(0, -".nullable()".length)}.nullish()` : `${schema}.optional()`;
+  }
+
+  const schema = (name: string, value: string) => `export const ${name}Schema = ${value};\nexport type ${name} = z.infer<typeof ${name}Schema>;`;
+
+  // A schema is a value, so it must be declared before it is used: emit children first.
+  const blocks: string[] = [];
+  for (const [obj, name] of [...names].reverse()) {
+    const lines = [...obj.fields].map(([key, field]) => {
+      // A literal "__proto__" key would set the prototype instead of adding a property.
+      const prop = key === "__proto__" ? '["__proto__"]' : /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(key) ? key : JSON.stringify(key);
+      return `  ${prop}: ${fieldSchema(field)},`;
+    });
+    blocks.push(schema(name, lines.length ? `z.object({\n${lines.join("\n")}\n})` : "z.object({})"));
+  }
+  if (root.kind !== "object") blocks.push(schema(pascalCase(rootName), zod(root)));
+  return `import { z } from "zod";\n\n${blocks.join("\n\n")}\n`;
+}
+
+// ---------------------------------------------------------------------------
 // Entry point
 // ---------------------------------------------------------------------------
 
@@ -342,6 +398,7 @@ const emitters: Record<Language, (root: JType, rootName: string) => string> = {
   typescript: emitTypeScript,
   python: emitPython,
   go: emitGo,
+  zod: emitZod,
 };
 
 export function generateTypes(json: string, language: Language, rootName = "Root"): GenerateResult {

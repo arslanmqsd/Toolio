@@ -185,6 +185,69 @@ describe("Go", () => {
   });
 });
 
+describe("Zod", () => {
+  it("emits schemas children-first, each with its inferred type", () => {
+    expect(gen({ id: 1, score: 1.5, ok: true, tags: ["a"], owner: { name: "x" } }, "zod")).toBe(
+      [
+        'import { z } from "zod";',
+        "",
+        "export const OwnerSchema = z.object({",
+        "  name: z.string(),",
+        "});",
+        "export type Owner = z.infer<typeof OwnerSchema>;",
+        "",
+        "export const RootSchema = z.object({",
+        "  id: z.number().int(),",
+        "  score: z.number(),",
+        "  ok: z.boolean(),",
+        "  tags: z.array(z.string()),",
+        "  owner: OwnerSchema,",
+        "});",
+        "export type Root = z.infer<typeof RootSchema>;",
+        "",
+      ].join("\n"),
+    );
+  });
+
+  it("uses optional for missing keys, nullable for nulls, nullish for both", () => {
+    const code = gen({ rows: [{ a: null, b: 1, c: null, o: { x: 1 } }, { a: "x", c: "y", o: null }, { a: "z", b: 2, o: { x: 2 } }] }, "zod");
+    expect(code).toContain(
+      ["export const RowSchema = z.object({", "  a: z.string().nullable(),", "  b: z.number().int().optional(),", "  c: z.string().nullish(),", "  o: OSchema.nullable(),", "});"].join("\n"),
+    );
+  });
+
+  it("writes unions, nulls, unknowns and nested arrays", () => {
+    const code = gen({ v: [1, "a", null], n: null, e: [], grid: [[1.5]] }, "zod");
+    expect(code).toContain(
+      "  v: z.array(z.union([z.number().int(), z.string()]).nullable()),\n  n: z.null(),\n  e: z.array(z.unknown()),\n  grid: z.array(z.array(z.number())),",
+    );
+  });
+
+  it("quotes keys that aren't identifiers, and keeps __proto__ a plain key", () => {
+    expect(gen({ "first-name": "a", "2x": 1, $ok: 1 }, "zod")).toContain('  "first-name": z.string(),\n  "2x": z.number().int(),\n  $ok: z.number().int(),');
+    const result = generateTypes('{"__proto__": "x"}', "zod");
+    expect(result.ok && result.code).toContain('  ["__proto__"]: z.string(),');
+  });
+
+  it("emits a schema for non-object roots, after the schemas it uses, and empty objects", () => {
+    expect(gen([{ id: 1 }], "zod", "users")).toBe(
+      [
+        'import { z } from "zod";',
+        "",
+        "export const UserSchema = z.object({",
+        "  id: z.number().int(),",
+        "});",
+        "export type User = z.infer<typeof UserSchema>;",
+        "",
+        "export const UsersSchema = z.array(UserSchema);",
+        "export type Users = z.infer<typeof UsersSchema>;",
+        "",
+      ].join("\n"),
+    );
+    expect(gen({}, "zod")).toContain("export const RootSchema = z.object({});");
+  });
+});
+
 describe("errors", () => {
   it("reports empty and invalid input", () => {
     expect(generateTypes("  ", "typescript")).toEqual({ ok: false, error: "Input is empty. Paste some JSON." });
