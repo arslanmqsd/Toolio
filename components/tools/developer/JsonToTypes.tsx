@@ -32,6 +32,7 @@ const LANGUAGES: { id: Language; label: string }[] = [
   { id: "typescript", label: "TypeScript" },
   { id: "python", label: "Python" },
   { id: "go", label: "Go" },
+  { id: "zod", label: "Zod" },
 ];
 
 export default function JsonToTypes() {
