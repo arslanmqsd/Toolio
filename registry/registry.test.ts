@@ -20,6 +20,7 @@ describe("sendTargets", () => {
       "hash-generator",
       "regex-tester",
       "semver-calculator",
+      "slug-generator",
       "text-diff-checker",
     ]);
   });
