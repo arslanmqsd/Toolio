@@ -8,6 +8,7 @@ import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import { CodeInput, CodeTextArea } from "@/components/ui/CodeField";
 import ErrorCaret from "@/components/ui/ErrorCaret";
+import ErrorLocation from "@/components/ui/ErrorLocation";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import { useWorkerJob, type WorkerJobState } from "@/lib/hooks/useWorkerJob";
 import { MAX_LISTED_MATCHES, type JsonPathOutcome } from "@/lib/tools/developer/json-path";
@@ -185,13 +186,7 @@ function Results({ state, text, path, view, onViewChange, onShowJson, onShowPath
     return (
       <Alert id="jsonpath-json-error" title="Invalid JSON">
         <p>{error.message}</p>
-        <p className="mt-3 text-xs text-[color:var(--text-muted)]">
-          Line {error.line}, column {error.column}
-        </p>
-        <ErrorCaret line={text.split("\n")[error.line - 1] ?? ""} column={error.column} className="mt-2" />
-        <Button size="sm" onClick={() => onShowJson(error.offset)} className="mt-3">
-          Show in JSON
-        </Button>
+        <ErrorLocation source={text} line={error.line} column={error.column} onShow={() => onShowJson(error.offset)} showLabel="Show in JSON" />
       </Alert>
     );
   }

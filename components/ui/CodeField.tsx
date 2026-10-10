@@ -1,8 +1,11 @@
 import { forwardRef, type InputHTMLAttributes, type TextareaHTMLAttributes } from "react";
 
-/** Monospace field styling, red when the content is invalid. */
+/**
+ * Monospace field styling, red when the content is invalid. Ligatures are off so what's typed shows
+ * as typed: "-->" or "!=" drawn as one glyph would hide the very mistakes a tool points out.
+ */
 export function codeFieldClass(invalid = false): string {
-  return `w-full rounded-md border bg-transparent font-[family-name:var(--font-mono)] text-sm focus:outline focus:outline-1 ${
+  return `w-full rounded-md border bg-transparent font-[family-name:var(--font-mono)] text-sm [font-variant-ligatures:none] focus:outline focus:outline-1 ${
     invalid
       ? "border-[color:var(--error)] focus:outline-[color:var(--error)]"
       : "border-[color:var(--border)] focus:outline-[color:var(--accent)]"

@@ -7,15 +7,15 @@ import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
 import { CodeTextArea, selectLine } from "@/components/ui/CodeField";
-import ErrorCaret from "@/components/ui/ErrorCaret";
+import ErrorLocation from "@/components/ui/ErrorLocation";
 import FileDrop from "@/components/ui/FileDrop";
 import HtmlPreview from "@/components/ui/HtmlPreview";
 import LabelledControl from "@/components/ui/LabelledControl";
 import SegmentedControl from "@/components/ui/SegmentedControl";
-import { formatBytes } from "@/lib/format-bytes";
+import SizeSummary from "@/components/ui/SizeSummary";
 import { readTextFile } from "@/lib/files/text-file";
 import { useWorkerJob } from "@/lib/hooks/useWorkerJob";
-import type { HtmlJobResult, HtmlRequest, HtmlSizes } from "@/lib/tools/developer/html-format";
+import type { HtmlJobResult, HtmlRequest } from "@/lib/tools/developer/html-format";
 import { DEFAULT_FORMAT, DEFAULT_MINIFY, type FormatOptions, type MinifyOptions } from "@/lib/tools/developer/html-format-options";
 
 const EXAMPLE = `<!DOCTYPE html>
@@ -81,23 +81,6 @@ const ERROR_ID = "html-format-error";
 
 function createWorker() {
   return new Worker(new URL("../../../lib/tools/developer/html-format.worker.ts", import.meta.url));
-}
-
-const percentSaved = (before: number, after: number) => (before === 0 ? 0 : Math.round((1 - after / before) * 100));
-
-function SizeSummary({ sizes }: { sizes: HtmlSizes }) {
-  const saved = percentSaved(sizes.input, sizes.output);
-  return (
-    <p className="mb-4 font-[family-name:var(--font-ui)] text-xs tabular-nums text-[color:var(--text-muted)]">
-      {formatBytes(sizes.input)} → <span className="font-medium text-[color:var(--text)]">{formatBytes(sizes.output)}</span>
-      {saved > 0 && <> ({saved}% smaller)</>}
-      {saved < 0 && <> ({-saved}% larger)</>}
-      <span aria-hidden="true"> · </span>
-      <span className="whitespace-nowrap">
-        gzipped {formatBytes(sizes.inputGzip)} → {formatBytes(sizes.outputGzip)}
-      </span>
-    </p>
-  );
 }
 
 export default function HtmlFormatter() {
@@ -286,20 +269,19 @@ function CodeResult({ state, inputText, inputRef, onMinify }: CodeResultProps) {
     return (
       <Alert id={ERROR_ID} title={result.mode === "format" ? "Couldn't format this HTML" : "Couldn't minify this HTML"}>
         <p>{message}</p>
-        <p className="mt-3 text-xs text-[color:var(--text-muted)]">
-          Line {line}, column {column}
-        </p>
-        <ErrorCaret line={inputText.split("\n")[line - 1] ?? ""} column={column} className="mt-2" />
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <Button size="sm" onClick={() => selectLine(inputRef.current, line)}>
-            Show in input
-          </Button>
-          {result.mode === "format" && (
-            <Button size="sm" onClick={onMinify}>
-              Minify instead
-            </Button>
-          )}
-        </div>
+        <ErrorLocation
+          source={inputText}
+          line={line}
+          column={column}
+          onShow={() => selectLine(inputRef.current, line)}
+          actions={
+            result.mode === "format" && (
+              <Button size="sm" onClick={onMinify}>
+                Minify instead
+              </Button>
+            )
+          }
+        />
         {result.mode === "format" && (
           <p className="mt-3 text-xs text-[color:var(--text-muted)]">
             Browsers forgive tags that don&apos;t match up, but formatting needs them to. Minifying works on it as is.
