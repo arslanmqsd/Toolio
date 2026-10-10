@@ -22,5 +22,6 @@ import unixTimestamp from "./unix-timestamp";
 import urlEncoder from "./url-encoder";
 import urlParser from "./url-parser";
 import uuidGenerator from "./uuid-generator";
+import xmlFormatter from "./xml-formatter";
 
-export const developerTools: ToolConfig[] = [jsonFormatter, jwtDecoder, regexTester, jsonToTypes, curlConverter, urlEncoder, unixTimestamp, uuidGenerator, hashGenerator, httpStatus, envGenerator, cronBuilder, sqlFormatter, sqlToMongo, gitCommandBuilder, gitDiffViewer, urlParser, base64Converter, gitignoreGenerator, jsonPathTester, semverCalculator, htmlFormatter, chmodCalculator];
+export const developerTools: ToolConfig[] = [jsonFormatter, jwtDecoder, regexTester, jsonToTypes, curlConverter, urlEncoder, unixTimestamp, uuidGenerator, hashGenerator, httpStatus, envGenerator, cronBuilder, sqlFormatter, sqlToMongo, gitCommandBuilder, gitDiffViewer, urlParser, base64Converter, gitignoreGenerator, jsonPathTester, semverCalculator, htmlFormatter, chmodCalculator, xmlFormatter];

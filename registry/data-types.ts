@@ -24,6 +24,7 @@ export const DATA_TYPES = [
   "base64",
   "gitignore",
   "yaml",
+  "xml",
 ] as const;
 
 export type DataType = (typeof DATA_TYPES)[number];
@@ -54,4 +55,5 @@ export const dataTypeLabels: Record<DataType, string> = {
   base64: "Base64",
   gitignore: ".gitignore",
   yaml: "YAML",
+  xml: "XML",
 };
