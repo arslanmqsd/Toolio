@@ -13,7 +13,7 @@ import FileDrop from "@/components/ui/FileDrop";
 import LabelledControl from "@/components/ui/LabelledControl";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import TablePreview from "@/components/ui/TablePreview";
-import ThingsToCheck from "@/components/ui/ThingsToCheck";
+import ResultNotices from "@/components/ui/ResultNotices";
 import { readTextFile } from "@/lib/files/text-file";
 import { useWorkerJob } from "@/lib/hooks/useWorkerJob";
 import {
@@ -324,8 +324,6 @@ function ConversionResult({ state, result, inputType, inputText, inputRef, view,
 
   const toCsv = result.direction === "json-to-csv";
   const { table } = result;
-  const warnings = result.notices.filter((n) => n.kind === "warning").map((n) => n.message);
-  const info = result.notices.filter((n) => n.kind === "info").map((n) => n.message);
   const delimiter: Delimiter | null = "delimiter" in result ? result.delimiter : null;
   const views = [
     { id: "text", label: toCsv ? "CSV" : "JSON" },
@@ -341,14 +339,7 @@ function ConversionResult({ state, result, inputType, inputText, inputRef, view,
         </p>
         <SegmentedControl label="Output view" options={views} value={view} onChange={onView} />
       </div>
-      <ThingsToCheck items={warnings} />
-      {info.length > 0 && (
-        <ul className="mb-4 space-y-1 border-b border-[color:var(--border)] pb-4 font-[family-name:var(--font-ui)] text-xs text-[color:var(--text-muted)]">
-          {info.map((message) => (
-            <li key={message}>{message}</li>
-          ))}
-        </ul>
-      )}
+      <ResultNotices notices={result.notices} />
       {view === "table" ? (
         <TablePreview header={table.header} rows={table.rows} rowCount={table.rowCount} columnCount={table.columnCount} label={toCsv ? "CSV output" : "CSV input"} />
       ) : (

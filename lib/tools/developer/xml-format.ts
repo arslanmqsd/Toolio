@@ -32,13 +32,13 @@ export interface XmlStats {
   depth: number;
 }
 
-interface Attribute {
+export interface Attribute {
   name: string;
   /** As written, entities and all. */
   value: string;
 }
 
-interface Element {
+export interface Element {
   type: "element";
   name: string;
   attributes: Attribute[];
@@ -52,15 +52,15 @@ interface Element {
   closeStart: number;
 }
 
-interface Markup {
+export interface Markup {
   type: "text" | "cdata" | "comment" | "pi" | "doctype" | "declaration";
   /** As written, delimiters included. */
   raw: string;
 }
 
-type XmlNode = Element | Markup;
+export type XmlNode = Element | Markup;
 
-interface XmlDocument {
+export interface XmlDocument {
   source: string;
   prolog: Markup[];
   root: Element;
@@ -70,8 +70,10 @@ interface XmlDocument {
 export type ParseResult = { ok: true; document: XmlDocument; stats: XmlStats; notices: string[] } | { ok: false; error: XmlError };
 export type XmlResult = { ok: true; output: string; stats: XmlStats; notices: string[] } | { ok: false; error: XmlError };
 
-const NAME_START = ":A-Z_a-z\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u02FF\\u0370-\\u037D\\u037F-\\u1FFF\\u200C-\\u200D\\u2070-\\u218F\\u2C00-\\u2FEF\\u3001-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFFD\\u{10000}-\\u{EFFFF}";
-const NAME_CHAR = `${NAME_START}\\-.0-9\\u00B7\\u0300-\\u036F\\u203F-\\u2040`;
+const NC_NAME_START = "A-Z_a-z\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u02FF\\u0370-\\u037D\\u037F-\\u1FFF\\u200C-\\u200D\\u2070-\\u218F\\u2C00-\\u2FEF\\u3001-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFFD\\u{10000}-\\u{EFFFF}";
+const NAME_START = `:${NC_NAME_START}`;
+const NC_NAME_CHAR = `${NC_NAME_START}\\-.0-9\\u00B7\\u0300-\\u036F\\u203F-\\u2040`;
+const NAME_CHAR = `:${NC_NAME_CHAR}`;
 const NAME_SOURCE = `[${NAME_START}][${NAME_CHAR}]*`;
 const NAME = new RegExp(NAME_SOURCE, "uy");
 const REFERENCE = new RegExp(`&(?:#([0-9]+)|#x([0-9a-fA-F]+)|(${NAME_SOURCE}));`, "uy");
@@ -80,8 +82,14 @@ const NAME_START_CHAR = new RegExp(`[${NAME_START}]`, "u");
 const WHITESPACE = /[ \t\n]*/y;
 const NOT_WHITESPACE = /[^ \t\n]/;
 /** Control characters, and surrogates without their other half, can't appear in XML 1.0 at all. */
-const FORBIDDEN_CHAR = /[\0-\x08\x0B\x0C\x0E-\x1F￾￿]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+export const FORBIDDEN_CHAR = /[\0-\x08\x0B\x0C\x0E-\x1F￾￿]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
 const PREDEFINED_ENTITIES = new Set(["lt", "gt", "amp", "quot", "apos"]);
+
+/** A name without a namespace prefix: an element, attribute or prefix name. */
+export const NC_NAME = new RegExp(`^[${NC_NAME_START}][${NC_NAME_CHAR}]*$`, "u");
+/** Characters a name can't have anywhere, and ones it can't start with. */
+export const NOT_NC_NAME_CHAR = new RegExp(`[^${NC_NAME_CHAR}]`, "gu");
+export const NC_NAME_START_CHAR = new RegExp(`^[${NC_NAME_START}]`, "u");
 
 const isXmlChar = (cp: number) => cp === 0x9 || cp === 0xa || cp === 0xd || (cp >= 0x20 && cp <= 0xd7ff) || (cp >= 0xe000 && cp <= 0xfffd) || (cp >= 0x10000 && cp <= 0x10ffff);
 

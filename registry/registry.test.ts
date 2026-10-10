@@ -5,8 +5,10 @@ const ids = (tools: { id: string }[]) => tools.map((tool) => tool.id).sort();
 
 describe("sendTargets", () => {
   it("lists other tools that consume the output type", () => {
-    expect(ids(sendTargets(getToolById("jwt-decoder")!, "json"))).toEqual(["json-csv-converter", "json-formatter", "json-jsonl-converter", "json-path-tester", "json-to-types", "yaml-json-converter"]);
-    expect(ids(sendTargets(getToolById("json-formatter")!, "json"))).toEqual(["json-csv-converter", "json-jsonl-converter", "json-path-tester", "json-to-types", "yaml-json-converter"]);
+    expect(ids(sendTargets(getToolById("jwt-decoder")!, "json"))).toEqual(["json-csv-converter", "json-formatter", "json-jsonl-converter", "json-path-tester", "json-to-types", "xml-json-converter", "yaml-json-converter"]);
+    expect(ids(sendTargets(getToolById("json-formatter")!, "json"))).toEqual(["json-csv-converter", "json-jsonl-converter", "json-path-tester", "json-to-types", "xml-json-converter", "yaml-json-converter"]);
+    expect(ids(sendTargets(getToolById("xml-formatter")!, "xml"))).toEqual(["xml-json-converter"]);
+    expect(ids(sendTargets(getToolById("xml-json-converter")!, "xml"))).toEqual(["xml-formatter"]);
     expect(ids(sendTargets(getToolById("markdown-html-converter")!, "html"))).toEqual(["html-formatter"]);
     expect(ids(sendTargets(getToolById("html-formatter")!, "html"))).toEqual(["markdown-html-converter"]);
     expect(ids(sendTargets(getToolById("url-encoder")!, "text"))).toEqual([
