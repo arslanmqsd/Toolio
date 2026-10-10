@@ -1,5 +1,6 @@
 import type { ToolConfig } from "@/registry/types";
+import loremIpsumGenerator from "./lorem-ipsum-generator";
 import markdownHtmlConverter from "./markdown-html-converter";
 import textDiffChecker from "./text-diff-checker";
 
-export const textTools: ToolConfig[] = [textDiffChecker, markdownHtmlConverter];
+export const textTools: ToolConfig[] = [textDiffChecker, markdownHtmlConverter, loremIpsumGenerator];
