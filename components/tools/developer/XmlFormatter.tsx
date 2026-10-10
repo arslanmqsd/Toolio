@@ -12,6 +12,7 @@ import FileDrop from "@/components/ui/FileDrop";
 import LabelledControl from "@/components/ui/LabelledControl";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import SizeSummary from "@/components/ui/SizeSummary";
+import ThingsToCheck from "@/components/ui/ThingsToCheck";
 import ValidSummary from "@/components/ui/ValidSummary";
 import { checkTextFile } from "@/lib/files/text-file";
 import { useWorkerJob } from "@/lib/hooks/useWorkerJob";
@@ -160,7 +161,8 @@ export default function XmlFormatter() {
         label={shownMode === "minify" ? "Minified" : "Formatted"}
         copyText={empty ? undefined : output}
         outputType="xml"
-        download={{ filename: `${file?.base ?? "document"}${shownMode === "minify" ? ".min" : ""}${file?.extension ?? ".xml"}`, mimeType: "application/xml" }}
+        download={{ filename: `${file?.base ?? "document"
+          }${shownMode === "minify" ? ".min" : ""}${file?.extension ?? ".xml"}`, mimeType: "application/xml" }}
       >
         {empty ? (
           <Alert title="Nothing to check" tone="warn">
@@ -226,17 +228,7 @@ function XmlResult({ state, inputText, inputRef }: XmlResultProps) {
         <p className="text-[color:var(--text-muted)]">Checked for well-formedness only, not against a schema (XSD) or DTD.</p>
       </ValidSummary>
       <SizeSummary sizes={result.sizes} />
-      {result.notices.length > 0 && (
-        <div className="mb-4">
-          <Alert tone="warn" title={result.notices.length === 1 ? "1 thing to check" : `${result.notices.length} things to check`}>
-            <ul className="mt-1 space-y-1.5 text-xs">
-              {result.notices.map((n) => (
-                <li key={n}>{n}</li>
-              ))}
-            </ul>
-          </Alert>
-        </div>
-      )}
+      <ThingsToCheck items={result.notices} />
       <pre className={`[tab-size:4] ${result.mode === "minify" ? "whitespace-pre-wrap break-all" : "whitespace-pre"}`}>{result.output}</pre>
     </>
   );

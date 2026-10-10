@@ -25,6 +25,7 @@ export const DATA_TYPES = [
   "gitignore",
   "yaml",
   "xml",
+  "csv",
 ] as const;
 
 export type DataType = (typeof DATA_TYPES)[number];
@@ -56,4 +57,5 @@ export const dataTypeLabels: Record<DataType, string> = {
   gitignore: ".gitignore",
   yaml: "YAML",
   xml: "XML",
+  csv: "CSV",
 };

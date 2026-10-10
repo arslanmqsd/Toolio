@@ -13,6 +13,7 @@ import HtmlPreview from "@/components/ui/HtmlPreview";
 import LabelledControl from "@/components/ui/LabelledControl";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import SizeSummary from "@/components/ui/SizeSummary";
+import ThingsToCheck from "@/components/ui/ThingsToCheck";
 import { readTextFile } from "@/lib/files/text-file";
 import { useWorkerJob } from "@/lib/hooks/useWorkerJob";
 import type { HtmlJobResult, HtmlRequest } from "@/lib/tools/developer/html-format";
@@ -294,17 +295,7 @@ function CodeResult({ state, inputText, inputRef, onMinify }: CodeResultProps) {
   return (
     <>
       <SizeSummary sizes={result.sizes} />
-      {result.notices.length > 0 && (
-        <div className="mb-4">
-          <Alert tone="warn" title={result.notices.length === 1 ? "1 thing to check" : `${result.notices.length} things to check`}>
-            <ul className="mt-1 space-y-1.5 text-xs">
-              {result.notices.map((n) => (
-                <li key={n}>{n}</li>
-              ))}
-            </ul>
-          </Alert>
-        </div>
-      )}
+      <ThingsToCheck items={result.notices} />
       <pre className={`[tab-size:4] ${result.mode === "minify" ? "whitespace-pre-wrap break-all" : "whitespace-pre"}`}>{result.output}</pre>
     </>
   );
