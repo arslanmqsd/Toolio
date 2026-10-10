@@ -3,7 +3,11 @@
  * which a row number can't do once a quoted field spans lines. JSON is read with the JSON
  * Formatter's parser and written from its tree, so numbers keep their digits both ways.
  */
+import { plural, some, type Notice } from "@/lib/notices";
 import { parseJson, printJson, type JsonNode } from "@/lib/tools/developer/json-format";
+import { inferScalar, stringNode } from "./infer-scalar";
+
+export type { Notice };
 
 export type Delimiter = "," | ";" | "\t" | "|";
 
@@ -15,12 +19,6 @@ export interface CsvError {
   message: string;
   line: number;
   column: number;
-}
-
-export interface Notice {
-  /** Warnings may mean lost or misread data; info only says what was done. */
-  kind: "warning" | "info";
-  message: string;
 }
 
 /** The first rows of the table, for a preview. */
@@ -141,18 +139,8 @@ export function detectDelimiter(text: string): Delimiter {
   return best;
 }
 
-/** Lists a few examples and how many more there are: "a, b, c and 4 more". */
-function some(items: string[], shown = 3): string {
-  const listed = items.slice(0, shown);
-  const rest = items.length - listed.length;
-  if (rest > 0) return `${listed.join(", ")} and ${rest} more`;
-  return listed.length > 1 ? `${listed.slice(0, -1).join(", ")} and ${listed[listed.length - 1]}` : listed[0];
-}
-
 /** The most fields in any row. A loop, since spreading a million rows into Math.max overflows the stack. */
 const widest = (rows: string[][], start = 0) => rows.reduce((max, r) => Math.max(max, r.length), start);
-
-const plural = (count: number, one: string, many: string) => `${count.toLocaleString("en-US")} ${count === 1 ? one : many}`;
 
 export interface CsvToJsonOptions {
   delimiter: Delimiter | "auto";
@@ -170,12 +158,6 @@ export interface CsvToJsonOptions {
 export const DEFAULT_CSV_TO_JSON: CsvToJsonOptions = { delimiter: "auto", header: true, inferTypes: true, emptyAsNull: false, nest: false, indent: "  " };
 
 export type CsvToJsonResult = { ok: true; output: string; delimiter: Delimiter; table: TablePreview; notices: Notice[] } | { ok: false; error: CsvError };
-
-// Leading zeros, a leading +, exponents and thousands separators stay strings: 007, +1, 1e5 and
-// 1,000 are usually codes or text, and a spreadsheet would have written a plain number otherwise.
-const NUMBER = /^-?(0|[1-9]\d*)(\.\d+)?$/;
-
-const stringNode = (value: string): JsonNode => ({ type: "string", raw: JSON.stringify(value) });
 
 /** A tree of nested headers. Maps, so a header like __proto__ is just a key. */
 type Tree = Map<string, Tree | JsonNode>;
@@ -198,14 +180,7 @@ export function csvToJson(text: string, options: CsvToJsonOptions): CsvToJsonRes
   const bigNumbers: string[] = [];
   const value = (cell: string | undefined): JsonNode => {
     if (cell === undefined || cell === "") return options.emptyAsNull ? { type: "null", raw: "null" } : stringNode("");
-    if (!options.inferTypes) return stringNode(cell);
-    if (/^(true|false)$/i.test(cell)) return { type: "boolean", raw: cell.toLowerCase() as "true" | "false" };
-    if (/^null$/i.test(cell)) return { type: "null", raw: "null" };
-    if (NUMBER.test(cell)) {
-      if (cell.includes(".") || Number.isSafeInteger(Number(cell))) return { type: "number", raw: cell };
-      bigNumbers.push(cell);
-    }
-    return stringNode(cell);
+    return options.inferTypes ? inferScalar(cell, bigNumbers) : stringNode(cell);
   };
 
   const header = options.header ? parsed.rows[0] : null;
