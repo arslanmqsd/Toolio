@@ -7,7 +7,7 @@ import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
 import { CodeTextArea, selectLine } from "@/components/ui/CodeField";
-import ErrorCaret from "@/components/ui/ErrorCaret";
+import ErrorLocation from "@/components/ui/ErrorLocation";
 import FileDrop from "@/components/ui/FileDrop";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import { readTextFile } from "@/lib/files/text-file";
@@ -196,13 +196,7 @@ export default function YamlJsonConverter() {
         ) : !result.ok ? (
           <Alert id={ERROR_ID} title={`Invalid ${toJson ? "YAML" : "JSON"}`}>
             <p>{result.error.message}</p>
-            <p className="mt-3 text-xs text-[color:var(--text-muted)]">
-              Line {result.error.line}, column {result.error.column}
-            </p>
-            <ErrorCaret line={deferred.text.split("\n")[result.error.line - 1] ?? ""} column={result.error.column} className="mt-2" />
-            <Button size="sm" onClick={() => selectLine(inputRef.current, result.error.line)} className="mt-3">
-              Show in input
-            </Button>
+            <ErrorLocation source={deferred.text} line={result.error.line} column={result.error.column} onShow={() => selectLine(inputRef.current, result.error.line)} />
             {toJson && looksLikeJson(deferred.text) && (
               <p className="mt-3 text-xs text-[color:var(--text-muted)]">
                 This looks like JSON.{" "}

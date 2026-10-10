@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { DEFAULT_FORMAT, DEFAULT_MINIFY, formatHtml, gzipSize, minifyHtml, processHtml, type HtmlResult } from "./html-format";
+import { DEFAULT_FORMAT, DEFAULT_MINIFY, formatHtml, minifyHtml, processHtml, type HtmlResult } from "./html-format";
 
 async function ok(result: Promise<HtmlResult>) {
   const r = await result;
@@ -140,14 +140,6 @@ describe("minifyHtml", () => {
 
   it("reports HTML it can't parse with a position", async () => {
     expect(await minifyHtml("<p>ok</p>\n<a href='x>y</a>", DEFAULT_MINIFY)).toMatchObject({ ok: false, error: { line: 2, column: 1 } });
-  });
-});
-
-describe("gzipSize", () => {
-  it("measures the gzipped size in bytes", async () => {
-    const size = await gzipSize("a".repeat(10_000));
-    expect(size).toBeGreaterThan(20);
-    expect(size).toBeLessThan(100);
   });
 });
 

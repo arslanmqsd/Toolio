@@ -4,11 +4,11 @@ import { useDeferredValue, useMemo, useRef, useState } from "react";
 import { useToolInput } from "@/components/tool-shell/tool-io";
 import { InputPanel, OutputPanel } from "@/components/tool-shell/ToolPanels";
 import Alert from "@/components/ui/Alert";
-import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
 import { CodeTextArea } from "@/components/ui/CodeField";
-import ErrorCaret from "@/components/ui/ErrorCaret";
+import ErrorLocation from "@/components/ui/ErrorLocation";
 import SegmentedControl from "@/components/ui/SegmentedControl";
+import ValidSummary from "@/components/ui/ValidSummary";
 import { formatBytes } from "@/lib/format-bytes";
 import { formatJson, type JsonStats } from "@/lib/tools/developer/json-format";
 
@@ -35,7 +35,7 @@ const textSize = (text: string) => formatBytes(new TextEncoder().encode(text).le
 
 function Summary({ stats, input, output }: { stats: JsonStats; input: string; output: string }) {
   const values = Object.values(stats.counts).reduce((a, b) => a + b, 0);
-  const items = [
+  const items: [string, string][] = [
     ["Root", stats.root],
     ["Keys", stats.keys.toLocaleString()],
     ["Values", values.toLocaleString()],
@@ -43,16 +43,7 @@ function Summary({ stats, input, output }: { stats: JsonStats; input: string; ou
     ["Size", `${textSize(input)} → ${textSize(output)}`],
   ];
   return (
-    <div className="mb-4 space-y-2 border-b border-[color:var(--border)] pb-4 font-[family-name:var(--font-ui)] text-xs">
-      <p className="font-medium text-[color:var(--accent-text)]">Valid JSON</p>
-      <dl className="flex flex-wrap gap-x-6 gap-y-1">
-        {items.map(([label, value]) => (
-          <div key={label} className="flex gap-1.5">
-            <dt className="text-[color:var(--text-muted)]">{label}</dt>
-            <dd>{value}</dd>
-          </div>
-        ))}
-      </dl>
+    <ValidSummary title="Valid JSON" items={items}>
       {stats.unsafeIntegers > 0 && (
         <p className="text-[color:var(--text-muted)]">
           {stats.unsafeIntegers === 1 ? "1 number is" : `${stats.unsafeIntegers} numbers are`} too large for JavaScript
@@ -64,7 +55,7 @@ function Summary({ stats, input, output }: { stats: JsonStats; input: string; ou
           Duplicate keys: {[...new Set(stats.duplicateKeys)].join(", ")}. Most parsers keep only the last value.
         </p>
       )}
-    </div>
+    </ValidSummary>
   );
 }
 
@@ -89,7 +80,6 @@ export default function JsonFormatter() {
     input.setSelectionRange(offset, Math.min(offset + 1, text.length));
   }
 
-  const errorLine = result.ok ? "" : deferredText.split("\n")[result.error.line - 1] ?? "";
 
   return (
     <>
@@ -130,13 +120,7 @@ export default function JsonFormatter() {
             <p>{result.error.message}</p>
             {deferredText.trim() !== "" && (
               <>
-                <p className="mt-3 text-xs text-[color:var(--text-muted)]">
-                  Line {result.error.line}, column {result.error.column}
-                </p>
-                <ErrorCaret line={errorLine} column={result.error.column} className="mt-2" />
-                <Button size="sm" onClick={() => showError(result.error.offset)} className="mt-3">
-                  Show in input
-                </Button>
+                <ErrorLocation source={deferredText} line={result.error.line} column={result.error.column} onShow={() => showError(result.error.offset)} />
               </>
             )}
           </Alert>

@@ -9,6 +9,7 @@ import * as estree from "prettier/plugins/estree";
 import * as html from "prettier/plugins/html";
 import * as postcss from "prettier/plugins/postcss";
 import type { Options as MinifierOptions } from "html-minifier-terser";
+import { measureSizeChange, type SizeChange } from "@/lib/gzip-size";
 import type { FormatOptions, MinifyOptions } from "./html-format-options";
 
 export { DEFAULT_FORMAT, DEFAULT_MINIFY, type FormatOptions, type MinifyOptions } from "./html-format-options";
@@ -97,12 +98,6 @@ function parseErrorAt(text: string, message: string): HtmlError {
   };
 }
 
-/** Bytes after gzip, as a server would usually send it. */
-export async function gzipSize(text: string): Promise<number> {
-  const stream = new Response(text).body!.pipeThrough(new CompressionStream("gzip"));
-  return (await new Response(stream).arrayBuffer()).byteLength;
-}
-
 export interface HtmlRequest {
   text: string;
   mode: "format" | "minify";
@@ -110,19 +105,10 @@ export interface HtmlRequest {
   minify: MinifyOptions;
 }
 
-export interface HtmlSizes {
-  input: number;
-  output: number;
-  inputGzip: number;
-  outputGzip: number;
-}
-
-export type HtmlJobResult = (HtmlResult & { ok: false; mode: HtmlRequest["mode"] }) | (HtmlResult & { ok: true; mode: HtmlRequest["mode"]; sizes: HtmlSizes });
+export type HtmlJobResult = (HtmlResult & { ok: false; mode: HtmlRequest["mode"] }) | (HtmlResult & { ok: true; mode: HtmlRequest["mode"]; sizes: SizeChange });
 
 export async function processHtml({ text, mode, format, minify }: HtmlRequest): Promise<HtmlJobResult> {
   const result = mode === "format" ? await formatHtml(text, format) : await minifyHtml(text, minify);
   if (!result.ok) return { ...result, mode };
-  const bytes = (s: string) => new TextEncoder().encode(s).length;
-  const [inputGzip, outputGzip] = await Promise.all([gzipSize(text), gzipSize(result.output)]);
-  return { ...result, mode, sizes: { input: bytes(text), output: bytes(result.output), inputGzip, outputGzip } };
+  return { ...result, mode, sizes: await measureSizeChange(text, result.output) };
 }
