@@ -23,6 +23,7 @@ describe("sendTargets", () => {
       "semver-calculator",
       "slug-generator",
       "text-diff-checker",
+      "word-counter",
     ]);
   });
 
