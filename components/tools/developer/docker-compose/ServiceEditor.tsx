@@ -140,7 +140,7 @@ export default function ServiceEditor({ service: s, serviceNames, issues, makeId
         {issuesFor("ports")}
       </Field>
 
-      <fieldset className="space-y-2">
+      <fieldset className="min-w-0 space-y-2">
         <legend className="text-sm font-medium">Environment variables</legend>
         <p className="text-xs text-[color:var(--text-muted)]">
           Secrets are written as $&#123;NAME&#125; and read from .env; their value here only goes into .env.example, so use a placeholder.
@@ -194,7 +194,7 @@ export default function ServiceEditor({ service: s, serviceNames, issues, makeId
         </Field>
       </div>
 
-      <fieldset className="space-y-2">
+      <fieldset className="min-w-0 space-y-2">
         <legend className="text-sm font-medium">Starts after</legend>
         {others.length === 0 && missing.length === 0 ? (
           <p className="text-xs text-[color:var(--text-muted)]">Add another service to wait for it.</p>
@@ -242,7 +242,7 @@ export default function ServiceEditor({ service: s, serviceNames, issues, makeId
         {issuesFor("dependsOn")}
       </fieldset>
 
-      <fieldset className="space-y-3">
+      <fieldset className="min-w-0 space-y-3">
         <legend className="sr-only">Health check</legend>
         <Checkbox checked={h.enabled} onChange={(enabled) => setHealth({ enabled })}>
           Health check

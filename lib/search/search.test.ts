@@ -78,6 +78,8 @@ describe("search", () => {
     ["compose.yaml generator", "docker-compose-builder"],
     ["docker run command", "docker-command-builder"],
     ["docker command builder", "docker-command-builder"],
+    ["nginx config", "nginx-config-generator"],
+    ["nginx reverse proxy", "nginx-config-generator"],
     ["fake data", "fake-data-generator"],
     ["mock data for my api", "fake-data-generator"],
     ["random user generator", "fake-data-generator"],
