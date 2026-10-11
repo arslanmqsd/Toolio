@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { isFormulaCell, parseCsv } from "@/lib/tools/data/json-csv";
+import { isFormulaCell } from "@/lib/csv/write";
+import { parseCsv } from "@/lib/tools/data/json-csv";
 import { CITIES } from "./fake-data-lists";
 import { DEFAULT_FAKE_DATA, FAKE_FIELDS, MAX_FAKE_ROWS, generateFakeData, type FakeDataOptions, type FakeFieldId } from "./fake-data";
 

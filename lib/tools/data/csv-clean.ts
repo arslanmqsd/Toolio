@@ -1,19 +1,16 @@
 /**
  * Cleans a CSV file: tidies cells, drops empty and duplicate rows and empty columns, evens out
- * ragged rows and fixes header names. Reads and writes with the JSON ↔ CSV converter's CSV code.
+ * ragged rows and fixes header names. Reads with the JSON ↔ CSV converter's CSV reader.
  */
+import { formulaNotice, isFormulaCell, writeCsv, type Delimiter } from "@/lib/csv/write";
 import { plural, some, type Notice } from "@/lib/notices";
 import {
   PREVIEW_ROWS,
   columnNamer,
   delimiterNames,
   detectDelimiter,
-  formulaNotice,
-  isFormulaCell,
   parseCsv,
-  writeCsv,
   type CsvError,
-  type Delimiter,
   type TablePreview,
 } from "./json-csv";
 
