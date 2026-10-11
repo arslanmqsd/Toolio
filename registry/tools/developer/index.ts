@@ -14,6 +14,7 @@ import jsonFormatter from "./json-formatter";
 import jsonPathTester from "./json-path-tester";
 import jsonToTypes from "./json-to-types";
 import jwtDecoder from "./jwt-decoder";
+import ogPreview from "./og-preview";
 import regexTester from "./regex-tester";
 import semverCalculator from "./semver-calculator";
 import sqlFormatter from "./sql-formatter";
@@ -24,4 +25,4 @@ import urlParser from "./url-parser";
 import uuidGenerator from "./uuid-generator";
 import xmlFormatter from "./xml-formatter";
 
-export const developerTools: ToolConfig[] = [jsonFormatter, jwtDecoder, regexTester, jsonToTypes, curlConverter, urlEncoder, unixTimestamp, uuidGenerator, hashGenerator, httpStatus, envGenerator, cronBuilder, sqlFormatter, sqlToMongo, gitCommandBuilder, gitDiffViewer, urlParser, base64Converter, gitignoreGenerator, jsonPathTester, semverCalculator, htmlFormatter, chmodCalculator, xmlFormatter];
+export const developerTools: ToolConfig[] = [jsonFormatter, jwtDecoder, regexTester, jsonToTypes, curlConverter, urlEncoder, unixTimestamp, uuidGenerator, hashGenerator, httpStatus, envGenerator, cronBuilder, sqlFormatter, sqlToMongo, gitCommandBuilder, gitDiffViewer, urlParser, base64Converter, gitignoreGenerator, jsonPathTester, semverCalculator, htmlFormatter, chmodCalculator, xmlFormatter, ogPreview];
