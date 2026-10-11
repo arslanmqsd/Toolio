@@ -74,6 +74,8 @@ describe("search", () => {
     ["og preview", "og-preview"],
     ["meta tag checker", "og-preview"],
     ["twitter card", "og-preview"],
+    ["docker compose", "docker-compose-builder"],
+    ["compose.yaml generator", "docker-compose-builder"],
     ["fake data", "fake-data-generator"],
     ["mock data for my api", "fake-data-generator"],
     ["random user generator", "fake-data-generator"],
