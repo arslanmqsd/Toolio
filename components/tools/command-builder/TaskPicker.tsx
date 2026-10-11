@@ -3,22 +3,29 @@
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import Button from "@/components/ui/Button";
 import SearchInput from "@/components/ui/SearchInput";
-import { maxDanger } from "@/lib/tools/developer/git/build";
-import { GIT_CATEGORIES, TASKS } from "@/lib/tools/developer/git/catalog";
-import { searchTasks } from "@/lib/tools/developer/git/search";
-import type { GitCategoryId, Task } from "@/lib/tools/developer/git/types";
+import { maxDanger } from "@/lib/command-builder/build";
+import type { Catalog, Danger, Task } from "@/lib/command-builder/types";
 import DangerBadge from "./DangerBadge";
 
-// Worked out once: it builds every checkbox and select combination of every task.
-const DANGER = new Map(TASKS.map((task) => [task.id, maxDanger(task)]));
+// Worked out once per catalog: it builds every checkbox and select combination of every task.
+const dangers = new WeakMap<Catalog, Map<string, Danger>>();
+function dangerOf(catalog: Catalog, task: Task): Danger {
+  let map = dangers.get(catalog);
+  if (!map) {
+    map = new Map(catalog.tasks.map((t) => [t.id, maxDanger(t)]));
+    dangers.set(catalog, map);
+  }
+  return map.get(task.id) ?? "safe";
+}
 
 const chipClass = "aria-pressed:border-[color:var(--accent)] aria-pressed:text-[color:var(--accent-text)]";
 
 interface TaskPickerProps {
+  catalog: Catalog;
   query: string;
   onQueryChange: (query: string) => void;
-  category: GitCategoryId | null;
-  onCategoryChange: (category: GitCategoryId | null) => void;
+  category: string | null;
+  onCategoryChange: (category: string | null) => void;
   /** Highlighted at first, e.g. the task the user just came back from. */
   initialActiveId: string | null;
   onSelect: (task: Task) => void;
@@ -27,6 +34,7 @@ interface TaskPickerProps {
 
 /** Search box and category chips over the task list, as an ARIA combobox: arrows move, Enter picks. */
 export default function TaskPicker({
+  catalog,
   query,
   onQueryChange,
   category,
@@ -45,9 +53,9 @@ export default function TaskPicker({
   }, [focusOnMount]);
 
   const visible = useMemo(() => {
-    const tasks = searching ? searchTasks(query).map((m) => m.item) : TASKS;
+    const tasks: Task[] = searching ? catalog.search(query).map((m) => m.item) : catalog.tasks;
     return category ? tasks.filter((t) => t.category === category) : tasks;
-  }, [query, category, searching]);
+  }, [catalog, query, category, searching]);
 
   // While searching, the best match is active until the user moves.
   const found = visible.findIndex((t) => t.id === activeId);
@@ -89,12 +97,12 @@ export default function TaskPicker({
           <span className="block text-sm font-medium">{task.title}</span>
           <span className="block text-xs text-[color:var(--text-muted)]">{task.summary}</span>
         </span>
-        <DangerBadge danger={DANGER.get(task.id) ?? "safe"} />
+        <DangerBadge danger={dangerOf(catalog, task)} />
       </div>
     );
   }
 
-  const groups = searching ? null : GIT_CATEGORIES.map((c) => ({ ...c, tasks: visible.filter((t) => t.category === c.id) }));
+  const groups = searching ? null : catalog.categories.map((c) => ({ ...c, tasks: visible.filter((t) => t.category === c.id) }));
 
   return (
     <div className="space-y-4">
@@ -102,8 +110,8 @@ export default function TaskPicker({
         ref={input}
         value={query}
         onChange={onQueryChange}
-        label="Search Git tasks"
-        placeholder="undo last commit, delete branch…"
+        label={`Search ${catalog.name} tasks`}
+        placeholder={catalog.searchPlaceholder}
         role="combobox"
         aria-expanded
         aria-controls={listId}
@@ -116,7 +124,7 @@ export default function TaskPicker({
         <Button size="sm" className={chipClass} aria-pressed={category === null} onClick={() => onCategoryChange(null)}>
           All
         </Button>
-        {GIT_CATEGORIES.map((c) => (
+        {catalog.categories.map((c) => (
           <Button
             key={c.id}
             size="sm"
@@ -148,7 +156,7 @@ export default function TaskPicker({
           </Button>
         </div>
       ) : (
-        <div id={listId} role="listbox" aria-label="Git tasks" className="max-h-[32rem] space-y-1 overflow-y-auto">
+        <div id={listId} role="listbox" aria-label={`${catalog.name} tasks`} className="max-h-[32rem] space-y-1 overflow-y-auto">
           {groups
             ? groups
                 .filter((g) => g.tasks.length > 0)

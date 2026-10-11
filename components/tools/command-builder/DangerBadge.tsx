@@ -1,5 +1,5 @@
 import { TriangleAlert } from "lucide-react";
-import type { Danger } from "@/lib/tools/developer/git/types";
+import type { Danger } from "@/lib/command-builder/types";
 
 export const dangerTitles: Record<Danger, string> = {
   safe: "Safe",

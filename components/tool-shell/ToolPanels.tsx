@@ -42,10 +42,12 @@ interface OutputPanelProps {
   download?: { filename: string; mimeType: string; content?: Uint8Array<ArrayBuffer> };
   /** Span every column of the tool layout, for wide output like a diff. */
   wide?: boolean;
+  /** Called after the copy button puts `copyText` on the clipboard. */
+  onCopy?: () => void;
   children: ReactNode;
 }
 
-export function OutputPanel({ label = "Output", copyText, outputType, download, wide = false, children }: OutputPanelProps) {
+export function OutputPanel({ label = "Output", copyText, outputType, download, wide = false, onCopy, children }: OutputPanelProps) {
   return (
     <section className={`${panelClass} ${wide ? "lg:col-span-full" : ""} font-[family-name:var(--font-output)]`} aria-label={label}>
       <div className={panelHeaderClass}>
@@ -53,7 +55,7 @@ export function OutputPanel({ label = "Output", copyText, outputType, download, 
         <div className="flex items-center gap-2">
           {outputType && copyText && <SendToMenu value={copyText} type={outputType} />}
           {download && <DownloadButton content={download.content ?? copyText} filename={download.filename} mimeType={download.mimeType} />}
-          <CopyButton text={copyText} />
+          <CopyButton text={copyText} onCopied={onCopy} />
         </div>
       </div>
       <div className="min-w-0 flex-1 overflow-auto p-4 text-sm">{children}</div>
@@ -67,7 +69,7 @@ type CopyStatus = "idle" | "copied" | "failed";
  * `what` names what's copied for screen readers ("Copy" + " path $.a"), for when several copy
  * buttons share a view.
  */
-export function CopyButton({ text, what }: { text?: string; what?: string }) {
+export function CopyButton({ text, what, onCopied }: { text?: string; what?: string; onCopied?: () => void }) {
   const [status, setStatus] = useState<CopyStatus>("idle");
 
   useEffect(() => {
@@ -81,6 +83,7 @@ export function CopyButton({ text, what }: { text?: string; what?: string }) {
     try {
       await navigator.clipboard.writeText(text);
       setStatus("copied");
+      onCopied?.();
     } catch {
       setStatus("failed");
     }

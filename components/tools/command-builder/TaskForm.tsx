@@ -1,26 +1,29 @@
 "use client";
 
 import { useEffect, useRef, type ChangeEvent } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Lock } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
-import { CodeInput } from "@/components/ui/CodeField";
+import { CodeInput, CodeTextArea } from "@/components/ui/CodeField";
 import Field from "@/components/ui/Field";
 import Select from "@/components/ui/Select";
 import TextInput from "@/components/ui/TextInput";
-import { visibleFields } from "@/lib/tools/developer/git/build";
-import type { Field as TaskField, FieldValue, FieldValues, Task } from "@/lib/tools/developer/git/types";
+import { visibleFields } from "@/lib/command-builder/build";
+import type { Catalog, Field as TaskField, FieldValue, FieldValues, Task } from "@/lib/command-builder/types";
 
 interface TaskFormProps {
+  catalog: Catalog;
   task: Task;
   values: FieldValues;
   errors: Record<string, string>;
   onChange: (id: string, value: FieldValue) => void;
+  /** Replaces every value with a preset's. */
+  onPreset: (presetId: string) => void;
   onBack: () => void;
   focusOnMount: boolean;
 }
 
-export default function TaskForm({ task, values, errors, onChange, onBack, focusOnMount }: TaskFormProps) {
+export default function TaskForm({ catalog, task, values, errors, onChange, onPreset, onBack, focusOnMount }: TaskFormProps) {
   const heading = useRef<HTMLHeadingElement>(null);
 
   // Lands keyboard and screen reader users on the task they picked.
@@ -42,11 +45,26 @@ export default function TaskForm({ task, values, errors, onChange, onBack, focus
         <p className="mt-1 text-sm text-[color:var(--text-muted)]">{task.summary}</p>
       </div>
 
+      {task.presets && task.presets.length > 0 && (
+        <div role="group" aria-labelledby={`${catalog.idPrefix}-presets`} className="space-y-2">
+          <p id={`${catalog.idPrefix}-presets`} className="text-sm font-medium">
+            Start from a preset
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {task.presets.map((p) => (
+              <Button key={p.id} size="sm" onClick={() => onPreset(p.id)}>
+                {p.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {fields.length === 0 ? (
         <p className="text-sm text-[color:var(--text-muted)]">Nothing to fill in: the command is ready.</p>
       ) : (
         fields.map((field) => (
-          <FieldControl key={field.id} task={task} field={field} value={values[field.id]} error={errors[field.id]} onChange={onChange} />
+          <FieldControl key={field.id} idPrefix={catalog.idPrefix} task={task} field={field} value={values[field.id]} error={errors[field.id]} onChange={onChange} />
         ))
       )}
     </div>
@@ -54,6 +72,7 @@ export default function TaskForm({ task, values, errors, onChange, onBack, focus
 }
 
 interface FieldControlProps {
+  idPrefix: string;
   task: Task;
   field: TaskField;
   value: FieldValue | undefined;
@@ -61,8 +80,8 @@ interface FieldControlProps {
   onChange: (id: string, value: FieldValue) => void;
 }
 
-function FieldControl({ task, field, value, error, onChange }: FieldControlProps) {
-  const id = `git-${task.id}-${field.id}`;
+function FieldControl({ idPrefix, task, field, value, error, onChange }: FieldControlProps) {
+  const id = `${idPrefix}-${task.id}-${field.id}`;
   const errorId = `${id}-error`;
 
   if (field.kind === "checkbox") {
@@ -74,12 +93,17 @@ function FieldControl({ task, field, value, error, onChange }: FieldControlProps
   }
 
   const text = typeof value === "string" ? value : "";
-  const label = field.optional ? (
+  const label = (
     <>
-      {field.label} <span className="font-normal text-[color:var(--text-muted)]">(optional)</span>
+      {field.label}
+      {field.optional && <span className="font-normal text-[color:var(--text-muted)]"> (optional)</span>}
+      {field.sensitive && (
+        <span className="ml-1.5 inline-flex items-center gap-1 align-middle text-xs font-normal text-[color:var(--text-muted)]">
+          <Lock aria-hidden className="h-3 w-3" />
+          not saved to history
+        </span>
+      )}
     </>
-  ) : (
-    field.label
   );
 
   let control;
@@ -92,6 +116,18 @@ function FieldControl({ task, field, value, error, onChange }: FieldControlProps
           </option>
         ))}
       </Select>
+    );
+  } else if (field.kind === "lines") {
+    control = (
+      <CodeTextArea
+        id={id}
+        value={text}
+        placeholder={field.placeholder}
+        onChange={(e) => onChange(field.id, e.target.value)}
+        rows={Math.min(6, Math.max(2, text.split("\n").length))}
+        invalid={Boolean(error)}
+        aria-describedby={error ? errorId : undefined}
+      />
     );
   } else {
     const shared = {
