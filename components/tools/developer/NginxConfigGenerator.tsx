@@ -30,7 +30,7 @@ type Output = (typeof OUTPUTS)[number]["id"];
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <fieldset className="space-y-4 border-t border-[color:var(--border)] pt-5">
+    <fieldset className="min-w-0 space-y-4 border-t border-[color:var(--border)] pt-5">
       <legend className="pr-2 text-sm font-semibold">{title}</legend>
       {children}
     </fieldset>
