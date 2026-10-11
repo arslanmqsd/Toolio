@@ -76,6 +76,8 @@ describe("search", () => {
     ["twitter card", "og-preview"],
     ["docker compose", "docker-compose-builder"],
     ["compose.yaml generator", "docker-compose-builder"],
+    ["docker run command", "docker-command-builder"],
+    ["docker command builder", "docker-command-builder"],
     ["fake data", "fake-data-generator"],
     ["mock data for my api", "fake-data-generator"],
     ["random user generator", "fake-data-generator"],
