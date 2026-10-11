@@ -11,8 +11,8 @@ describe("sendTargets", () => {
     expect(ids(sendTargets(getToolById("json-csv-converter")!, "csv"))).toEqual(["csv-cleaner"]);
     expect(ids(sendTargets(getToolById("csv-cleaner")!, "csv"))).toEqual(["json-csv-converter"]);
     expect(ids(sendTargets(getToolById("xml-json-converter")!, "xml"))).toEqual(["xml-formatter"]);
-    expect(ids(sendTargets(getToolById("markdown-html-converter")!, "html"))).toEqual(["html-formatter"]);
-    expect(ids(sendTargets(getToolById("html-formatter")!, "html"))).toEqual(["markdown-html-converter"]);
+    expect(ids(sendTargets(getToolById("markdown-html-converter")!, "html"))).toEqual(["html-formatter", "og-preview"]);
+    expect(ids(sendTargets(getToolById("html-formatter")!, "html"))).toEqual(["markdown-html-converter", "og-preview"]);
     expect(ids(sendTargets(getToolById("url-encoder")!, "text"))).toEqual([
       "base64-converter",
       "case-converter",
