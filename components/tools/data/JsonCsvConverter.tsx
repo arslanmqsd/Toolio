@@ -13,6 +13,7 @@ import FileDrop from "@/components/ui/FileDrop";
 import LabelledControl from "@/components/ui/LabelledControl";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import TabularOutput, { type TabularView } from "@/components/ui/TabularOutput";
+import type { Delimiter } from "@/lib/csv/write";
 import { readTextFile } from "@/lib/files/text-file";
 import { useWorkerJob } from "@/lib/hooks/useWorkerJob";
 import {
@@ -20,7 +21,6 @@ import {
   DEFAULT_JSON_TO_CSV,
   delimiterNames,
   type CsvToJsonOptions,
-  type Delimiter,
   type JsonCsvJobResult,
   type JsonCsvRequest,
   type JsonToCsvOptions,

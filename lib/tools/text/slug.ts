@@ -2,8 +2,8 @@
  * URL slugs from titles, one per line: transliterated to Latin letters, split into words and joined
  * with a separator, optionally shortened at a word boundary and numbered when repeated.
  */
+import { formulaNotice, isFormulaCell, writeCsv } from "@/lib/csv/write";
 import { plural, some, type Notice } from "@/lib/notices";
-import { formulaNotice, isFormulaCell, writeCsv } from "@/lib/tools/data/json-csv";
 import { transliterate } from "./transliterate";
 
 export type SlugSeparator = "-" | "_" | ".";

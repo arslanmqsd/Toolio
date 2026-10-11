@@ -3,13 +3,12 @@
  * which a row number can't do once a quoted field spans lines. JSON is read with the JSON
  * Formatter's parser and written from its tree, so numbers keep their digits both ways.
  */
+import { formulaNotice, isFormulaCell, writeCsv, type Delimiter } from "@/lib/csv/write";
 import { plural, some, type Notice } from "@/lib/notices";
 import { parseJson, printJson, type JsonNode } from "@/lib/tools/developer/json-format";
 import { inferScalar, stringNode } from "./infer-scalar";
 
 export type { Notice };
-
-export type Delimiter = "," | ";" | "\t" | "|";
 
 export const DELIMITERS: Delimiter[] = [",", ";", "\t", "|"];
 
@@ -296,36 +295,11 @@ export const DEFAULT_JSON_TO_CSV: JsonToCsvOptions = { delimiter: ",", arrays: "
 
 export type JsonToCsvResult = { ok: true; output: string; table: TablePreview; notices: Notice[] } | { ok: false; error: CsvError };
 
-// What Excel, LibreOffice and Google Sheets treat as the start of a formula. A plain number like
-// -5 or +1.5 starts the same way but is only a number.
-const FORMULA_START = /^[=+\-@\t\r]/;
-const PLAIN_NUMBER = /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/;
-
-/** Whether a spreadsheet would run this cell as a formula. */
-export const isFormulaCell = (cell: string) => FORMULA_START.test(cell) && !PLAIN_NUMBER.test(cell);
-
-/** What to say about cells that start like a formula: escaped with ', or a warning that they would run. */
-export function formulaNotice(count: number, escaped: boolean): Notice {
-  return escaped
-    ? { kind: "info", message: `${plural(count, "cell starts", "cells start")} with ', so a spreadsheet opens ${count === 1 ? "it" : "them"} as text rather than running a formula.` }
-    : {
-        kind: "warning",
-        message: `${plural(count, "cell starts", "cells start")} with =, +, -, @ or a tab, so Excel or Sheets would run ${count === 1 ? "it" : "them"} as a formula. If this data came from someone else, turn on escaping before opening it in a spreadsheet.`,
-      };
-}
-
 function cellText(node: JsonNode): string {
   if (node.type === "string") return JSON.parse(node.raw) as string;
   if (node.type === "null") return "";
   if (node.type === "object" || node.type === "array") return printJson(node, { indent: "", sortKeys: false });
   return node.raw;
-}
-
-/** Quotes only the fields that need it. */
-export function writeCsv(rows: string[][], delimiter: Delimiter, crlf: boolean): string {
-  const newline = crlf ? "\r\n" : "\n";
-  const field = (cell: string) => (cell.includes(delimiter) || /["\n\r]/.test(cell) ? `"${cell.replace(/"/g, '""')}"` : cell);
-  return rows.map((r) => r.map(field).join(delimiter) + newline).join("");
 }
 
 export function jsonToCsv(text: string, options: JsonToCsvOptions): JsonToCsvResult {

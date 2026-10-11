@@ -3,9 +3,10 @@
  * same seed always give the same rows. Emails use domains reserved for examples and phone numbers
  * the 555-01xx range set aside for fiction, so none reach a real person.
  */
+import { writeCsv } from "@/lib/csv/write";
 import { plural, type Notice } from "@/lib/notices";
 import { between, createRng, pick, type Rng } from "@/lib/random/seeded";
-import { PREVIEW_ROWS, writeCsv, type TablePreview } from "./json-csv";
+import { PREVIEW_ROWS, type TablePreview } from "./json-csv";
 import { CITIES, COMPANY_SUFFIXES, COMPANY_WORDS, EMAIL_DOMAINS, FIRST_NAMES, JOB_TITLES, LAST_NAMES, STREET_NAMES, STREET_TYPES } from "./fake-data-lists";
 
 export const FAKE_FIELDS = [
