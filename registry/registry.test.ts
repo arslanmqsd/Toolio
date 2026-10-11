@@ -15,6 +15,7 @@ describe("sendTargets", () => {
     expect(ids(sendTargets(getToolById("html-formatter")!, "html"))).toEqual(["markdown-html-converter"]);
     expect(ids(sendTargets(getToolById("url-encoder")!, "text"))).toEqual([
       "base64-converter",
+      "case-converter",
       "git-diff-viewer",
       "gitignore-generator",
       "hash-generator",
