@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bestUnit, convert, pow, formatBest, formatRatio, parseAmount, parseSize, parseUnit, unitById, UNITS, type Ratio } from "./data-size";
+import { bestUnit, convert, formatTransferTime, parseSpeed, pow, transferSeconds, formatBest, formatRatio, parseAmount, parseSize, parseUnit, unitById, UNITS, type Ratio } from "./data-size";
 
 const B = unitById("B")!;
 const to = (text: string, unit: string, decimals: number | "exact" = "exact") => {
@@ -111,5 +111,48 @@ describe("bestUnit", () => {
 
   it("has a unique id per unit", () => {
     expect(new Set(UNITS.map((u) => u.id)).size).toBe(UNITS.length);
+  });
+});
+
+describe("parseSpeed", () => {
+  const mbps = (text: string) => {
+    const s = parseSpeed(text);
+    return s.ok ? formatRatio(convert(s.bitsPerSecond, unitById("Mbit")!), "exact").text : s.error;
+  };
+
+  it("reads bits and bytes a second", () => {
+    expect(mbps("100 Mbps")).toBe("100");
+    expect(mbps("100")).toBe("100");
+    expect(mbps("12.5 MB/s")).toBe("100");
+    expect(mbps("12.5 MBps")).toBe("100");
+    expect(mbps("1 Gbit/s")).toBe("1,000");
+    expect(mbps("1 Gb/sec")).toBe("1,000");
+  });
+
+  it("rejects empty and zero speeds", () => {
+    expect(mbps(" ")).toBe("Enter a speed, like 100 Mbps or 12.5 MB/s.");
+    expect(mbps("0 Mbps")).toBe("The speed must be more than 0.");
+  });
+});
+
+describe("transfer time", () => {
+  it("divides the size by the speed", () => {
+    const size = parseSize("4 GB", B);
+    const speed = parseSpeed("100 Mbps");
+    if (!size.ok || !speed.ok) throw new Error();
+    expect(transferSeconds(size.bits, speed.bitsPerSecond)).toBe(320);
+  });
+
+  it("shows the two largest parts", () => {
+    expect(formatTransferTime(0)).toBe("0 s");
+    expect(formatTransferTime(0.001)).toBe("under 0.01 s");
+    expect(formatTransferTime(0.0834)).toBe("0.083 s");
+    expect(formatTransferTime(5.33)).toBe("5.3 s");
+    expect(formatTransferTime(45.4)).toBe("45 s");
+    expect(formatTransferTime(320)).toBe("5 min 20 s");
+    expect(formatTransferTime(3600)).toBe("1 h");
+    expect(formatTransferTime(3661)).toBe("1 h 1 min");
+    expect(formatTransferTime(90000)).toBe("1 day 1 h");
+    expect(formatTransferTime(86400 * 3 + 60)).toBe("3 days");
   });
 });

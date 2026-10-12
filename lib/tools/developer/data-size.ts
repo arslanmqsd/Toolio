@@ -188,3 +188,43 @@ export function formatBest(bits: Ratio, system: "decimal" | "binary", decimals =
   const unit = bestUnit(bits, system);
   return `${formatRatio(convert(bits, unit), decimals).text} ${unit.id}`;
 }
+
+export type SpeedResult = { ok: true; bitsPerSecond: Ratio; unit: DataUnit } | { ok: false; error: string };
+
+/** Reads a transfer speed: "100 Mbps", "12.5 MB/s", "1 Gbit/s", or a bare number in Mbit/s. */
+export function parseSpeed(text: string): SpeedResult {
+  const size = text
+    .trim()
+    .replace(/\s*\/\s*s(ec)?$/i, "")
+    // MBps is megabytes a second; parseUnit reads any "bps" as bits.
+    .replace(/([KMGT]i?)Bps$/, "$1B");
+  if (!size) return { ok: false, error: "Enter a speed, like 100 Mbps or 12.5 MB/s." };
+  const parsed = parseSize(size, unitById("Mbit")!);
+  if (!parsed.ok) return { ok: false, error: parsed.error.replace("Enter a size, like 1.5 GiB or 500 MB.", "Enter a speed, like 100 Mbps or 12.5 MB/s.") };
+  if (parsed.bits.n === ZERO) return { ok: false, error: "The speed must be more than 0." };
+  return { ok: true, bitsPerSecond: parsed.bits, unit: parsed.unit };
+}
+
+/** Seconds to move `bits` at `bitsPerSecond`. */
+export const transferSeconds = (bits: Ratio, bitsPerSecond: Ratio): number => Number(bits.n * bitsPerSecond.d) / Number(bits.d * bitsPerSecond.n);
+
+/** "0.08 s", "5.3 s", "5 min 20 s", "2 h 13 min", "3 days 4 h": the two largest parts. */
+export function formatTransferTime(seconds: number): string {
+  if (seconds === 0) return "0 s";
+  if (seconds < 0.01) return "under 0.01 s";
+  if (seconds < 10) return `${Number(seconds.toPrecision(2))} s`;
+  const total = Math.round(seconds);
+  if (total < 60) return `${total} s`;
+  const parts: [number, string][] = [
+    [Math.floor(total / 86400), "days"],
+    [Math.floor(total / 3600) % 24, "h"],
+    [Math.floor(total / 60) % 60, "min"],
+    [total % 60, "s"],
+  ];
+  const first = parts.findIndex(([n]) => n > 0);
+  return parts
+    .slice(first, first + 2)
+    .filter(([n]) => n > 0)
+    .map(([n, unit]) => `${n.toLocaleString("en-US")} ${unit === "days" && n === 1 ? "day" : unit}`)
+    .join(" ");
+}
