@@ -3,6 +3,7 @@ import base64Converter from "./base64-converter";
 import chmodCalculator from "./chmod-calculator";
 import cronBuilder from "./cron-builder";
 import curlConverter from "./curl-converter";
+import dataSizeConverter from "./data-size-converter";
 import dockerCommandBuilder from "./docker-command-builder";
 import dockerComposeBuilder from "./docker-compose-builder";
 import envGenerator from "./env-generator";
@@ -28,4 +29,4 @@ import urlParser from "./url-parser";
 import uuidGenerator from "./uuid-generator";
 import xmlFormatter from "./xml-formatter";
 
-export const developerTools: ToolConfig[] = [jsonFormatter, jwtDecoder, regexTester, jsonToTypes, curlConverter, urlEncoder, unixTimestamp, uuidGenerator, hashGenerator, httpStatus, envGenerator, cronBuilder, sqlFormatter, sqlToMongo, gitCommandBuilder, gitDiffViewer, urlParser, base64Converter, gitignoreGenerator, jsonPathTester, semverCalculator, htmlFormatter, chmodCalculator, xmlFormatter, ogPreview, dockerComposeBuilder, dockerCommandBuilder, nginxConfigGenerator];
+export const developerTools: ToolConfig[] = [jsonFormatter, jwtDecoder, regexTester, jsonToTypes, curlConverter, urlEncoder, unixTimestamp, uuidGenerator, hashGenerator, httpStatus, envGenerator, cronBuilder, sqlFormatter, sqlToMongo, gitCommandBuilder, gitDiffViewer, urlParser, base64Converter, gitignoreGenerator, jsonPathTester, semverCalculator, htmlFormatter, chmodCalculator, xmlFormatter, ogPreview, dockerComposeBuilder, dockerCommandBuilder, nginxConfigGenerator, dataSizeConverter];
