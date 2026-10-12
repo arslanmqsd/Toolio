@@ -1,9 +1,11 @@
 "use client";
 
 import { useDeferredValue, useMemo, useRef, useState } from "react";
+import { Wand2 } from "lucide-react";
 import { useToolInput } from "@/components/tool-shell/tool-io";
 import { InputPanel, OutputPanel } from "@/components/tool-shell/ToolPanels";
 import Alert from "@/components/ui/Alert";
+import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
 import { CodeTextArea } from "@/components/ui/CodeField";
 import ErrorLocation from "@/components/ui/ErrorLocation";
@@ -11,6 +13,7 @@ import SegmentedControl from "@/components/ui/SegmentedControl";
 import ValidSummary from "@/components/ui/ValidSummary";
 import { formatBytes } from "@/lib/format-bytes";
 import { formatJson, type JsonStats } from "@/lib/tools/developer/json-format";
+import { repairJson } from "@/lib/tools/developer/json-repair";
 
 const EXAMPLE =
   '{"id":9007199254740993,"name":"Toolio","tags":["json","format","validate"],"owner":{"name":"Ada Lovelace","active":true,"score":98.5},"meta":null}';
@@ -72,6 +75,7 @@ export default function JsonFormatter() {
     () => formatJson(deferredText, { indent: mode === "minify" ? "" : INDENT_STRINGS[indent], sortKeys }),
     [deferredText, mode, indent, sortKeys],
   );
+  const repair = useMemo(() => (result.ok ? null : repairJson(deferredText)), [result.ok, deferredText]);
 
   function showError(offset: number) {
     const input = inputRef.current;
@@ -79,7 +83,6 @@ export default function JsonFormatter() {
     input.focus();
     input.setSelectionRange(offset, Math.min(offset + 1, text.length));
   }
-
 
   return (
     <>
@@ -122,6 +125,14 @@ export default function JsonFormatter() {
               <>
                 <ErrorLocation source={deferredText} line={result.error.line} column={result.error.column} onShow={() => showError(result.error.offset)} />
               </>
+            )}
+            {repair && (
+              <div className="mt-3 space-y-2 text-[color:var(--text)]">
+                <p>This looks like a JavaScript object or JSON5. {repair.summary} to make it valid JSON.</p>
+                <Button size="sm" icon={Wand2} onClick={() => setText(repair.text)}>
+                  Convert to JSON
+                </Button>
+              </div>
             )}
           </Alert>
         )}
