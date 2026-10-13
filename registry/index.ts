@@ -1,5 +1,6 @@
 import { actionLabels, TOOL_ACTIONS } from "./actions";
 import { categories } from "./categories";
+import { calculatorTools } from "./tools/calculators";
 import { dataTools } from "./tools/data";
 import { developerTools } from "./tools/developer";
 import { textTools } from "./tools/text";
@@ -13,7 +14,7 @@ export { DATA_TYPES, dataTypeLabels, type DataType } from "./data-types";
 export { plannedTools, type PlannedTool } from "./planned";
 export type { ToolConfig };
 
-export const allTools: ToolConfig[] = [...developerTools, ...textTools, ...dataTools];
+export const allTools: ToolConfig[] = [...developerTools, ...textTools, ...dataTools, ...calculatorTools];
 
 const toolsByKey = new Map<string, ToolConfig>(
   allTools.map((tool) => [`${tool.category}/${tool.id}`, tool]),

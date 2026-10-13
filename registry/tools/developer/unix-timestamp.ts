@@ -19,8 +19,6 @@ const unixTimestamp: ToolConfig = {
     "seconds since 1970",
     "what time is this timestamp",
     "current unix time",
-    "time zone converter",
-    "timezone",
     "utc",
     "iso 8601",
   ],
