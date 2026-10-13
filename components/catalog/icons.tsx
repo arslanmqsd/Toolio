@@ -27,6 +27,7 @@ import {
   Fingerprint,
   GitBranch,
   Globe,
+  Globe2,
   HardDrive,
   Hash,
   Image,
@@ -107,6 +108,7 @@ const toolIcons: Record<string, LucideIcon> = {
   "git-diff-viewer": FileDiff,
   "word-counter": Type,
   "unit-converter": Ruler,
+  "time-zone-converter": Globe2,
 };
 
 interface IconTileProps {

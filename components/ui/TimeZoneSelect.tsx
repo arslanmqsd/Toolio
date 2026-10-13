@@ -15,7 +15,7 @@ interface TimeZoneSelectProps {
 }
 
 /** Zones grouped by region ("America", "Europe", …), each labelled with its current offset. */
-function groupZones(zones: string[], at: number): [string, { zone: string; label: string }[]][] {
+export function groupZones(zones: string[], at: number): [string, { zone: string; label: string }[]][] {
   const groups = new Map<string, { zone: string; label: string }[]>();
   for (const zone of zones) {
     const region = zone.includes("/") ? zone.split("/")[0] : "Other";
