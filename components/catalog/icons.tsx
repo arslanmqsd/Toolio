@@ -48,6 +48,7 @@ import {
   Tags,
   Terminal,
   Type,
+  Webhook,
   type LucideIcon,
 } from "lucide-react";
 import { tintColor } from "@/lib/category-theme-css";
@@ -109,6 +110,7 @@ const toolIcons: Record<string, LucideIcon> = {
   "word-counter": Type,
   "unit-converter": Ruler,
   "time-zone-converter": Globe2,
+  "webhook-payload-tester": Webhook,
 };
 
 interface IconTileProps {
