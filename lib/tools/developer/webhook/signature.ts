@@ -4,10 +4,14 @@
  * front), so the receiver must check the bytes exactly as they arrived.
  */
 
+import { bytesToBase64 } from "@/lib/encoding/base64";
+import { bytesToHex } from "@/lib/encoding/hex";
+import { keyBytes, type KeyFormat } from "@/lib/encoding/key-bytes";
+
 export type Scheme = "github" | "stripe" | "slack" | "shopify" | "standard" | "custom" | "none";
 export type Algorithm = "SHA-256" | "SHA-1" | "SHA-512";
 export type Encoding = "hex" | "base64";
-export type KeyFormat = "text" | "base64" | "hex";
+export type { KeyFormat };
 
 /** A webhook signed your own way: what's signed, how the result is written, and where it goes. */
 export interface CustomScheme {
@@ -126,30 +130,6 @@ export interface SignOptions {
 
 const utf8 = (text: string) => new TextEncoder().encode(text);
 
-function toHex(bytes: Uint8Array): string {
-  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
-}
-
-function toBase64(bytes: Uint8Array): string {
-  let binary = "";
-  for (const b of bytes) binary += String.fromCharCode(b);
-  return btoa(binary);
-}
-
-function fromHex(text: string): Uint8Array | null {
-  const clean = text.replace(/\s/g, "");
-  if (!clean || clean.length % 2 || /[^0-9a-f]/i.test(clean)) return null;
-  return Uint8Array.from(clean.match(/../g)!, (h) => parseInt(h, 16));
-}
-
-function fromBase64(text: string): Uint8Array | null {
-  try {
-    return Uint8Array.from(atob(text), (c) => c.charCodeAt(0));
-  } catch {
-    return null;
-  }
-}
-
 export async function hmac(key: Uint8Array, message: string, algorithm: Algorithm = "SHA-256"): Promise<Uint8Array> {
   const cryptoKey = await crypto.subtle.importKey("raw", key as BufferSource, { name: "HMAC", hash: algorithm }, false, ["sign"]);
   return new Uint8Array(await crypto.subtle.sign("HMAC", cryptoKey, utf8(message) as BufferSource));
@@ -163,17 +143,17 @@ export async function sign(o: SignOptions): Promise<SignResult> {
   if (!o.secret) return { ok: false, error: "Enter the signing secret to compute the signature." };
   switch (o.scheme) {
     case "github": {
-      const mac = toHex(await hmac(utf8(o.secret), o.body));
+      const mac = bytesToHex(await hmac(utf8(o.secret), o.body));
       return { ok: true, headers: [["X-Hub-Signature-256", `sha256=${mac}`]], signedContent: o.body };
     }
     case "stripe": {
       const content = `${o.timestamp}.${o.body}`;
-      const mac = toHex(await hmac(utf8(o.secret), content));
+      const mac = bytesToHex(await hmac(utf8(o.secret), content));
       return { ok: true, headers: [["Stripe-Signature", `t=${o.timestamp},v1=${mac}`]], signedContent: content };
     }
     case "slack": {
       const content = `v0:${o.timestamp}:${o.body}`;
-      const mac = toHex(await hmac(utf8(o.secret), content));
+      const mac = bytesToHex(await hmac(utf8(o.secret), content));
       return {
         ok: true,
         headers: [
@@ -184,15 +164,15 @@ export async function sign(o: SignOptions): Promise<SignResult> {
       };
     }
     case "shopify": {
-      const mac = toBase64(await hmac(utf8(o.secret), o.body));
+      const mac = bytesToBase64(await hmac(utf8(o.secret), o.body));
       return { ok: true, headers: [["X-Shopify-Hmac-Sha256", mac]], signedContent: o.body };
     }
     case "standard": {
-      const key = fromBase64(o.secret.replace(/^whsec_/, ""));
+      const key = keyBytes(o.secret.replace(/^whsec_/, ""), "base64");
       if (!key || key.length === 0) return { ok: false, error: "Standard Webhooks secrets are whsec_ followed by base64, like whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw." };
       if (!o.messageId.trim()) return { ok: false, error: "Enter a message id; it's part of what's signed." };
       const content = `${o.messageId}.${o.timestamp}.${o.body}`;
-      const mac = toBase64(await hmac(key, content));
+      const mac = bytesToBase64(await hmac(key, content));
       return {
         ok: true,
         headers: [
@@ -217,7 +197,7 @@ async function signCustom(o: SignOptions, c: CustomScheme): Promise<SignResult> 
   if (withId && !c.idHeader.trim()) return { ok: false, error: "Name the header that carries the id, so the receiver can rebuild what was signed." };
   if (withId && !o.messageId.trim()) return { ok: false, error: "Enter an id; it's part of what's signed." };
 
-  const key = c.keyFormat === "base64" ? fromBase64(o.secret.trim()) : c.keyFormat === "hex" ? fromHex(o.secret) : utf8(o.secret);
+  const key = keyBytes(c.keyFormat === "text" ? o.secret : o.secret.trim(), c.keyFormat);
   if (!key || key.length === 0) return { ok: false, error: `The secret isn't valid ${c.keyFormat === "hex" ? "hex" : "base64"}.` };
 
   // One pass, so a body containing "{timestamp}" stays as it is.
@@ -227,7 +207,7 @@ async function signCustom(o: SignOptions, c: CustomScheme): Promise<SignResult> 
   const headers: [string, string][] = [];
   if (withTimestamp) headers.push([c.timestampHeader.trim(), String(o.timestamp)]);
   if (withId) headers.push([c.idHeader.trim(), o.messageId]);
-  headers.push([c.header.trim(), `${c.prefix}${c.encoding === "base64" ? toBase64(bytes) : toHex(bytes)}`]);
+  headers.push([c.header.trim(), `${c.prefix}${c.encoding === "base64" ? bytesToBase64(bytes) : bytesToHex(bytes)}`]);
   return { ok: true, headers, signedContent: content };
 }
 

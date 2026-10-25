@@ -17,6 +17,7 @@ import jsonFormatter from "./json-formatter";
 import jsonPathTester from "./json-path-tester";
 import jsonToTypes from "./json-to-types";
 import jwtDecoder from "./jwt-decoder";
+import jwtGenerator from "./jwt-generator";
 import nginxConfigGenerator from "./nginx-config-generator";
 import ogPreview from "./og-preview";
 import regexTester from "./regex-tester";
@@ -30,4 +31,4 @@ import uuidGenerator from "./uuid-generator";
 import webhookPayloadTester from "./webhook-payload-tester";
 import xmlFormatter from "./xml-formatter";
 
-export const developerTools: ToolConfig[] = [jsonFormatter, jwtDecoder, regexTester, jsonToTypes, curlConverter, urlEncoder, unixTimestamp, uuidGenerator, hashGenerator, httpStatus, envGenerator, cronBuilder, sqlFormatter, sqlToMongo, gitCommandBuilder, gitDiffViewer, urlParser, base64Converter, gitignoreGenerator, jsonPathTester, semverCalculator, htmlFormatter, chmodCalculator, xmlFormatter, ogPreview, dockerComposeBuilder, dockerCommandBuilder, nginxConfigGenerator, dataSizeConverter, webhookPayloadTester];
+export const developerTools: ToolConfig[] = [jsonFormatter, jwtDecoder, jwtGenerator, regexTester, jsonToTypes, curlConverter, urlEncoder, unixTimestamp, uuidGenerator, hashGenerator, httpStatus, envGenerator, cronBuilder, sqlFormatter, sqlToMongo, gitCommandBuilder, gitDiffViewer, urlParser, base64Converter, gitignoreGenerator, jsonPathTester, semverCalculator, htmlFormatter, chmodCalculator, xmlFormatter, ogPreview, dockerComposeBuilder, dockerCommandBuilder, nginxConfigGenerator, dataSizeConverter, webhookPayloadTester];
