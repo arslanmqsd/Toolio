@@ -5,8 +5,8 @@ const ids = (tools: { id: string }[]) => tools.map((tool) => tool.id).sort();
 
 describe("sendTargets", () => {
   it("lists other tools that consume the output type", () => {
-    expect(ids(sendTargets(getToolById("jwt-decoder")!, "json"))).toEqual(["json-csv-converter", "json-formatter", "json-jsonl-converter", "json-path-tester", "json-to-types", "webhook-payload-tester", "xml-json-converter", "yaml-json-converter"]);
-    expect(ids(sendTargets(getToolById("json-formatter")!, "json"))).toEqual(["json-csv-converter", "json-jsonl-converter", "json-path-tester", "json-to-types", "webhook-payload-tester", "xml-json-converter", "yaml-json-converter"]);
+    expect(ids(sendTargets(getToolById("jwt-decoder")!, "json"))).toEqual(["json-csv-converter", "json-formatter", "json-jsonl-converter", "json-path-tester", "json-to-types", "jwt-generator", "webhook-payload-tester", "xml-json-converter", "yaml-json-converter"]);
+    expect(ids(sendTargets(getToolById("json-formatter")!, "json"))).toEqual(["json-csv-converter", "json-jsonl-converter", "json-path-tester", "json-to-types", "jwt-generator", "webhook-payload-tester", "xml-json-converter", "yaml-json-converter"]);
     expect(ids(sendTargets(getToolById("xml-formatter")!, "xml"))).toEqual(["xml-json-converter"]);
     expect(ids(sendTargets(getToolById("json-csv-converter")!, "csv"))).toEqual(["csv-cleaner"]);
     expect(ids(sendTargets(getToolById("csv-cleaner")!, "csv"))).toEqual(["json-csv-converter"]);
