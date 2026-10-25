@@ -4,7 +4,7 @@
  */
 
 export interface CleanOptions {
-  /** Drop zero-width characters, BOMs and soft hyphens; turn non-breaking and other Unicode spaces into plain spaces. */
+  /** Drop zero-width spaces, BOMs, soft hyphens and bidi marks; turn non-breaking and other Unicode spaces into plain spaces. */
   invisible: boolean;
   /** Curly quotes to straight, en and em dashes to "-", "…" to "...". */
   plainPunctuation: boolean;
@@ -27,16 +27,17 @@ export const DEFAULT_CLEAN: CleanOptions = {
   joinLines: false,
 };
 
-// Zero-width space/joiners, word joiner, BOM, soft hyphen, and bidi marks that show nothing.
-const INVISIBLE = /[​-‏⁠﻿­‪-‮⁦-⁩]/g;
+// Zero-width space, word joiner, BOM, soft hyphen and bidi marks. ZWNJ and ZWJ (U+200C/D) stay: they build emoji sequences
+// like the family emoji and shape Persian and Indic words.
+const INVISIBLE = /[\u200B\u200E\u200F\u2060\uFEFF\u00AD\u202A-\u202E\u2066-\u2069]/g;
 // No-break, en/em, thin, hair, ideographic and other spaces that look like " " but aren't.
-const ODD_SPACES = /[   -   　]/g;
+const ODD_SPACES = /[\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]/g;
 
 const PUNCTUATION: [RegExp, string][] = [
-  [/[‘’‚‛′]/g, "'"],
-  [/[“”„‟″]/g, '"'],
-  [/[–—−]/g, "-"],
-  [/…/g, "..."],
+  [/[\u2018\u2019\u201A\u201B\u2032]/g, "'"],
+  [/[\u201C\u201D\u201E\u201F\u2033]/g, '"'],
+  [/[\u2013\u2014\u2212]/g, "-"],
+  [/\u2026/g, "..."],
 ];
 
 export function cleanText(text: string, o: CleanOptions): string {

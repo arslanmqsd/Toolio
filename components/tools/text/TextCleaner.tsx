@@ -10,7 +10,7 @@ import SegmentedControl from "@/components/ui/SegmentedControl";
 import { plural } from "@/lib/notices";
 import { DEFAULT_CLEAN, cleanText, type CleanOptions } from "@/lib/tools/text/clean";
 
-const EXAMPLE = "  Copied   from a PDF,​ this text\nhas hard   wraps,  “smart quotes” and\n\n\n\nstray    blank lines.  \nstray    blank lines.  ";
+const EXAMPLE = "  Copied   from a\u00A0PDF,\u200B this text\nhas hard   wraps,  “smart quotes” and\n\n\n\nstray    blank lines.  \nstray    blank lines.  ";
 
 const BLANK_OPTIONS = [
   { id: "squeeze", label: "Squeeze to one" },
