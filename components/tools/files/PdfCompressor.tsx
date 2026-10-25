@@ -8,10 +8,13 @@ import Button from "@/components/ui/Button";
 import Field from "@/components/ui/Field";
 import FileDrop from "@/components/ui/FileDrop";
 import SegmentedControl from "@/components/ui/SegmentedControl";
+import TaskProgress from "@/components/ui/TaskProgress";
 import { formatBytes } from "@/lib/format-bytes";
 import { plural } from "@/lib/notices";
 import type { CompressProgress, CompressResult, LevelId } from "@/lib/tools/files/pdf-compress";
-import type { PdfJobMessage, PdfJobRequest } from "@/lib/tools/files/pdf-compress.worker";
+import { pdfErrorMessage } from "@/lib/tools/files/pdf-errors";
+import type { PdfCompressRequest } from "@/lib/tools/files/pdf-compress.worker";
+import { runWorkerTask } from "@/lib/worker-task";
 
 // The original, the decoded images and the new file are all in memory at once; past this, tabs (phones first) run out.
 const MAX_BYTES = 100 * 1024 * 1024;
@@ -36,11 +39,6 @@ type State = { status: "idle" } | { status: "working"; progress: CompressProgres
 
 const muted = "font-[family-name:var(--font-ui)] text-[color:var(--text-muted)]";
 
-function errorMessage(message: string): string {
-  if (/encrypt/i.test(message)) return "This PDF is password-protected. Remove the password first, then try again.";
-  return "This file couldn't be read as a PDF. It may be damaged or not a PDF at all.";
-}
-
 /** "38% smaller", or "less than 1% smaller" rather than a misleading "0%". */
 function savedLabel(before: number, after: number): string {
   const percent = Math.round((1 - after / before) * 100);
@@ -56,23 +54,24 @@ export default function PdfCompressor() {
     if (!file) return setState({ status: "idle" });
     if (file.size > MAX_BYTES) return setState({ status: "error", error: `This file is over ${formatBytes(MAX_BYTES)}, too big to process in the browser.` });
     let cancelled = false;
-    const worker = createWorker();
+    let cancelTask = () => {};
     setState({ status: "working", progress: { phase: "reading" } });
-    worker.onmessage = ({ data }: MessageEvent<PdfJobMessage>) => {
-      if (data.type === "progress") setState({ status: "working", progress: data.progress });
-      else if (data.type === "done") setState({ status: "done", result: data.result });
-      else setState({ status: "error", error: errorMessage(data.error) });
-    };
-    // Fires when the worker itself dies, usually from running out of memory on a huge file.
-    worker.onerror = () => setState({ status: "error", error: "The browser ran out of memory compressing this file. Try a smaller PDF." });
-    file.arrayBuffer().then(
-      (bytes) => !cancelled && worker.postMessage({ bytes, level } satisfies PdfJobRequest, [bytes]),
-      () => !cancelled && setState({ status: "error", error: "The browser couldn't read this file." }),
-    );
+    file
+      .arrayBuffer()
+      .then((bytes) => {
+        if (cancelled) return;
+        const task = runWorkerTask<PdfCompressRequest, CompressProgress, CompressResult>(createWorker, { bytes, level }, {
+          transfer: [bytes],
+          onProgress: (progress) => setState({ status: "working", progress }),
+        });
+        cancelTask = task.cancel;
+        return task.result.then((result) => setState({ status: "done", result }));
+      })
+      .catch((err: Error) => !cancelled && setState({ status: "error", error: pdfErrorMessage(err.message) }));
     // Changing the level, clearing the file or leaving the page stops the run in progress.
     return () => {
       cancelled = true;
-      worker.terminate();
+      cancelTask();
     };
   }, [file, level]);
 
@@ -117,7 +116,11 @@ export default function PdfCompressor() {
           {state.status === "idle" ? (
             <p className={muted}>Choose a PDF to compress it.</p>
           ) : state.status === "working" ? (
-            <Progress progress={state.progress} onCancel={() => setFile(null)} />
+            <TaskProgress
+              label={progressLabel(state.progress)}
+              value={state.progress.phase === "images" && state.progress.total > 0 ? state.progress.done / state.progress.total : undefined}
+              onCancel={() => setFile(null)}
+            />
           ) : state.status === "error" ? (
             <Alert title="Couldn't compress this PDF">{state.error}</Alert>
           ) : file && result ? (
@@ -145,26 +148,8 @@ export default function PdfCompressor() {
   );
 }
 
-function Progress({ progress, onCancel }: { progress: CompressProgress; onCancel: () => void }) {
-  const label =
-    progress.phase === "reading"
-      ? "Reading PDF…"
-      : progress.phase === "saving"
-        ? "Saving…"
-        : `Compressing image ${Math.min(progress.done + 1, progress.total)} of ${progress.total.toLocaleString("en-US")}…`;
-  return (
-    <div className={`space-y-3 ${muted}`}>
-      <p>{label}</p>
-      {/* No value while reading or saving: those steps can't report how far along they are. */}
-      <progress
-        value={progress.phase === "images" && progress.total > 0 ? progress.done / progress.total : undefined}
-        max={1}
-        aria-label="Compression progress"
-        className="h-1.5 w-full accent-[color:var(--accent)]"
-      />
-      <Button size="sm" onClick={onCancel}>
-        Cancel
-      </Button>
-    </div>
-  );
+function progressLabel(progress: CompressProgress): string {
+  if (progress.phase === "reading") return "Reading PDF…";
+  if (progress.phase === "saving") return "Saving…";
+  return `Compressing image ${Math.min(progress.done + 1, progress.total)} of ${progress.total.toLocaleString("en-US")}…`;
 }
