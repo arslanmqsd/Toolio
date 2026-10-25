@@ -51,6 +51,7 @@ import {
   Type,
   Webhook,
   type LucideIcon,
+  Eraser,
 } from "lucide-react";
 import { tintColor } from "@/lib/category-theme-css";
 import type { CategoryId } from "@/registry";
@@ -88,6 +89,7 @@ const toolIcons: Record<string, LucideIcon> = {
   "lorem-ipsum-generator": Pilcrow,
   "slug-generator": Link2,
   "case-converter": CaseSensitive,
+  "text-cleaner": Eraser,
   "og-preview": Share2,
   "docker-compose-builder": Container,
   "docker-command-builder": SquareTerminal,
