@@ -27,6 +27,8 @@ export function buildFindRegex({ find, regex, matchCase, wholeWord }: Omit<FindR
 
 export function findReplace(request: FindReplaceRequest): FindReplaceResult {
   const { text, replace, regex } = request;
+  // An empty pattern matches between every character, which no one means.
+  if (!request.find) return { output: text, count: 0 };
   const re = buildFindRegex(request);
   const count = text.match(re)?.length ?? 0;
   // Plain mode inserts the replacement as typed, so a "$" in it stays a "$".
