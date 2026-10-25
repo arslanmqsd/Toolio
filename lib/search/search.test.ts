@@ -83,6 +83,8 @@ describe("search", () => {
     ["regex replace", "find-replace"],
     ["compress pdf", "pdf-compressor"],
     ["reduce pdf size", "pdf-compressor"],
+    ["merge pdf", "pdf-merger"],
+    ["combine pdf files", "pdf-merger"],
     ["og preview", "og-preview"],
     ["meta tag checker", "og-preview"],
     ["twitter card", "og-preview"],
