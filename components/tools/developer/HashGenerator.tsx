@@ -1,17 +1,15 @@
 "use client";
 
 import { useDeferredValue, useEffect, useState } from "react";
-import { X } from "lucide-react";
 import { useToolInput } from "@/components/tool-shell/tool-io";
 import { InputPanel, OutputPanel } from "@/components/tool-shell/ToolPanels";
 import Alert from "@/components/ui/Alert";
-import Button from "@/components/ui/Button";
 import { CodeInput, CodeTextArea } from "@/components/ui/CodeField";
 import Field from "@/components/ui/Field";
 import FileDrop from "@/components/ui/FileDrop";
+import SelectedFile from "@/components/ui/SelectedFile";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import ValueTable, { type ValueRow } from "@/components/ui/ValueTable";
-import { formatBytes } from "@/lib/format-bytes";
 import {
   HASH_ALGORITHMS,
   digestMatches,
@@ -96,14 +94,7 @@ export default function HashGenerator() {
           {source === "text" ? (
             <CodeTextArea aria-label="Text to hash" value={text} onChange={(e) => setText(e.target.value)} rows={8} />
           ) : file ? (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-[color:var(--border)] p-3 text-sm">
-              <span className="min-w-0 break-all">
-                {file.name} <span className="text-[color:var(--text-muted)]">({formatBytes(file.size)})</span>
-              </span>
-              <Button icon={X} size="sm" onClick={() => setFile(null)}>
-                Clear
-              </Button>
-            </div>
+            <SelectedFile file={file} onClear={() => setFile(null)} />
           ) : (
             <FileDrop onFiles={([f]) => setFile(f)} what="any file" />
           )}

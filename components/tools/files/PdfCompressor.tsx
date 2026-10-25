@@ -1,23 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X } from "lucide-react";
 import { InputPanel, OutputPanel } from "@/components/tool-shell/ToolPanels";
 import Alert from "@/components/ui/Alert";
-import Button from "@/components/ui/Button";
 import Field from "@/components/ui/Field";
 import FileDrop from "@/components/ui/FileDrop";
+import SelectedFile from "@/components/ui/SelectedFile";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import TaskProgress from "@/components/ui/TaskProgress";
 import { formatBytes } from "@/lib/format-bytes";
 import { plural } from "@/lib/notices";
 import type { CompressProgress, CompressResult, LevelId } from "@/lib/tools/files/pdf-compress";
-import { pdfErrorMessage } from "@/lib/tools/files/pdf-errors";
+import { PDF_MAX_BYTES, pdfErrorMessage } from "@/lib/tools/files/pdf-errors";
 import type { PdfCompressRequest } from "@/lib/tools/files/pdf-compress.worker";
 import { runWorkerTask } from "@/lib/worker-task";
 
-// The original, the decoded images and the new file are all in memory at once; past this, tabs (phones first) run out.
-const MAX_BYTES = 100 * 1024 * 1024;
 
 function createWorker() {
   return new Worker(new URL("../../../lib/tools/files/pdf-compress.worker.ts", import.meta.url));
@@ -52,7 +49,7 @@ export default function PdfCompressor() {
 
   useEffect(() => {
     if (!file) return setState({ status: "idle" });
-    if (file.size > MAX_BYTES) return setState({ status: "error", error: `This file is over ${formatBytes(MAX_BYTES)}, too big to process in the browser.` });
+    if (file.size > PDF_MAX_BYTES) return setState({ status: "error", error: `This file is over ${formatBytes(PDF_MAX_BYTES)}, too big to process in the browser.` });
     let cancelled = false;
     let cancelTask = () => {};
     setState({ status: "working", progress: { phase: "reading" } });
@@ -84,14 +81,7 @@ export default function PdfCompressor() {
       <InputPanel label="PDF">
         <div className="space-y-5">
           {file ? (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-[color:var(--border)] p-3 text-sm">
-              <span className="min-w-0 break-all">
-                {file.name} <span className="text-[color:var(--text-muted)]">({formatBytes(file.size)})</span>
-              </span>
-              <Button icon={X} size="sm" onClick={() => setFile(null)}>
-                Clear
-              </Button>
-            </div>
+            <SelectedFile file={file} onClear={() => setFile(null)} />
           ) : (
             <FileDrop onFiles={([f]) => setFile(f)} accept="application/pdf,.pdf" what="a PDF" />
           )}

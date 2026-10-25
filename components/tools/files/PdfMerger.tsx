@@ -10,13 +10,11 @@ import ReorderList from "@/components/ui/ReorderList";
 import TaskProgress from "@/components/ui/TaskProgress";
 import { formatBytes } from "@/lib/format-bytes";
 import { plural } from "@/lib/notices";
-import { pdfErrorMessage } from "@/lib/tools/files/pdf-errors";
+import { PDF_MAX_BYTES, pdfErrorMessage } from "@/lib/tools/files/pdf-errors";
 import type { MergeProgress } from "@/lib/tools/files/pdf-merge";
 import type { PdfMergeRequest } from "@/lib/tools/files/pdf-merge.worker";
 import { runWorkerTask } from "@/lib/worker-task";
 
-// Every file and the merged copy are in memory at once; past this, tabs (phones first) run out.
-const MAX_TOTAL_BYTES = 100 * 1024 * 1024;
 
 function createWorker() {
   return new Worker(new URL("../../../lib/tools/files/pdf-merge.worker.ts", import.meta.url));
@@ -110,7 +108,7 @@ export default function PdfMerger() {
   }
 
   const totalBytes = items.reduce((sum, item) => sum + item.file.size, 0);
-  const tooBig = totalBytes > MAX_TOTAL_BYTES;
+  const tooBig = totalBytes > PDF_MAX_BYTES;
   const broken = items.filter((item) => item.error).length;
   const opening = items.some((item) => item.pages === null && !item.error);
   const canMerge = items.length >= 2 && !tooBig && !broken && !opening && merge.status !== "working";
@@ -145,7 +143,7 @@ export default function PdfMerger() {
 
           {tooBig && (
             <Alert title="Too much to merge in the browser">
-              These files add up to {formatBytes(totalBytes)}. Keep the total under {formatBytes(MAX_TOTAL_BYTES)}.
+              These files add up to {formatBytes(totalBytes)}. Keep the total under {formatBytes(PDF_MAX_BYTES)}.
             </Alert>
           )}
 
