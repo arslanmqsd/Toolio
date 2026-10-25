@@ -81,6 +81,8 @@ describe("search", () => {
     ["find and replace", "find-replace"],
     ["search and replace", "find-replace"],
     ["regex replace", "find-replace"],
+    ["compress pdf", "pdf-compressor"],
+    ["reduce pdf size", "pdf-compressor"],
     ["og preview", "og-preview"],
     ["meta tag checker", "og-preview"],
     ["twitter card", "og-preview"],

@@ -3,6 +3,7 @@ import { categories } from "./categories";
 import { calculatorTools } from "./tools/calculators";
 import { dataTools } from "./tools/data";
 import { developerTools } from "./tools/developer";
+import { fileTools } from "./tools/files";
 import { textTools } from "./tools/text";
 import type { DataType } from "./data-types";
 import type { ToolConfig } from "./types";
@@ -14,7 +15,7 @@ export { DATA_TYPES, dataTypeLabels, type DataType } from "./data-types";
 export { plannedTools, type PlannedTool } from "./planned";
 export type { ToolConfig };
 
-export const allTools: ToolConfig[] = [...developerTools, ...textTools, ...dataTools, ...calculatorTools];
+export const allTools: ToolConfig[] = [...developerTools, ...textTools, ...fileTools, ...dataTools, ...calculatorTools];
 
 const toolsByKey = new Map<string, ToolConfig>(
   allTools.map((tool) => [`${tool.category}/${tool.id}`, tool]),
