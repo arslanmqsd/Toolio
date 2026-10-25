@@ -22,6 +22,7 @@ describe("sendTargets", () => {
       "regex-tester",
       "semver-calculator",
       "slug-generator",
+      "text-cleaner",
       "text-diff-checker",
       "word-counter",
     ]);
