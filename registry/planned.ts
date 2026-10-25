@@ -9,7 +9,6 @@ export interface PlannedTool {
 }
 
 export const plannedTools: PlannedTool[] = [
-  { id: "pdf-compressor", category: "files", title: "PDF Compressor", description: "Reduce PDF file size." },
   { id: "image-resizer", category: "images", title: "Image Resizer", description: "Resize images without losing quality." },
   { id: "unit-converter", category: "calculators", title: "Unit Converter", description: "Convert length, weight, and temperature." },
 ];
