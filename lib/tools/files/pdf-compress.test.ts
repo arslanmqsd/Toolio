@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PDFDocument, PDFName, PDFNumber, PDFRawStream } from "pdf-lib";
-import { LEVELS, compressPdf, type JpegEncoder } from "./pdf-compress";
+import { LEVELS, compressPdf, unpredictPng, type ImageEncoder, type ImageSource } from "./pdf-compress";
 
 /** Just enough of a JPEG for pdf-lib to read its size: SOI, a baseline SOF0 header, padding, EOI. */
 function fakeJpeg(width: number, height: number, components = 3, padding = 20_000): Uint8Array {
@@ -28,9 +28,24 @@ async function editImage(bytes: Uint8Array, edit: (doc: PDFDocument, image: PDFR
 /** Records what the encoder was asked to do, and returns a small JPEG. */
 function spyEncoder() {
   const calls: { width: number; height: number; quality: number }[] = [];
-  const encode: JpegEncoder = async (_, target) => (calls.push(target), new Uint8Array(500).fill(7));
-  return { calls, encode };
+  const sources: ImageSource[] = [];
+  const encode: ImageEncoder = async (source, target) => (sources.push(source), calls.push(target), new Uint8Array(500).fill(7));
+  return { calls, sources, encode };
 }
+
+/** A PDF with one PNG-style (Flate) image of the given raw samples. */
+async function pdfWithFlateImage(samples: Uint8Array, width: number, height: number, extra: Record<string, unknown> = {}) {
+  const doc = await PDFDocument.create();
+  doc.addPage();
+  doc.context.register(
+    doc.context.flateStream(samples, { Type: "XObject", Subtype: "Image", Width: width, Height: height, ColorSpace: "DeviceRGB", BitsPerComponent: 8, ...extra }),
+  );
+  return doc.save();
+}
+
+/** Compressible RGB samples: a gradient, so a real PNG would be many KB. */
+const gradient = (width: number, height: number) => Uint8Array.from({ length: width * height * 3 }, (_, i) => (i * 7) % 256);
+const rgbaOf = (source: ImageSource) => (source.kind === "pixels" ? Array.from(source.rgba) : []);
 
 async function imageDicts(bytes: Uint8Array) {
   const doc = await PDFDocument.load(bytes);
@@ -43,7 +58,7 @@ async function imageDicts(bytes: Uint8Array) {
 describe("compressPdf", () => {
   it("swaps in a smaller, scaled-down JPEG and keeps the pages", async () => {
     const targets: { width: number; height: number; quality: number }[] = [];
-    const encode: JpegEncoder = async (_, target) => (targets.push(target), new Uint8Array(500).fill(7));
+    const encode: ImageEncoder = async (_, target) => (targets.push(target), new Uint8Array(500).fill(7));
 
     const input = await pdfWithImage(4000, 2000);
     const result = await compressPdf(input, LEVELS.medium, encode);
@@ -60,7 +75,7 @@ describe("compressPdf", () => {
 
   it("keeps the original image when re-encoding doesn't help or fails", async () => {
     const input = await pdfWithImage(800, 600);
-    for (const encode of [async () => null, async () => new Uint8Array(50_000)] as JpegEncoder[]) {
+    for (const encode of [async () => null, async () => new Uint8Array(50_000)] as ImageEncoder[]) {
       const result = await compressPdf(input, LEVELS.strong, encode);
       expect(result).toMatchObject({ images: 1, recompressed: 0 });
       const [image] = await imageDicts(result.bytes);
@@ -117,14 +132,60 @@ describe("compressPdf", () => {
     }
   });
 
-  it("counts but leaves alone images that aren't JPEGs", async () => {
-    const doc = await PDFDocument.create();
-    doc.addPage();
-    doc.context.register(
-      doc.context.flateStream(new Uint8Array(30_000), { Type: "XObject", Subtype: "Image", Width: 100, Height: 100, ColorSpace: "DeviceRGB", BitsPerComponent: 8 }),
+  it("decodes PNG-style images to RGBA pixels and swaps in a JPEG", async () => {
+    const { calls, sources, encode } = spyEncoder();
+    const samples = Uint8Array.from([255, 0, 0, 0, 255, 0, 0, 0, 255, 10, 20, 30]);
+    const result = await compressPdf(await pdfWithFlateImage(samples, 2, 2), LEVELS.medium, encode);
+
+    expect(result).toMatchObject({ images: 1, recompressed: 0 }); // 500-byte JPEG isn't smaller than this tiny image
+    expect(calls).toEqual([{ width: 2, height: 2, quality: 0.65 }]);
+    expect(rgbaOf(sources[0])).toEqual([255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 10, 20, 30, 255]);
+
+    const big = await compressPdf(await pdfWithFlateImage(gradient(400, 400), 400, 400), LEVELS.medium, spyEncoder().encode);
+    expect(big.recompressed).toBe(1);
+    const [image] = await imageDicts(big.bytes);
+    expect(image.dict.get(PDFName.of("Filter"))).toBe(PDFName.of("DCTDecode"));
+    expect(image.dict.get(PDFName.of("DecodeParms"))).toBeUndefined();
+  });
+
+  it("spreads greyscale samples over all three channels", async () => {
+    const { sources, encode } = spyEncoder();
+    await compressPdf(await pdfWithFlateImage(Uint8Array.from([0, 128]), 2, 1, { ColorSpace: "DeviceGray" }), LEVELS.medium, encode);
+    expect(rgbaOf(sources[0])).toEqual([0, 0, 0, 255, 128, 128, 128, 255]);
+  });
+
+  it("undoes PNG predictors before encoding", async () => {
+    // Two RGB pixels per row; row 1 uses Sub (each pixel adds the one to its left), row 2 uses Up.
+    const predicted = Uint8Array.from([1, 10, 20, 30, 5, 5, 5, 2, 1, 1, 1, 1, 1, 1]);
+    const { sources, encode } = spyEncoder();
+    await compressPdf(
+      await pdfWithFlateImage(predicted, 2, 2, { DecodeParms: { Predictor: 15, Colors: 3, Columns: 2 } }),
+      LEVELS.medium,
+      encode,
     );
+    expect(rgbaOf(sources[0])).toEqual([10, 20, 30, 255, 15, 25, 35, 255, 11, 21, 31, 255, 16, 26, 36, 255]);
+  });
+
+  it("skips images it can't decode faithfully", async () => {
+    const cases: Record<string, unknown>[] = [
+      { BitsPerComponent: 16 },
+      { ColorSpace: "DeviceCMYK" },
+      { DecodeParms: { Predictor: 2, Colors: 3, Columns: 20 } },
+    ];
+    for (const extra of cases) {
+      const { calls, encode } = spyEncoder();
+      const result = await compressPdf(await pdfWithFlateImage(gradient(20, 20), 20, 20, extra), LEVELS.medium, encode);
+      expect(calls, JSON.stringify(extra)).toEqual([]);
+      expect(result.images).toBe(1);
+    }
+  });
+
+  it("skips images stored with filters it can't undo", async () => {
+    const input = await editImage(await pdfWithFlateImage(gradient(20, 20), 20, 20), (doc, image) => {
+      image.dict.set(PDFName.of("Filter"), PDFName.of("JBIG2Decode"));
+    });
     const { calls, encode } = spyEncoder();
-    expect(await compressPdf(await doc.save(), LEVELS.strong, encode)).toMatchObject({ images: 1, recompressed: 0 });
+    expect((await compressPdf(input, LEVELS.medium, encode)).recompressed).toBe(0);
     expect(calls).toEqual([]);
   });
 
@@ -138,6 +199,19 @@ describe("compressPdf", () => {
     expect((await PDFDocument.load(result.bytes)).getPageCount()).toBe(3);
   });
 
+  it("reports reading, each image, then saving", async () => {
+    const doc = await PDFDocument.create();
+    for (const width of [600, 700]) doc.addPage().drawImage(await doc.embedJpg(fakeJpeg(width, 400)), { x: 0, y: 0 });
+    const steps: unknown[] = [];
+    await compressPdf(await doc.save(), LEVELS.medium, spyEncoder().encode, (progress) => steps.push(progress));
+    expect(steps).toEqual([
+      { phase: "reading" },
+      { phase: "images", done: 0, total: 2 },
+      { phase: "images", done: 1, total: 2 },
+      { phase: "saving" },
+    ]);
+  });
+
   it("never returns a file bigger than it was given", async () => {
     const doc = await PDFDocument.create();
     doc.addPage().drawText("Only text");
@@ -145,5 +219,29 @@ describe("compressPdf", () => {
     const result = await compressPdf(input, LEVELS.medium, spyEncoder().encode);
     expect(result.bytes.length).toBeLessThanOrEqual(input.length);
     expect(result.images).toBe(0);
+  });
+});
+
+describe("unpredictPng", () => {
+  it("undoes each PNG filter type", () => {
+    // One grey sample per pixel, three pixels per row; rows use None, Sub, Up, Average and Paeth.
+    const rows = [
+      [0, 10, 20, 30],
+      [1, 10, 10, 10],
+      [2, 1, 1, 1],
+      [3, 5, 5, 5],
+      [4, 1, 1, 1],
+    ];
+    expect(Array.from(unpredictPng(Uint8Array.from(rows.flat()), 1, 3))).toEqual([
+      10, 20, 30,
+      10, 20, 30,
+      11, 21, 31,
+      10, 20, 30,
+      11, 21, 31,
+    ]);
+  });
+
+  it("wraps around at 256", () => {
+    expect(Array.from(unpredictPng(Uint8Array.from([1, 200, 100]), 1, 2))).toEqual([200, 44]);
   });
 });

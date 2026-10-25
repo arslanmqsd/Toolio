@@ -44,10 +44,12 @@ interface OutputPanelProps {
   wide?: boolean;
   /** Called after the copy button puts `copyText` on the clipboard. */
   onCopy?: () => void;
+  /** False for output that can't be text, like a PDF, so no copy button is shown at all. */
+  copyable?: boolean;
   children: ReactNode;
 }
 
-export function OutputPanel({ label = "Output", copyText, outputType, download, wide = false, onCopy, children }: OutputPanelProps) {
+export function OutputPanel({ label = "Output", copyText, outputType, download, wide = false, onCopy, copyable = true, children }: OutputPanelProps) {
   return (
     <section className={`${panelClass} ${wide ? "lg:col-span-full" : ""} font-[family-name:var(--font-output)]`} aria-label={label}>
       <div className={panelHeaderClass}>
@@ -55,7 +57,7 @@ export function OutputPanel({ label = "Output", copyText, outputType, download, 
         <div className="flex items-center gap-2">
           {outputType && copyText && <SendToMenu value={copyText} type={outputType} />}
           {download && <DownloadButton content={download.content ?? copyText} filename={download.filename} mimeType={download.mimeType} />}
-          <CopyButton text={copyText} onCopied={onCopy} />
+          {copyable && <CopyButton text={copyText} onCopied={onCopy} />}
         </div>
       </div>
       <div className="min-w-0 flex-1 overflow-auto p-4 text-sm">{children}</div>

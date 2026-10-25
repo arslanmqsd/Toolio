@@ -10,9 +10,15 @@ import FileDrop from "@/components/ui/FileDrop";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import { formatBytes } from "@/lib/format-bytes";
 import { plural } from "@/lib/notices";
-import { LEVELS, browserJpegEncoder, compressPdf, type CompressResult, type LevelId } from "@/lib/tools/files/pdf-compress";
+import type { CompressProgress, CompressResult, LevelId } from "@/lib/tools/files/pdf-compress";
+import type { PdfJobMessage, PdfJobRequest } from "@/lib/tools/files/pdf-compress.worker";
 
-const MAX_BYTES = 200 * 1024 * 1024;
+// The original, the decoded images and the new file are all in memory at once; past this, tabs (phones first) run out.
+const MAX_BYTES = 100 * 1024 * 1024;
+
+function createWorker() {
+  return new Worker(new URL("../../../lib/tools/files/pdf-compress.worker.ts", import.meta.url));
+}
 
 const LEVEL_OPTIONS: { id: LevelId; label: string }[] = [
   { id: "light", label: "Light" },
@@ -26,14 +32,19 @@ const LEVEL_HELP: Record<LevelId, string> = {
   strong: "Smallest file; photos get visibly softer.",
 };
 
-type State = { status: "idle" } | { status: "working" } | { status: "done"; result: CompressResult } | { status: "error"; error: string };
+type State = { status: "idle" } | { status: "working"; progress: CompressProgress } | { status: "done"; result: CompressResult } | { status: "error"; error: string };
 
 const muted = "font-[family-name:var(--font-ui)] text-[color:var(--text-muted)]";
 
-function errorMessage(err: unknown): string {
-  const message = (err as Error)?.message ?? "";
+function errorMessage(message: string): string {
   if (/encrypt/i.test(message)) return "This PDF is password-protected. Remove the password first, then try again.";
   return "This file couldn't be read as a PDF. It may be damaged or not a PDF at all.";
+}
+
+/** "38% smaller", or "less than 1% smaller" rather than a misleading "0%". */
+function savedLabel(before: number, after: number): string {
+  const percent = Math.round((1 - after / before) * 100);
+  return percent < 1 ? "less than 1% smaller" : `${percent}% smaller`;
 }
 
 export default function PdfCompressor() {
@@ -45,16 +56,23 @@ export default function PdfCompressor() {
     if (!file) return setState({ status: "idle" });
     if (file.size > MAX_BYTES) return setState({ status: "error", error: `This file is over ${formatBytes(MAX_BYTES)}, too big to process in the browser.` });
     let cancelled = false;
-    setState({ status: "working" });
-    file
-      .arrayBuffer()
-      .then((buffer) => compressPdf(new Uint8Array(buffer), LEVELS[level], browserJpegEncoder))
-      .then(
-        (result) => !cancelled && setState({ status: "done", result }),
-        (err) => !cancelled && setState({ status: "error", error: errorMessage(err) }),
-      );
+    const worker = createWorker();
+    setState({ status: "working", progress: { phase: "reading" } });
+    worker.onmessage = ({ data }: MessageEvent<PdfJobMessage>) => {
+      if (data.type === "progress") setState({ status: "working", progress: data.progress });
+      else if (data.type === "done") setState({ status: "done", result: data.result });
+      else setState({ status: "error", error: errorMessage(data.error) });
+    };
+    // Fires when the worker itself dies, usually from running out of memory on a huge file.
+    worker.onerror = () => setState({ status: "error", error: "The browser ran out of memory compressing this file. Try a smaller PDF." });
+    file.arrayBuffer().then(
+      (bytes) => !cancelled && worker.postMessage({ bytes, level } satisfies PdfJobRequest, [bytes]),
+      () => !cancelled && setState({ status: "error", error: "The browser couldn't read this file." }),
+    );
+    // Changing the level, clearing the file or leaving the page stops the run in progress.
     return () => {
       cancelled = true;
+      worker.terminate();
     };
   }, [file, level]);
 
@@ -84,7 +102,7 @@ export default function PdfCompressor() {
           </Field>
 
           <p className={`text-xs ${muted}`}>
-            Photos and scans inside the PDF are re-saved at lower quality and size. Text stays selectable and
+            Photos, scans and screenshots inside the PDF are re-saved as smaller JPEGs. Text stays selectable and
             drawings stay sharp, so PDFs that are mostly text won&apos;t shrink much.
           </p>
         </div>
@@ -92,25 +110,26 @@ export default function PdfCompressor() {
 
       <OutputPanel
         label="Compressed PDF"
+        copyable={false}
         download={result && smaller ? { filename: outName, mimeType: "application/pdf", content: result.bytes as Uint8Array<ArrayBuffer> } : undefined}
       >
-        <div role="status" aria-live="polite">
+        <div role="status" aria-live="polite" aria-busy={state.status === "working"}>
           {state.status === "idle" ? (
             <p className={muted}>Choose a PDF to compress it.</p>
           ) : state.status === "working" ? (
-            <p className={muted}>Compressing…</p>
+            <Progress progress={state.progress} onCancel={() => setFile(null)} />
           ) : state.status === "error" ? (
             <Alert title="Couldn't compress this PDF">{state.error}</Alert>
           ) : file && result ? (
             <div className="space-y-2 font-[family-name:var(--font-ui)]">
               <p className="text-base tabular-nums">
                 {formatBytes(file.size)} → <span className="font-semibold">{formatBytes(result.bytes.length)}</span>
-                {smaller && <span className="text-[color:var(--text-muted)]"> ({Math.round((1 - result.bytes.length / file.size) * 100)}% smaller)</span>}
+                {smaller && <span className="text-[color:var(--text-muted)]"> ({savedLabel(file.size, result.bytes.length)})</span>}
               </p>
               <p className="text-sm text-[color:var(--text-muted)]">
                 {result.images === 0
                   ? "No images found."
-                  : `${plural(result.recompressed, "image", "images")} of ${result.images.toLocaleString("en-US")} recompressed.`}
+                  : `${result.recompressed.toLocaleString("en-US")} of ${plural(result.images, "image", "images")} recompressed.`}
               </p>
               {!smaller && (
                 <p className="text-sm">
@@ -123,5 +142,29 @@ export default function PdfCompressor() {
         </div>
       </OutputPanel>
     </>
+  );
+}
+
+function Progress({ progress, onCancel }: { progress: CompressProgress; onCancel: () => void }) {
+  const label =
+    progress.phase === "reading"
+      ? "Reading PDF…"
+      : progress.phase === "saving"
+        ? "Saving…"
+        : `Compressing image ${Math.min(progress.done + 1, progress.total)} of ${progress.total.toLocaleString("en-US")}…`;
+  return (
+    <div className={`space-y-3 ${muted}`}>
+      <p>{label}</p>
+      {/* No value while reading or saving: those steps can't report how far along they are. */}
+      <progress
+        value={progress.phase === "images" && progress.total > 0 ? progress.done / progress.total : undefined}
+        max={1}
+        aria-label="Compression progress"
+        className="h-1.5 w-full accent-[color:var(--accent)]"
+      />
+      <Button size="sm" onClick={onCancel}>
+        Cancel
+      </Button>
+    </div>
   );
 }
