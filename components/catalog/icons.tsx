@@ -54,6 +54,7 @@ import {
   Eraser,
   Replace,
   Files,
+  Scissors,
 } from "lucide-react";
 import { tintColor } from "@/lib/category-theme-css";
 import type { CategoryId } from "@/registry";
@@ -87,6 +88,7 @@ const toolIcons: Record<string, LucideIcon> = {
   "xml-json-converter": FileBraces,
   "pdf-compressor": FileArchive,
   "pdf-merger": Files,
+  "pdf-splitter": Scissors,
   "image-resizer": Image,
   "csv-cleaner": Sheet,
   "lorem-ipsum-generator": Pilcrow,

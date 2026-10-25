@@ -85,6 +85,8 @@ describe("search", () => {
     ["reduce pdf size", "pdf-compressor"],
     ["merge pdf", "pdf-merger"],
     ["combine pdf files", "pdf-merger"],
+    ["split pdf", "pdf-splitter"],
+    ["extract pdf pages", "pdf-splitter"],
     ["og preview", "og-preview"],
     ["meta tag checker", "og-preview"],
     ["twitter card", "og-preview"],
