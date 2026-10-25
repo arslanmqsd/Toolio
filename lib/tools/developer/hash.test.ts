@@ -85,7 +85,8 @@ describe("digestMatches", () => {
 
 describe("hashAll", () => {
   it("returns every digest and reports progress for large input", async () => {
-    const bytes = randomBytes(4, 20 * 1024 * 1024);
+    // Just over one 8 MB chunk, at an odd length: crosses a chunk boundary and ends on a partial chunk.
+    const bytes = randomBytes(4, 9 * 1024 * 1024 + 7);
     const progress: number[] = [];
     const digests = await hashAll(bytes, (f) => progress.push(f));
     for (const { id } of HASH_ALGORITHMS) {
