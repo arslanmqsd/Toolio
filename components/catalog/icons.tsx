@@ -52,6 +52,7 @@ import {
   Webhook,
   type LucideIcon,
   Eraser,
+  Replace,
 } from "lucide-react";
 import { tintColor } from "@/lib/category-theme-css";
 import type { CategoryId } from "@/registry";
@@ -90,6 +91,7 @@ const toolIcons: Record<string, LucideIcon> = {
   "slug-generator": Link2,
   "case-converter": CaseSensitive,
   "text-cleaner": Eraser,
+  "find-replace": Replace,
   "og-preview": Share2,
   "docker-compose-builder": Container,
   "docker-command-builder": SquareTerminal,
