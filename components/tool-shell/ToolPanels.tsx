@@ -40,7 +40,7 @@ interface OutputPanelProps {
    */
   outputType?: DataType;
   /** Adds a button that saves this file: `content` when given (e.g. binary bytes), otherwise `copyText`. */
-  download?: { filename: string; mimeType: string; content?: Uint8Array<ArrayBuffer> };
+  download?: { filename: string; mimeType: string; content?: Uint8Array<ArrayBuffer> | Blob };
   /** Span every column of the tool layout, for wide output like a diff. */
   wide?: boolean;
   /** Called after the copy button puts `copyText` on the clipboard. */
@@ -106,16 +106,16 @@ export function CopyButton({ text, what, onCopied }: { text?: string; what?: str
 }
 
 interface DownloadButtonProps {
-  content?: string | Uint8Array<ArrayBuffer>;
+  content?: string | Uint8Array<ArrayBuffer> | Blob;
   filename: string;
   mimeType: string;
 }
 
 export function DownloadButton({ content, filename, mimeType }: DownloadButtonProps) {
-  const empty = !content?.length;
+  const empty = !(content instanceof Blob ? content.size : content?.length);
 
   function save() {
-    if (content?.length) saveFile(content, filename, mimeType);
+    if (content && !empty) saveFile(content, filename, mimeType);
   }
 
   return (

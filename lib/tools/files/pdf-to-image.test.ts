@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_PIXELS, exportScale, imageName } from "./pdf-to-image";
+import { HEAVY_PIXELS, MAX_PIXELS, exportScale, imageName, jobPixels } from "./pdf-to-image";
 
 describe("exportScale", () => {
   it("turns DPI into a scale over PDF points", () => {
@@ -40,5 +40,21 @@ describe("imageName", () => {
   it("keeps other dots and falls back when the name is only an extension", () => {
     expect(imageName("v1.2 notes.pdf", 2, 2, "png")).toBe("v1.2 notes-page-2.png");
     expect(imageName(".pdf", 1, 1, "png")).toBe("document-page-1.png");
+  });
+});
+
+describe("jobPixels", () => {
+  it("counts letter pages at the chosen DPI", () => {
+    expect(jobPixels(1, 72)).toBe(612 * 792);
+    expect(jobPixels(2, 144)).toBe(2 * 1224 * 1584);
+    expect(jobPixels(0, 300)).toBe(0);
+  });
+
+  it("flags long print-quality jobs but not everyday ones", () => {
+    expect(jobPixels(50, 300) > HEAVY_PIXELS).toBe(false);
+    expect(jobPixels(51, 300) > HEAVY_PIXELS).toBe(true);
+    expect(jobPixels(190, 150) > HEAVY_PIXELS).toBe(false);
+    expect(jobPixels(800, 72) > HEAVY_PIXELS).toBe(false);
+    expect(jobPixels(250, 150) > HEAVY_PIXELS).toBe(true);
   });
 });

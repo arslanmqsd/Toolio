@@ -16,6 +16,13 @@ export function exportScale(widthPt: number, heightPt: number, dpi: number, maxP
   return pixels <= maxPixels ? scale : scale * Math.sqrt(maxPixels / pixels);
 }
 
+/**
+ * Rough pixel count of a job, assuming letter-size pages. Past `HEAVY_PIXELS` (50 letter pages at 300 DPI,
+ * about 420 million pixels) the finished images can reach hundreds of megabytes, so the tool warns first.
+ */
+export const jobPixels = (pages: number, dpi: number) => pages * 612 * 792 * (dpi / POINTS_PER_INCH) ** 2;
+export const HEAVY_PIXELS = jobPixels(50, 300);
+
 /** "report-page-07.jpg": numbers padded to the page count so files sort in page order. */
 export function imageName(pdfName: string, page: number, pageCount: number, format: ImageFormat): string {
   const base = pdfName.replace(/\.pdf$/i, "") || "document";
