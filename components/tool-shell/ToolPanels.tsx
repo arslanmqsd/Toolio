@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import type { DataType } from "@/registry";
+import { saveFile } from "@/lib/save-file";
 import { panelButtonClass } from "./panel-styles";
 import SaveSnippetButton from "./SaveSnippetButton";
 import SendToMenu from "./SendToMenu";
@@ -114,14 +115,7 @@ export function DownloadButton({ content, filename, mimeType }: DownloadButtonPr
   const empty = !content?.length;
 
   function save() {
-    if (!content?.length) return;
-    const url = URL.createObjectURL(new Blob([content], { type: mimeType }));
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = filename;
-    link.click();
-    // Revoke after the click has started the download; revoking straight away can cancel it in some browsers.
-    setTimeout(() => URL.revokeObjectURL(url), 0);
+    if (content?.length) saveFile(content, filename, mimeType);
   }
 
   return (

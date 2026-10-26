@@ -3,12 +3,14 @@
  * Browser only, and loaded on first use so pages that never draw a PDF don't download it.
  */
 
-type ImageFormat = "png" | "jpg";
+import { exportScale, type ImageFormat } from "./pdf-to-image";
 
 export interface PdfRenderer {
   pageCount: number;
   /** A PNG of one page (zero-based), its longest side `maxSide` CSS pixels, with the page's own rotation applied. */
   thumbnail: (index: number, maxSide: number) => Promise<Blob>;
+  /** One page (zero-based) at `dpi`, as PNG or JPEG, shrunk if needed to stay inside browser canvas limits. */
+  image: (index: number, dpi: number, format: ImageFormat) => Promise<Blob>;
   destroy: () => void;
 }
 
@@ -48,6 +50,7 @@ export async function openPdfRenderer(bytes: Uint8Array): Promise<PdfRenderer> {
     pageCount: doc.numPages,
     // Sharp on high-density screens without drawing huge canvases for big pages.
     thumbnail: (index, maxSide) => draw(index, (w, h) => (maxSide * Math.min(window.devicePixelRatio || 1, 2)) / Math.max(w, h), "png"),
+    image: (index, dpi, format) => draw(index, (w, h) => exportScale(w, h, dpi), format),
     destroy: () => void doc.destroy(),
   };
 }

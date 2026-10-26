@@ -89,6 +89,8 @@ describe("search", () => {
     ["extract pdf pages", "pdf-splitter"],
     ["rotate pdf", "pdf-page-organizer"],
     ["reorder pdf pages", "pdf-page-organizer"],
+    ["pdf to jpg", "pdf-to-image"],
+    ["convert pdf to png", "pdf-to-image"],
     ["og preview", "og-preview"],
     ["meta tag checker", "og-preview"],
     ["twitter card", "og-preview"],
