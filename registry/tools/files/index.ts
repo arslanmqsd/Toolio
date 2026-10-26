@@ -5,5 +5,6 @@ import pdfMerger from "./pdf-merger";
 import pdfPageOrganizer from "./pdf-page-organizer";
 import pdfSplitter from "./pdf-splitter";
 import pdfToImage from "./pdf-to-image";
+import pdfWatermark from "./pdf-watermark";
 
-export const fileTools: ToolConfig[] = [pdfToImage, imagesToPdf, pdfPageOrganizer, pdfSplitter, pdfMerger, pdfCompressor];
+export const fileTools: ToolConfig[] = [pdfWatermark, pdfToImage, imagesToPdf, pdfPageOrganizer, pdfSplitter, pdfMerger, pdfCompressor];

@@ -58,6 +58,7 @@ import {
   LayoutGrid,
   FileImage,
   Images,
+  Stamp,
 } from "lucide-react";
 import { tintColor } from "@/lib/category-theme-css";
 import type { CategoryId } from "@/registry";
@@ -95,6 +96,7 @@ const toolIcons: Record<string, LucideIcon> = {
   "pdf-page-organizer": LayoutGrid,
   "pdf-to-image": FileImage,
   "images-to-pdf": Images,
+  "pdf-watermark": Stamp,
   "image-resizer": Image,
   "csv-cleaner": Sheet,
   "lorem-ipsum-generator": Pilcrow,
