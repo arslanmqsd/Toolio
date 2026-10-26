@@ -70,6 +70,8 @@ describe("mergePdfs", () => {
 describe("pdfErrorMessage", () => {
   it("explains password-protected files and anything else", () => {
     expect(pdfErrorMessage("Input document to `PDFDocument.load` is encrypted.")).toMatch(/password-protected/);
+    expect(pdfErrorMessage("No password given")).toMatch(/password-protected/);
+    expect(pdfErrorMessage("out of memory")).toMatch(/ran out of memory/);
     expect(pdfErrorMessage("Failed to parse PDF document")).toMatch(/couldn't be read as a PDF/);
   });
 });
