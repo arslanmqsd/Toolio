@@ -17,7 +17,7 @@ import { saveFile } from "@/lib/save-file";
 import { PDF_MAX_BYTES, pdfErrorMessage } from "@/lib/tools/files/pdf-errors";
 import { openPdfRenderer, type PdfRenderer } from "@/lib/tools/files/pdf-render";
 import { parsePageRanges, rangeIndexes } from "@/lib/tools/files/pdf-split";
-import { imageName, type ImageFormat } from "@/lib/tools/files/pdf-to-image";
+import { HEAVY_PIXELS, imageName, jobPixels, type ImageFormat } from "@/lib/tools/files/pdf-to-image";
 import { zipStore } from "@/lib/zip";
 
 const FORMATS: { id: ImageFormat; label: string }[] = [
@@ -51,7 +51,8 @@ type Doc = { status: "none" } | { status: "opening" } | { status: "ready"; pages
 interface Output {
   name: string;
   page: number;
-  bytes: Uint8Array<ArrayBuffer>;
+  /** Held by the browser, which can move big files out of the tab's memory; read only when zipping. */
+  blob: Blob;
   url: string;
 }
 
@@ -126,12 +127,10 @@ export default function PdfToImage() {
     const dpi = Number(resolution);
     setJob({ status: "working", done: 0, total: indexes.length });
     try {
-      // shortcut: keeps every image in memory until download; stream into the ZIP if 300 DPI on long PDFs runs tabs out of memory.
       for (const [n, index] of indexes.entries()) {
         const blob = await r.image(index, dpi, format);
-        const bytes = new Uint8Array(await blob.arrayBuffer());
         if (run.current !== id) return outputs.forEach((o) => URL.revokeObjectURL(o.url));
-        outputs.push({ name: imageName(file.name, index + 1, doc.pages, format), page: index + 1, bytes, url: URL.createObjectURL(blob) });
+        outputs.push({ name: imageName(file.name, index + 1, doc.pages, format), page: index + 1, blob, url: URL.createObjectURL(blob) });
         setJob({ status: "working", done: n + 1, total: indexes.length });
       }
       setJob({ status: "done", outputs });
@@ -141,11 +140,13 @@ export default function PdfToImage() {
     }
   }
 
-  function downloadZip(outputs: Output[]) {
+  async function downloadZip(outputs: Output[]) {
     const name = `${file?.name.replace(/\.pdf$/i, "") || "pages"}-${format}.zip`;
-    saveFile(zipStore(outputs.map((o) => ({ name: o.name, data: o.bytes }))), name, "application/zip");
+    const entries = await Promise.all(outputs.map(async (o) => ({ name: o.name, data: new Uint8Array(await o.blob.arrayBuffer()) })));
+    saveFile(zipStore(entries), name, "application/zip");
   }
 
+  const heavy = indexes ? jobPixels(indexes.length, Number(resolution)) > HEAVY_PIXELS : false;
   const single = job.status === "done" && job.outputs.length === 1 ? job.outputs[0] : null;
 
   return (
@@ -203,13 +204,19 @@ export default function PdfToImage() {
           <Button variant="primary" icon={ImageIcon} onClick={start} disabled={!indexes || job.status === "working"}>
             Convert to {format.toUpperCase()}
           </Button>
+
+          {heavy && (
+            <p className="font-[family-name:var(--font-ui)] text-sm text-[color:var(--accent-warn-text)]">
+              That&apos;s a lot of image data for one tab. If it slows down or crashes, pick a lower resolution or fewer pages at a time.
+            </p>
+          )}
         </div>
       </InputPanel>
 
       <OutputPanel
         label={job.status === "done" && job.outputs.length > 1 ? "Images" : "Image"}
         copyable={false}
-        download={single ? { filename: single.name, mimeType: MIME[format], content: single.bytes } : undefined}
+        download={single ? { filename: single.name, mimeType: MIME[format], content: single.blob } : undefined}
       >
         <div role="status" aria-live="polite" aria-busy={job.status === "working"}>
           {job.status === "idle" ? (
@@ -231,7 +238,7 @@ export default function PdfToImage() {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <p className="text-sm">
                     <span className="font-semibold">{plural(job.outputs.length, "image", "images")}</span>
-                    <span className="text-[color:var(--text-muted)]"> · {formatBytes(job.outputs.reduce((sum, o) => sum + o.bytes.length, 0))}</span>
+                    <span className="text-[color:var(--text-muted)]"> · {formatBytes(job.outputs.reduce((sum, o) => sum + o.blob.size, 0))}</span>
                   </p>
                   <Button icon={FileArchive} onClick={() => downloadZip(job.outputs)}>
                     Download all (ZIP)
@@ -245,9 +252,9 @@ export default function PdfToImage() {
                     <img src={out.url} alt={`Page ${out.page}`} className="aspect-square w-full rounded bg-[color:var(--surface)] object-contain" />
                     <span className="min-w-0 break-all text-xs">
                       {out.name}
-                      <span className="block text-[color:var(--text-muted)]">{formatBytes(out.bytes.length)}</span>
+                      <span className="block text-[color:var(--text-muted)]">{formatBytes(out.blob.size)}</span>
                     </span>
-                    {!single && <DownloadButton content={out.bytes} filename={out.name} mimeType={MIME[format]} />}
+                    {!single && <DownloadButton content={out.blob} filename={out.name} mimeType={MIME[format]} />}
                   </li>
                 ))}
               </ul>
