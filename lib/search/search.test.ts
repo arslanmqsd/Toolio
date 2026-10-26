@@ -91,6 +91,8 @@ describe("search", () => {
     ["reorder pdf pages", "pdf-page-organizer"],
     ["pdf to jpg", "pdf-to-image"],
     ["convert pdf to png", "pdf-to-image"],
+    ["jpg to pdf", "images-to-pdf"],
+    ["combine images into pdf", "images-to-pdf"],
     ["og preview", "og-preview"],
     ["meta tag checker", "og-preview"],
     ["twitter card", "og-preview"],
