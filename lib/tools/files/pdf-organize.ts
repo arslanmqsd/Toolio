@@ -26,3 +26,13 @@ export async function organizePages(input: Uint8Array, edits: PageEdit[]): Promi
   });
   return out.save({ useObjectStreams: true });
 }
+
+/**
+ * The same PDF with every page turned `turns` quarter turns clockwise on top of its own rotation. Edits
+ * the file in place, unlike organizePages, so bookmarks, links and form fields survive.
+ */
+export async function rotatePdf(input: Uint8Array, turns: number): Promise<Uint8Array> {
+  const doc = await PDFDocument.load(input, { updateMetadata: false });
+  for (const page of doc.getPages()) page.setRotation(degrees((page.getRotation().angle + turnsToDegrees(turns)) % 360));
+  return doc.save({ useObjectStreams: true });
+}

@@ -26,6 +26,19 @@ const DOS_DATE = (0 << 9) | (1 << 5) | 1;
 /** Bit 11: names are UTF-8. */
 const UTF8_FLAG = 0x0800;
 
+/** Names made unique for one archive: a repeated "a.pdf" becomes "a (2).pdf", then "a (3).pdf". */
+export function uniqueNames(names: string[]): string[] {
+  const taken = new Set<string>();
+  return names.map((name) => {
+    const dot = name.lastIndexOf(".");
+    const [stem, ext] = dot > 0 ? [name.slice(0, dot), name.slice(dot)] : [name, ""];
+    let unique = name;
+    for (let n = 2; taken.has(unique.toLowerCase()); n++) unique = `${stem} (${n})${ext}`;
+    taken.add(unique.toLowerCase());
+    return unique;
+  });
+}
+
 export function zipStore(entries: ZipEntry[]): Uint8Array<ArrayBuffer> {
   const encoder = new TextEncoder();
   const names = entries.map((e) => encoder.encode(e.name));
