@@ -6,6 +6,7 @@ import pdfMetadataEditor from "./pdf-metadata-editor";
 import pdfPageOrganizer from "./pdf-page-organizer";
 import pdfSplitter from "./pdf-splitter";
 import pdfToImage from "./pdf-to-image";
+import pdfToText from "./pdf-to-text";
 import pdfWatermark from "./pdf-watermark";
 
-export const fileTools: ToolConfig[] = [pdfWatermark, pdfToImage, imagesToPdf, pdfPageOrganizer, pdfSplitter, pdfMerger, pdfCompressor, pdfMetadataEditor];
+export const fileTools: ToolConfig[] = [pdfWatermark, pdfToImage, pdfToText, imagesToPdf, pdfPageOrganizer, pdfSplitter, pdfMerger, pdfCompressor, pdfMetadataEditor];
