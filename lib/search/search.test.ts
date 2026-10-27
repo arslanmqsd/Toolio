@@ -95,6 +95,8 @@ describe("search", () => {
     ["combine images into pdf", "images-to-pdf"],
     ["watermark pdf", "pdf-watermark"],
     ["confidential stamp", "pdf-watermark"],
+    ["edit pdf metadata", "pdf-metadata-editor"],
+    ["change pdf title", "pdf-metadata-editor"],
     ["og preview", "og-preview"],
     ["meta tag checker", "og-preview"],
     ["twitter card", "og-preview"],
