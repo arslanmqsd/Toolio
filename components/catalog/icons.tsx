@@ -61,6 +61,7 @@ import {
   Stamp,
   FilePen,
   FileType,
+  RotateCw,
 } from "lucide-react";
 import { tintColor } from "@/lib/category-theme-css";
 import type { CategoryId } from "@/registry";
@@ -101,6 +102,7 @@ const toolIcons: Record<string, LucideIcon> = {
   "pdf-watermark": Stamp,
   "pdf-metadata-editor": FilePen,
   "pdf-to-text": FileType,
+  "rotate-pdf": RotateCw,
   "image-resizer": Image,
   "csv-cleaner": Sheet,
   "lorem-ipsum-generator": Pilcrow,

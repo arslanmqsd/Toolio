@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { crc32, zipStore } from "./zip";
+import { crc32, uniqueNames, zipStore } from "./zip";
 
 const text = (s: string) => new TextEncoder().encode(s);
 
@@ -68,5 +68,20 @@ describe("zipStore", () => {
     const zip = zipStore([{ name: "bin", data }]);
     expect(zip.subarray(30 + 3, 30 + 3 + data.length)).toEqual(data);
     expect(zip.length).toBe(30 + 3 + 1000 + 46 + 3 + 22);
+  });
+});
+
+describe("uniqueNames", () => {
+  it("leaves distinct names alone", () => {
+    expect(uniqueNames(["a.pdf", "b.pdf"])).toEqual(["a.pdf", "b.pdf"]);
+  });
+
+  it("numbers repeats before the extension, ignoring case", () => {
+    expect(uniqueNames(["a.pdf", "a.pdf", "A.PDF"])).toEqual(["a.pdf", "a (2).pdf", "A (3).PDF"]);
+  });
+
+  it("handles names without an extension and clashes with numbered names", () => {
+    expect(uniqueNames(["notes", "notes", ".env", ".env"])).toEqual(["notes", "notes (2)", ".env", ".env (2)"]);
+    expect(uniqueNames(["a (2).pdf", "a.pdf", "a.pdf"])).toEqual(["a (2).pdf", "a.pdf", "a (3).pdf"]);
   });
 });
