@@ -1,9 +1,10 @@
 /**
- * Draws PDF pages with pdf.js (Mozilla's renderer), which parses the PDF in its own worker.
+ * Draws PDF pages and reads their text with pdf.js (Mozilla's renderer), which parses the PDF in its own worker.
  * Browser only, and loaded on first use so pages that never draw a PDF don't download it.
  */
 
 import { exportScale, type ImageFormat } from "./pdf-to-image";
+import { runsToText } from "./pdf-text";
 
 export interface PdfRenderer {
   pageCount: number;
@@ -11,6 +12,8 @@ export interface PdfRenderer {
   thumbnail: (index: number, maxSide: number) => Promise<Blob>;
   /** One page (zero-based) at `dpi`, as PNG or JPEG, shrunk if needed to stay inside browser canvas limits. */
   image: (index: number, dpi: number, format: ImageFormat) => Promise<Blob>;
+  /** One page's text (zero-based), with line and paragraph breaks rebuilt from where the text sits. */
+  text: (index: number) => Promise<string>;
   destroy: () => void;
 }
 
@@ -51,6 +54,19 @@ export async function openPdfRenderer(bytes: Uint8Array): Promise<PdfRenderer> {
     // Sharp on high-density screens without drawing huge canvases for big pages.
     thumbnail: (index, maxSide) => draw(index, (w, h) => (maxSide * Math.min(window.devicePixelRatio || 1, 2)) / Math.max(w, h), "png"),
     image: (index, dpi, format) => draw(index, (w, h) => exportScale(w, h, dpi), format),
+    async text(index) {
+      const page = await doc.getPage(index + 1);
+      try {
+        const { items } = await page.getTextContent();
+        return runsToText(
+          items.flatMap((item) =>
+            "str" in item ? [{ str: item.str, x: item.transform[4], y: item.transform[5], width: item.width, height: item.height, hasEOL: item.hasEOL }] : [],
+          ),
+        );
+      } finally {
+        page.cleanup();
+      }
+    },
     destroy: () => void doc.destroy(),
   };
 }

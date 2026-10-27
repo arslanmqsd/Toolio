@@ -60,6 +60,7 @@ import {
   Images,
   Stamp,
   FilePen,
+  FileType,
 } from "lucide-react";
 import { tintColor } from "@/lib/category-theme-css";
 import type { CategoryId } from "@/registry";
@@ -99,6 +100,7 @@ const toolIcons: Record<string, LucideIcon> = {
   "images-to-pdf": Images,
   "pdf-watermark": Stamp,
   "pdf-metadata-editor": FilePen,
+  "pdf-to-text": FileType,
   "image-resizer": Image,
   "csv-cleaner": Sheet,
   "lorem-ipsum-generator": Pilcrow,

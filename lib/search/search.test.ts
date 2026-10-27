@@ -97,6 +97,8 @@ describe("search", () => {
     ["confidential stamp", "pdf-watermark"],
     ["edit pdf metadata", "pdf-metadata-editor"],
     ["change pdf title", "pdf-metadata-editor"],
+    ["pdf to txt", "pdf-to-text"],
+    ["extract text from pdf", "pdf-to-text"],
     ["og preview", "og-preview"],
     ["meta tag checker", "og-preview"],
     ["twitter card", "og-preview"],
