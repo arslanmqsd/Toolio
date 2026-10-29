@@ -13,12 +13,12 @@ import TaskProgress from "@/components/ui/TaskProgress";
 import TextInput from "@/components/ui/TextInput";
 import { formatBytes } from "@/lib/format-bytes";
 import { plural } from "@/lib/notices";
+import { PDF_COLOR_OPTIONS, type PdfColor } from "@/lib/tools/files/pdf-colors";
 import { PDF_MAX_BYTES, pdfErrorMessage } from "@/lib/tools/files/pdf-errors";
 import { openPdfRenderer } from "@/lib/tools/files/pdf-render";
 import { parsePageRanges, rangeIndexes } from "@/lib/tools/files/pdf-split";
 import {
   unsupportedCharacters,
-  type WatermarkColor,
   type WatermarkLayout,
   type WatermarkOptions,
   type WatermarkProgress,
@@ -53,13 +53,6 @@ const ANGLES = [
   { id: "0", label: "Horizontal" },
 ] as const;
 
-const COLORS: { id: WatermarkColor; label: string }[] = [
-  { id: "gray", label: "Gray" },
-  { id: "red", label: "Red" },
-  { id: "blue", label: "Blue" },
-  { id: "black", label: "Black" },
-];
-
 type Doc = { status: "none" } | { status: "opening" } | { status: "ready"; pages: number } | { status: "error"; error: string };
 
 type Job =
@@ -84,7 +77,7 @@ export default function PdfWatermark() {
   const [size, setSize] = useState<WatermarkSize>("medium");
   const [opacity, setOpacity] = useState<(typeof OPACITIES)[number]["id"]>("0.3");
   const [angle, setAngle] = useState<(typeof ANGLES)[number]["id"]>("45");
-  const [color, setColor] = useState<WatermarkColor>("gray");
+  const [color, setColor] = useState<PdfColor>("gray");
   const [pagesText, setPagesText] = useState("");
   const [job, setJob] = useState<Job>({ status: "idle" });
   const cancelJob = useRef(() => {});
@@ -225,7 +218,7 @@ export default function PdfWatermark() {
           </div>
 
           <Field label="Color">
-            <SegmentedControl label="Color" options={COLORS} value={color} onChange={setColor} />
+            <SegmentedControl label="Color" options={PDF_COLOR_OPTIONS} value={color} onChange={setColor} />
           </Field>
 
           <Field
