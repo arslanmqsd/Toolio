@@ -1,8 +1,8 @@
 import { PDFDocument, StandardFonts, degrees, rgb, type PDFFont } from "pdf-lib";
+import { PDF_COLORS, type PdfColor } from "./pdf-colors";
 
 export type WatermarkLayout = "center" | "tiled";
 export type WatermarkSize = "small" | "medium" | "large";
-export type WatermarkColor = "gray" | "red" | "blue" | "black";
 
 export interface WatermarkOptions {
   text: string;
@@ -12,17 +12,10 @@ export interface WatermarkOptions {
   opacity: number;
   /** Degrees anticlockwise as the page is seen, so 45 runs bottom-left to top-right. */
   angle: number;
-  color: WatermarkColor;
+  color: PdfColor;
 }
 
 export type WatermarkProgress = { phase: "reading" } | { phase: "stamping"; done: number; total: number } | { phase: "saving" };
-
-const COLORS: Record<WatermarkColor, [number, number, number]> = {
-  gray: [0.5, 0.5, 0.5],
-  red: [0.8, 0.1, 0.1],
-  blue: [0.1, 0.3, 0.8],
-  black: [0, 0, 0],
-};
 
 /** How wide the text runs: centred, as a share of the page's diagonal; tiled, of its shorter side. */
 const SPAN: Record<WatermarkLayout, Record<WatermarkSize, number>> = {
@@ -94,7 +87,7 @@ function stampPage(page: ReturnType<PDFDocument["getPage"]>, font: PDFFont, opti
   // The text is drawn from its bottom-left corner; step back half its width and height along the rotated axes.
   const dx = (width / 2) * cos - (height / 2) * sin;
   const dy = (width / 2) * sin + (height / 2) * cos;
-  const [r, g, b] = COLORS[options.color];
+  const [r, g, b] = PDF_COLORS[options.color];
   // The grid is laid out in drawing coordinates, which cover the same area whichever way the page turns.
   for (const [cx, cy] of stampCentres(box, options.layout, width, height)) {
     page.drawText(options.text, { x: cx - dx, y: cy - dy, size, font, color: rgb(r, g, b), opacity: options.opacity, rotate: degrees(angle) });

@@ -62,6 +62,7 @@ import {
   FilePen,
   FileType,
   RotateCw,
+  ListOrdered,
 } from "lucide-react";
 import { tintColor } from "@/lib/category-theme-css";
 import type { CategoryId } from "@/registry";
@@ -103,6 +104,7 @@ const toolIcons: Record<string, LucideIcon> = {
   "pdf-metadata-editor": FilePen,
   "pdf-to-text": FileType,
   "rotate-pdf": RotateCw,
+  "pdf-page-numbers": ListOrdered,
   "image-resizer": Image,
   "csv-cleaner": Sheet,
   "lorem-ipsum-generator": Pilcrow,

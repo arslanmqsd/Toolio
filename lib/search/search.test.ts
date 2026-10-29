@@ -89,6 +89,8 @@ describe("search", () => {
     ["extract pdf pages", "pdf-splitter"],
     ["rotate pdf", "rotate-pdf"],
     ["rotate multiple pdfs", "rotate-pdf"],
+    ["add page numbers to pdf", "pdf-page-numbers"],
+    ["number pdf pages", "pdf-page-numbers"],
     ["reorder pdf pages", "pdf-page-organizer"],
     ["pdf to jpg", "pdf-to-image"],
     ["convert pdf to png", "pdf-to-image"],
