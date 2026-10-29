@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import RecordToolVisit from "@/components/tool-shell/RecordToolVisit";
 import ToolShell from "@/components/tool-shell/ToolShell";
 import { toolMetadata } from "@/lib/seo";
-import { allTools, getTool } from "@/registry";
+import { allTools, categories, getTool } from "@/registry";
 
 interface ToolPageProps {
   params: { category: string; tool: string };
@@ -26,7 +26,7 @@ export default async function ToolPage({ params }: ToolPageProps) {
 
   const { default: ToolComponent } = await tool.component();
   return (
-    <ToolShell toolId={tool.id} title={tool.title} description={tool.description}>
+    <ToolShell toolId={tool.id} category={categories[tool.category]} title={tool.title} description={tool.description}>
       <RecordToolVisit id={tool.id} />
       <ToolComponent />
     </ToolShell>
