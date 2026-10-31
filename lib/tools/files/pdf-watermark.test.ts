@@ -3,7 +3,7 @@ import { PDFDocument, degrees } from "pdf-lib";
 import { pageContents } from "./pdf-test-utils";
 import { fontSizeFor, stampCentres, unsupportedCharacters, watermarkPdf, type WatermarkOptions } from "./pdf-watermark";
 
-const OPTIONS: WatermarkOptions = { text: "DRAFT", layout: "center", size: "medium", opacity: 0.3, angle: 45, color: "gray" };
+const OPTIONS: WatermarkOptions = { text: "DRAFT", layout: "center", size: "medium", opacity: 0.3, angle: 45, color: "#9e9e9e" };
 
 async function letterPdf(pageCount: number, rotations: number[] = []) {
   const doc = await PDFDocument.create();

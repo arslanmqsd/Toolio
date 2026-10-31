@@ -1,9 +1,9 @@
-import { PDFDocument, StandardFonts, degrees, rgb } from "pdf-lib";
-import { PDF_COLORS, type PdfColor } from "./pdf-colors";
+import { PDFDocument, degrees, rgb } from "pdf-lib";
+import { hexRgb } from "./pdf-colors";
+import { PDF_FONTS, type PdfFont } from "./pdf-fonts";
 
 export type VerticalPosition = "top" | "bottom";
 export type HorizontalPosition = "left" | "center" | "right";
-export type NumberFont = "sans" | "serif" | "mono";
 export type NumberFormat = "n" | "page-n" | "n-of-total" | "page-n-of-total";
 
 export interface PageNumberOptions {
@@ -14,22 +14,17 @@ export interface PageNumberOptions {
   /** Distance from the page edges, in points. */
   margin: number;
   format: NumberFormat;
-  font: NumberFont;
+  font: PdfFont;
   /** In points. */
   size: number;
   bold: boolean;
-  color: PdfColor;
+  /** "#rrggbb". */
+  color: string;
   /** The number the first numbered page gets. */
   start: number;
 }
 
 export type PageNumbersProgress = { phase: "reading" } | { phase: "numbering"; done: number; total: number } | { phase: "saving" };
-
-const FONTS: Record<NumberFont, [StandardFonts, StandardFonts]> = {
-  sans: [StandardFonts.Helvetica, StandardFonts.HelveticaBold],
-  serif: [StandardFonts.TimesRoman, StandardFonts.TimesRomanBold],
-  mono: [StandardFonts.Courier, StandardFonts.CourierBold],
-};
 
 /** "7", "Page 7", "7 / 12", "Page 7 of 12". */
 export function formatPageNumber(format: NumberFormat, n: number, total: number): string {
@@ -89,11 +84,11 @@ export async function addPageNumbers(
 ): Promise<Uint8Array> {
   onProgress({ phase: "reading" });
   const doc = await PDFDocument.load(input, { updateMetadata: false });
-  const font = await doc.embedFont(FONTS[options.font][options.bold ? 1 : 0]);
+  const font = await doc.embedFont(PDF_FONTS[options.font][options.bold ? 1 : 0]);
   const targets = pages ?? doc.getPageIndices();
   const total = options.start + targets.length - 1;
   const capHeight = font.heightAtSize(options.size, { descender: false });
-  const [r, g, b] = PDF_COLORS[options.color];
+  const [r, g, b] = hexRgb(options.color);
 
   for (const [i, index] of targets.entries()) {
     onProgress({ phase: "numbering", done: i, total: targets.length });

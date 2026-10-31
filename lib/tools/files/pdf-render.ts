@@ -12,6 +12,8 @@ export interface PdfRenderer {
   thumbnail: (index: number, maxSide: number) => Promise<Blob>;
   /** One page (zero-based) at `dpi`, as PNG or JPEG, shrunk if needed to stay inside browser canvas limits. */
   image: (index: number, dpi: number, format: ImageFormat) => Promise<Blob>;
+  /** One page's size (zero-based) in points as seen, rotation applied. */
+  size: (index: number) => Promise<{ width: number; height: number }>;
   /** One page's text (zero-based), with line and paragraph breaks rebuilt from where the text sits. */
   text: (index: number) => Promise<string>;
   destroy: () => void;
@@ -54,6 +56,10 @@ export async function openPdfRenderer(bytes: Uint8Array): Promise<PdfRenderer> {
     // Sharp on high-density screens without drawing huge canvases for big pages.
     thumbnail: (index, maxSide) => draw(index, (w, h) => (maxSide * Math.min(window.devicePixelRatio || 1, 2)) / Math.max(w, h), "png"),
     image: (index, dpi, format) => draw(index, (w, h) => exportScale(w, h, dpi), format),
+    async size(index) {
+      const { width, height } = (await doc.getPage(index + 1)).getViewport({ scale: 1 });
+      return { width, height };
+    },
     async text(index) {
       const page = await doc.getPage(index + 1);
       try {
