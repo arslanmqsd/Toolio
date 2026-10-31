@@ -24,7 +24,6 @@ const fakeDataGenerator: ToolConfig = {
     "faker",
   ],
   actions: ["generate"],
-  component: () => import("@/components/tools/data/FakeDataGenerator"),
   consumes: [],
   produces: ["json", "csv"],
 };

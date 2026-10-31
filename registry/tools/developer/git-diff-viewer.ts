@@ -16,7 +16,6 @@ const gitDiffViewer: ToolConfig = {
     "diff viewer",
   ],
   actions: ["inspect"],
-  component: () => import("@/components/tools/developer/GitDiffViewer"),
   consumes: ["diff", "text"],
   produces: [],
 };

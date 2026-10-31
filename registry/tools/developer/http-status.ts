@@ -27,7 +27,6 @@ const httpStatus: ToolConfig = {
     "cloudflare error",
   ],
   actions: ["inspect"],
-  component: () => import("@/components/tools/developer/HttpStatus"),
   consumes: [],
   produces: [],
 };

@@ -26,7 +26,6 @@ const webhookPayloadTester: ToolConfig = {
     "send test webhook",
   ],
   actions: ["generate", "inspect"],
-  component: () => import("@/components/tools/developer/WebhookPayloadTester"),
   consumes: ["json"],
   produces: ["json"],
 };

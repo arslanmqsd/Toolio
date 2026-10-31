@@ -20,7 +20,6 @@ const loremIpsumGenerator: ToolConfig = {
     "lipsum",
   ],
   actions: ["generate"],
-  component: () => import("@/components/tools/text/LoremIpsumGenerator"),
   consumes: [],
   produces: ["text", "html", "markdown"],
 };

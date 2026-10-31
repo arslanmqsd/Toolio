@@ -22,7 +22,6 @@ const csvCleaner: ToolConfig = {
     "excel csv",
   ],
   actions: ["clean", "transform"],
-  component: () => import("@/components/tools/data/CsvCleaner"),
   consumes: ["csv"],
   produces: ["csv"],
 };

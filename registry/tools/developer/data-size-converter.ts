@@ -29,7 +29,6 @@ const dataSizeConverter: ToolConfig = {
     "why does my 1tb drive show 931gb",
   ],
   actions: ["convert", "calculate"],
-  component: () => import("@/components/tools/developer/DataSizeConverter"),
   consumes: [],
   produces: [],
 };

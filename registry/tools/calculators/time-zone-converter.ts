@@ -26,7 +26,6 @@ const timeZoneConverter: ToolConfig = {
     "utc offset",
   ],
   actions: ["convert", "calculate", "compare"],
-  component: () => import("@/components/tools/calculators/TimeZoneConverter"),
   consumes: [],
   produces: [],
 };

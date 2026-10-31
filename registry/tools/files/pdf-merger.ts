@@ -16,7 +16,6 @@ const pdfMerger: ToolConfig = {
     "append pdf",
   ],
   actions: ["transform"],
-  component: () => import("@/components/tools/files/PdfMerger"),
   consumes: [],
   produces: [],
 };

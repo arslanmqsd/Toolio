@@ -16,7 +16,6 @@ const pdfToImage: ToolConfig = {
     "rasterize pdf",
   ],
   actions: ["convert"],
-  component: () => import("@/components/tools/files/PdfToImage"),
   consumes: [],
   produces: [],
 };

@@ -22,7 +22,6 @@ const sqlToMongo: ToolConfig = {
     "mysql to mongodb",
   ],
   actions: ["convert"],
-  component: () => import("@/components/tools/developer/SqlToMongo"),
   consumes: ["sql"],
   produces: ["mongodb"],
 };

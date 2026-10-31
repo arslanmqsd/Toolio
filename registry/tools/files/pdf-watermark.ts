@@ -15,7 +15,6 @@ const pdfWatermark: ToolConfig = {
     "pdf text overlay",
   ],
   actions: ["transform"],
-  component: () => import("@/components/tools/files/PdfWatermark"),
   consumes: [],
   produces: [],
 };

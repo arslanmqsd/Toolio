@@ -16,7 +16,6 @@ const pdfMetadataEditor: ToolConfig = {
     "pdf keywords",
   ],
   actions: ["transform"],
-  component: () => import("@/components/tools/files/PdfMetadataEditor"),
   consumes: [],
   produces: [],
 };

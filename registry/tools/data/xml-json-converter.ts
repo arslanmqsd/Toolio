@@ -21,7 +21,6 @@ const xmlJsonConverter: ToolConfig = {
     "json2xml",
   ],
   actions: ["convert", "transform"],
-  component: () => import("@/components/tools/data/XmlJsonConverter"),
   consumes: ["xml", "json"],
   produces: ["json", "xml"],
 };

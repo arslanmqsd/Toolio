@@ -31,7 +31,6 @@ const jwtDecoder: ToolConfig = {
     "id token",
   ],
   actions: ["inspect", "extract"],
-  component: () => import("@/components/tools/developer/JwtDecoder"),
   consumes: ["jwt"],
   produces: ["json"],
 };

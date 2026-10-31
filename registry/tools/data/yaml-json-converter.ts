@@ -22,7 +22,6 @@ const yamlJsonConverter: ToolConfig = {
     "docker compose yaml",
   ],
   actions: ["convert", "format"],
-  component: () => import("@/components/tools/data/YamlJsonConverter"),
   consumes: ["yaml", "json"],
   produces: ["json", "yaml"],
 };

@@ -16,7 +16,6 @@ const rotatePdf: ToolConfig = {
     "batch rotate pdf",
   ],
   actions: ["transform"],
-  component: () => import("@/components/tools/files/RotatePdf"),
   consumes: [],
   produces: [],
 };

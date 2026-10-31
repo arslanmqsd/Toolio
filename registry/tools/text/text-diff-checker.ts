@@ -17,7 +17,6 @@ const textDiffChecker: ToolConfig = {
     "create patch",
   ],
   actions: ["compare"],
-  component: () => import("@/components/tools/text/TextDiffChecker"),
   consumes: ["text", "code"],
   produces: ["diff"],
 };

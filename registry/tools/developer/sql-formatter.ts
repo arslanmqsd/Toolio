@@ -30,7 +30,6 @@ const sqlFormatter: ToolConfig = {
     "pl/sql formatter",
   ],
   actions: ["format", "clean", "convert"],
-  component: () => import("@/components/tools/developer/SqlFormatter"),
   consumes: ["sql"],
   produces: ["sql"],
 };

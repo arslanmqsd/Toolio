@@ -26,7 +26,6 @@ const gitignoreGenerator: ToolConfig = {
     "ignore node_modules",
   ],
   actions: ["generate"],
-  component: () => import("@/components/tools/developer/GitignoreGenerator"),
   consumes: ["text"],
   produces: ["gitignore"],
 };

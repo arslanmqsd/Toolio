@@ -23,7 +23,6 @@ const unixTimestamp: ToolConfig = {
     "iso 8601",
   ],
   actions: ["convert", "inspect"],
-  component: () => import("@/components/tools/developer/UnixTimestamp"),
   consumes: ["timestamp", "date"],
   produces: ["timestamp", "date"],
 };

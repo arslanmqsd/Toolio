@@ -22,7 +22,6 @@ const ogPreview: ToolConfig = {
     "linkedin post preview",
   ],
   actions: ["inspect", "generate"],
-  component: () => import("@/components/tools/developer/OgPreview"),
   consumes: ["html"],
   produces: ["html"],
 };

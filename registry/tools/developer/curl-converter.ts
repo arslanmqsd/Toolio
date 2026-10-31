@@ -21,7 +21,6 @@ const curlConverter: ToolConfig = {
     "translate curl command",
   ],
   actions: ["convert", "generate"],
-  component: () => import("@/components/tools/developer/CurlConverter"),
   consumes: ["curl"],
   produces: ["code"],
 };

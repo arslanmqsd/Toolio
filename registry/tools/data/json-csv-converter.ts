@@ -22,7 +22,6 @@ const jsonCsvConverter: ToolConfig = {
     "csv injection",
   ],
   actions: ["convert", "transform"],
-  component: () => import("@/components/tools/data/JsonCsvConverter"),
   consumes: ["csv", "json"],
   produces: ["json", "csv"],
 };

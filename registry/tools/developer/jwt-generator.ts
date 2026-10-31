@@ -28,7 +28,6 @@ const jwtGenerator: ToolConfig = {
     "generate rsa key pair",
   ],
   actions: ["generate"],
-  component: () => import("@/components/tools/developer/JwtGenerator"),
   consumes: ["json"],
   produces: ["jwt"],
 };

@@ -20,7 +20,6 @@ const jsonPathTester: ToolConfig = {
     "extract values from json",
   ],
   actions: ["inspect", "extract"],
-  component: () => import("@/components/tools/developer/JsonPathTester"),
   consumes: ["json"],
   produces: ["json", "text"],
 };
