@@ -6,6 +6,15 @@
 import { exportScale, type ImageFormat } from "./pdf-to-image";
 import { runsToText } from "./pdf-text";
 
+/** A piece of a page's text, as a box on the page as seen: points from the top-left, rotation applied. */
+export interface TextBox {
+  str: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export interface PdfRenderer {
   pageCount: number;
   /** A PNG of one page (zero-based), its longest side `maxSide` CSS pixels, with the page's own rotation applied. */
@@ -14,6 +23,11 @@ export interface PdfRenderer {
   image: (index: number, dpi: number, format: ImageFormat) => Promise<Blob>;
   /** One page's size (zero-based) in points as seen, rotation applied. */
   size: (index: number) => Promise<{ width: number; height: number }>;
+  /**
+   * One page's text pieces (zero-based) in the order the PDF stores them, usually reading order. Only text
+   * running left to right as seen is included; sideways or upside-down text is left out.
+   */
+  textBoxes: (index: number) => Promise<TextBox[]>;
   /** One page's text (zero-based), with line and paragraph breaks rebuilt from where the text sits. */
   text: (index: number) => Promise<string>;
   destroy: () => void;
@@ -59,6 +73,29 @@ export async function openPdfRenderer(bytes: Uint8Array): Promise<PdfRenderer> {
     async size(index) {
       const { width, height } = (await doc.getPage(index + 1)).getViewport({ scale: 1 });
       return { width, height };
+    },
+    async textBoxes(index) {
+      const page = await doc.getPage(index + 1);
+      try {
+        const viewport = page.getViewport({ scale: 1 });
+        const { items } = await page.getTextContent();
+        const boxes: TextBox[] = [];
+        for (const item of items) {
+          if (!("str" in item) || !item.str.trim() || !item.width) continue;
+          const [a, b, c, d, e, f] = item.transform;
+          const size = Math.hypot(c, d) || item.height;
+          const len = Math.hypot(a, b) || 1;
+          const [ux, uy] = [a / len, b / len];
+          // The run's box in page space: along its baseline, from a little below it (descenders) to the ascent.
+          const corner = (along: number, up: number) => viewport.convertToViewportPoint(e + ux * along - uy * up, f + uy * along + ux * up) as [number, number];
+          const [start, end, top, bottom] = [corner(0, 0), corner(item.width, 0), corner(0, size * 0.85), corner(0, -size * 0.25)];
+          if (end[0] - start[0] <= 0 || Math.abs(end[1] - start[1]) > (end[0] - start[0]) * 0.1) continue;
+          boxes.push({ str: item.str, x: start[0], y: top[1], width: end[0] - start[0], height: bottom[1] - top[1] });
+        }
+        return boxes;
+      } finally {
+        page.cleanup();
+      }
     },
     async text(index) {
       const page = await doc.getPage(index + 1);

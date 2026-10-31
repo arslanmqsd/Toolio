@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import {
   AlignCenter,
   AlignLeft,
@@ -10,16 +10,22 @@ import {
   ChevronLeft,
   ChevronRight,
   Circle,
+  Cloud,
+  Eraser,
   Highlighter,
   ImagePlus,
   Italic,
   MousePointer2,
+  MoveUpRight,
+  Redo2,
   RotateCcw,
   RotateCcwSquare,
   RotateCwSquare,
   Pencil,
   PaintBucket,
   Save,
+  PenLine,
+  Pentagon,
   Shapes,
   Slash,
   Square,
@@ -44,11 +50,21 @@ import { formatBytes } from "@/lib/format-bytes";
 import { plural } from "@/lib/notices";
 import {
   COMMENT_SIZE,
+  cloudPath,
+  eraseInk,
+  eraseMarkup,
+  eraseShape,
+  linePaths,
+  pathD,
+  polyPath,
   LINE_HEIGHT,
+  MARK_LINE_AT,
   TEXT_ASCENT,
+  type Box,
   type EditItem,
   type EditProgress,
   type ImageRotation,
+  type MarkupStyle,
   type TextAlign,
   type TextStyle,
 } from "@/lib/tools/files/pdf-editor";
@@ -57,6 +73,7 @@ import { SWATCH_ROWS } from "@/lib/tools/files/pdf-colors";
 import { PDF_MAX_BYTES, pdfErrorMessage } from "@/lib/tools/files/pdf-errors";
 import { PDF_FONT_CSS, PDF_FONT_OPTIONS, type PdfFont } from "@/lib/tools/files/pdf-fonts";
 import { openPdfRenderer, type PdfRenderer } from "@/lib/tools/files/pdf-render";
+import { charAt, selectionRects, splitChars, type Char } from "@/lib/tools/files/pdf-text-select";
 import { imageSize, prepareImage } from "@/lib/tools/files/prepare-image";
 import { unsupportedCharacters } from "@/lib/tools/files/pdf-watermark";
 import { runWorkerTask } from "@/lib/worker-task";
@@ -65,36 +82,118 @@ function createWorker() {
   return new Worker(new URL("../../../lib/tools/files/pdf-editor.worker.ts", import.meta.url));
 }
 
-type Tool = "select" | "text" | "highlight" | "ink" | "rect" | "ellipse" | "line" | "comment";
+type Tool =
+  | "select"
+  | "text"
+  | MarkupStyle
+  | "ink"
+  | "marker"
+  | "eraser"
+  | "rect"
+  | "ellipse"
+  | "arc"
+  | "polygon"
+  | "cloud"
+  | "line"
+  | "polyline"
+  | "arrow"
+  | "comment";
+
+/** Tools that add a shape by dragging from one corner (or end) to the other, or by a single click. */
+type DragTool = "highlight" | "rect" | "ellipse" | "arc" | "cloud" | "line" | "arrow";
+const isDragTool = (tool: string): tool is DragTool => ["highlight", "rect", "ellipse", "arc", "cloud", "line", "arrow"].includes(tool);
+
+/** Tools that add corners one click at a time. */
+const isPolyTool = (tool: string): tool is "polyline" | "polygon" => tool === "polyline" || tool === "polygon";
+
+/** Small line icons for shapes lucide doesn't draw the way the toolbar needs. */
+function PathIcon({ d }: { d: string }) {
+  return (
+    <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d={d} />
+    </svg>
+  );
+}
+type Tab = "annotate" | "shapes" | "insert";
 type Item = EditItem & { id: number };
 type Point = { x: number; y: number };
 
-type ShapeKind = "line" | "rect" | "ellipse";
+const isTextMark = (tool: string): tool is "underline" | "strike" | "squiggly" => tool === "underline" || tool === "strike" || tool === "squiggly";
 
-const SHAPES: { id: ShapeKind; label: string; icon: LucideIcon }[] = [
-  { id: "line", label: "Line", icon: Slash },
-  { id: "rect", label: "Rectangle", icon: Square },
-  { id: "ellipse", label: "Ellipse", icon: Circle },
+/** The letter "A" marked the way a text tool marks text, as that tool's icon. */
+function MarkIcon({ style }: { style: MarkupStyle }) {
+  const look = {
+    highlight: { background: "#ffeb5a", color: "#111" },
+    underline: { textDecoration: "underline", textDecorationThickness: "2px" },
+    strike: { textDecoration: "line-through", textDecorationThickness: "2px" },
+    squiggly: { textDecoration: "underline wavy", textDecorationColor: "#e74c3c", textUnderlineOffset: "1px" },
+  }[style];
+  return (
+    <span aria-hidden className="flex h-4 w-4 items-center justify-center rounded-sm text-[0.9rem] font-semibold leading-none" style={look}>
+      A
+    </span>
+  );
+}
+
+const icon = (Icon: LucideIcon) => <Icon aria-hidden className="h-4 w-4" />;
+
+/** Tools grouped into tabs, like most PDF editors; each tab starts with Select so items can be picked up. */
+const TABS: { id: Tab; label: string; icon: LucideIcon; tools: { id: Tool; label: string; icon: ReactNode }[] }[] = [
+  {
+    id: "annotate",
+    label: "Annotate",
+    icon: PenLine,
+    tools: [
+      { id: "select", label: "Select and move", icon: icon(MousePointer2) },
+      { id: "highlight", label: "Highlight text", icon: <MarkIcon style="highlight" /> },
+      { id: "underline", label: "Underline text", icon: <MarkIcon style="underline" /> },
+      { id: "strike", label: "Strike through text", icon: <MarkIcon style="strike" /> },
+      { id: "squiggly", label: "Squiggly underline", icon: <MarkIcon style="squiggly" /> },
+      { id: "ink", label: "Pen", icon: icon(Pencil) },
+      { id: "marker", label: "Highlighter pen", icon: icon(Highlighter) },
+      { id: "text", label: "Text", icon: icon(Type) },
+      { id: "comment", label: "Comment", icon: icon(StickyNote) },
+      { id: "eraser", label: "Eraser", icon: icon(Eraser) },
+    ],
+  },
+  {
+    id: "shapes",
+    label: "Shapes",
+    icon: Shapes,
+    tools: [
+      { id: "select", label: "Select and move", icon: icon(MousePointer2) },
+      { id: "rect", label: "Rectangle", icon: icon(Square) },
+      { id: "ellipse", label: "Ellipse", icon: icon(Circle) },
+      { id: "arc", label: "Arc", icon: <PathIcon d="M5 20C5 11 11 5 20 5" /> },
+      { id: "polygon", label: "Polygon", icon: icon(Pentagon) },
+      { id: "cloud", label: "Cloud", icon: icon(Cloud) },
+      { id: "line", label: "Line", icon: icon(Slash) },
+      { id: "polyline", label: "Polyline", icon: <PathIcon d="M3 17l6-6 4 4 8-8" /> },
+      { id: "arrow", label: "Arrow", icon: icon(MoveUpRight) },
+      { id: "eraser", label: "Eraser", icon: icon(Eraser) },
+    ],
+  },
+  { id: "insert", label: "Insert", icon: ImagePlus, tools: [{ id: "select", label: "Select and move", icon: icon(MousePointer2) }] },
 ];
 
-const isShape = (tool: Tool): tool is ShapeKind => tool === "line" || tool === "rect" || tool === "ellipse";
+const MARK_LABEL: Record<MarkupStyle, string> = { highlight: "Highlight", underline: "Underline", strike: "Strikethrough", squiggly: "Squiggly" };
 
-/** The toolbar; "shapes" stands for whichever shape was picked last, chosen in the row below. */
-const TOOLS: { id: Exclude<Tool, ShapeKind> | "shapes"; label: string; icon: LucideIcon }[] = [
-  { id: "select", label: "Select and move", icon: MousePointer2 },
-  { id: "text", label: "Text", icon: Type },
-  { id: "highlight", label: "Highlight", icon: Highlighter },
-  { id: "ink", label: "Draw", icon: Pencil },
-  { id: "shapes", label: "Add shape", icon: Shapes },
-  { id: "comment", label: "Comment", icon: StickyNote },
-];
+/** Eraser widths, in points. */
+const ERASER_SIZES = [
+  { id: "8", label: "Small" },
+  { id: "16", label: "Medium" },
+  { id: "32", label: "Large" },
+] as const;
 
-const KIND_LABEL: Record<EditItem["kind"], string> = {
+/** A highlighter pen stroke's width, in points: about a line of body text. */
+const MARKER_WIDTH = 12;
+
+const KIND_LABEL: Record<Exclude<EditItem["kind"], "markup">, string> = {
   text: "Text",
-  highlight: "Highlight",
   rect: "Rectangle",
   ellipse: "Ellipse",
   line: "Line",
+  poly: "Polyline",
   comment: "Comment",
   ink: "Drawing",
   image: "Image",
@@ -141,12 +240,25 @@ function Divider() {
 }
 
 /** What a click without a drag adds, in points, so every tool works with a single click or Enter. */
-const DEFAULT_BOX: Record<"highlight" | "rect" | "ellipse" | "line", [number, number]> = {
+const DEFAULT_BOX: Record<DragTool, [number, number]> = {
   highlight: [150, 16],
   rect: [120, 80],
   ellipse: [100, 100],
+  arc: [120, 80],
+  cloud: [140, 90],
   line: [120, 0],
+  arrow: [120, 0],
 };
+
+let measureChars: CanvasRenderingContext2D | null = null;
+
+/** Widths for splitting the PDF's text into letters; a sans font is close enough to tell wide letters from narrow. */
+function charWidth(text: string): number {
+  measureChars ??= document.createElement("canvas").getContext("2d");
+  if (!measureChars) return text.length;
+  measureChars.font = "10px Helvetica, Arial, sans-serif";
+  return measureChars.measureText(text).width;
+}
 
 /** On-screen page width the page image is drawn for. Sharp at full panel width without huge canvases. */
 const PAGE_PIXELS = 1100;
@@ -157,12 +269,17 @@ type Doc =
   | { status: "ready"; renderer: PdfRenderer; pages: number }
   | { status: "error"; error: string };
 
-type View = { index: number; url: string; width: number; height: number };
+/** The page drawn on screen: its picture, size in points, and its own text split into letters for text marks. */
+type View = { index: number; url: string; width: number; height: number; chars: Char[] };
 
 type Drag =
   | { mode: "draw"; start: Point; now: Point }
   /** Freehand: the points live in a ref so fast pointer moves between renders aren't lost; `count` re-renders. */
   | { mode: "ink"; count: number }
+  /** Selecting the page's own text, as letter positions in `view.chars`. */
+  | { mode: "mark"; from: number; to: number }
+  /** Erasing: what was there before, so the whole sweep undoes in one step. */
+  | { mode: "erase"; before: Item[] }
   | { mode: "move" | "resize"; id: number; start: Point; before: Item[]; moved: boolean };
 
 type Job = { status: "idle" } | { status: "working"; progress: EditProgress } | { status: "done"; bytes: Uint8Array } | { status: "error"; error: string };
@@ -199,12 +316,32 @@ function bounds(item: EditItem): { x: number; y: number; width: number; height: 
     }
     case "line":
       return { x: Math.min(item.x, item.x2), y: Math.min(item.y, item.y2), width: Math.abs(item.x2 - item.x), height: Math.abs(item.y2 - item.y) };
+    case "poly": {
+      const xs = item.points.map((p) => item.x + p[0]);
+      const ys = item.points.map((p) => item.y + p[1]);
+      return { x: Math.min(...xs), y: Math.min(...ys), width: Math.max(...xs) - Math.min(...xs), height: Math.max(...ys) - Math.min(...ys) };
+    }
+    case "markup": {
+      const left = Math.min(...item.rects.map((b) => b.x));
+      const top = Math.min(...item.rects.map((b) => b.y));
+      return {
+        x: left,
+        y: top,
+        width: Math.max(...item.rects.map((b) => b.x + b.width)) - left,
+        height: Math.max(...item.rects.map((b) => b.y + b.height)) - top,
+      };
+    }
     default:
       return item;
   }
 }
 
 function describe(item: EditItem): string {
+  if (item.kind === "markup") return MARK_LABEL[item.style];
+  if (item.kind === "ink") return item.marker ? "Highlighter" : "Drawing";
+  if (item.kind === "line") return item.arrow ? "Arrow" : item.curve ? "Arc" : "Line";
+  if (item.kind === "poly") return item.closed ? "Polygon" : "Polyline";
+  if (item.kind === "rect" && item.cloud) return "Cloud";
   if (item.kind === "text" || item.kind === "comment") {
     const words = item.text.trim().replace(/\s+/g, " ");
     return `${KIND_LABEL[item.kind]}: ${words ? (words.length > 30 ? `${words.slice(0, 30)}…` : words) : "empty"}`;
@@ -214,6 +351,32 @@ function describe(item: EditItem): string {
 
 /** Text and comments with nothing typed in are dropped rather than saved. */
 const isEmpty = (item: EditItem) => (item.kind === "text" || item.kind === "comment") && !item.text.trim();
+
+/** One line of a text mark on screen, matching how the saved annotation draws it. */
+function MarkLook({ style, box: { x, y, width: w, height: h }, color }: { style: MarkupStyle; box: Box; color: string }) {
+  const hitArea = <rect x={x} y={y} width={w} height={h} fill="transparent" />;
+  if (style === "highlight") return <rect x={x} y={y} width={w} height={h} fill={color} style={{ mixBlendMode: "multiply" }} />;
+  const thickness = Math.max(0.5, h * 0.07);
+  if (style !== "squiggly") {
+    const ly = y + h * MARK_LINE_AT[style];
+    return (
+      <>
+        {hitArea}
+        <line x1={x} y1={ly} x2={x + w} y2={ly} stroke={color} strokeWidth={thickness} strokeLinecap="round" />
+      </>
+    );
+  }
+  const step = h / 6;
+  const base = y + h * MARK_LINE_AT.squiggly;
+  const points = [`${x},${base}`];
+  for (let i = 1, px = x + step; px <= x + w + 0.01; i++, px += step) points.push(`${Math.min(px, x + w)},${base + (i % 2 ? -1 : 1) * h * 0.05}`);
+  return (
+    <>
+      {hitArea}
+      <polyline points={points.join(" ")} fill="none" stroke={color} strokeWidth={thickness} strokeLinecap="round" strokeLinejoin="round" />
+    </>
+  );
+}
 
 function ItemShape({ item, hitArea }: { item: Item; hitArea: boolean }) {
   const hit = hitArea ? "all" : "none";
@@ -247,12 +410,29 @@ function ItemShape({ item, hitArea }: { item: Item; hitArea: boolean }) {
         </g>
       );
     }
-    case "highlight":
-      return <rect x={item.x} y={item.y} width={item.width} height={item.height} fill={item.color} style={{ mixBlendMode: "multiply" }} pointerEvents={hit} />;
-    case "rect":
+    case "markup":
       return (
+        <g pointerEvents={hit}>
+          {item.rects.map((b, i) => (
+            <MarkLook key={i} style={item.style} box={b} color={item.color} />
+          ))}
+        </g>
+      );
+    case "rect":
+      return item.cloud ? (
+        <path d={pathD(cloudPath(item))} fill={item.fill ?? "transparent"} stroke={item.color} strokeWidth={item.stroke} strokeLinejoin="round" pointerEvents={hit} />
+      ) : (
         <rect x={item.x} y={item.y} width={item.width} height={item.height} fill={item.fill ?? "transparent"} stroke={item.color} strokeWidth={item.stroke} pointerEvents={hit} />
       );
+    case "poly": {
+      const d = pathD(polyPath(item));
+      return (
+        <g pointerEvents={hit} strokeLinecap="round" strokeLinejoin="round">
+          <path d={d} fill={item.closed ? "transparent" : "none"} stroke="transparent" strokeWidth={Math.max(10, item.stroke)} />
+          <path d={d} fill={item.closed ? (item.fill ?? "none") : "none"} stroke={item.color} strokeWidth={item.stroke} />
+        </g>
+      );
+    }
     case "ellipse":
       return (
         <ellipse
@@ -266,14 +446,18 @@ function ItemShape({ item, hitArea }: { item: Item; hitArea: boolean }) {
           pointerEvents={hit}
         />
       );
-    case "line":
+    case "line": {
+      const { stroke, head } = linePaths(item);
+      const d = pathD(stroke);
       return (
-        <g pointerEvents={hit}>
+        <g pointerEvents={hit} fill="none" strokeLinecap="round" strokeLinejoin="round">
           {/* A wide invisible stroke so thin lines are easy to grab. */}
-          <line x1={item.x} y1={item.y} x2={item.x2} y2={item.y2} stroke="transparent" strokeWidth={Math.max(10, item.stroke)} />
-          <line x1={item.x} y1={item.y} x2={item.x2} y2={item.y2} stroke={item.color} strokeWidth={item.stroke} strokeLinecap="round" />
+          <path d={d} stroke="transparent" strokeWidth={Math.max(10, item.stroke)} />
+          <path d={d} stroke={item.color} strokeWidth={item.stroke} />
+          {head && <path d={pathD(head)} fill={item.color} stroke="none" />}
         </g>
       );
+    }
     case "image": {
       // Drawn at its own shape around the box's centre, then turned to fill the box.
       const sideways = item.rotation % 180 !== 0;
@@ -302,7 +486,7 @@ function ItemShape({ item, hitArea }: { item: Item; hitArea: boolean }) {
       return (
         <g pointerEvents={hit} fill="none" strokeLinecap="round" strokeLinejoin="round">
           <path d={d} stroke="transparent" strokeWidth={Math.max(10, item.stroke)} />
-          <path d={d} stroke={item.color} strokeWidth={item.stroke} />
+          <path d={d} stroke={item.color} strokeWidth={item.stroke} style={item.marker ? { mixBlendMode: "multiply" } : undefined} />
         </g>
       );
     }
@@ -328,13 +512,23 @@ export default function PdfEditor() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [ink, setInk] = useState("#000000");
   const [marker, setMarker] = useState("#ffeb5a");
+  /** Colour for underline, strikethrough and squiggly marks. */
+  const [lineMark, setLineMark] = useState("#e74c3c");
+  const [tab, setTab] = useState<Tab>("annotate");
+  const [markHint, setMarkHint] = useState(false);
+  const [eraserSize, setEraserSize] = useState<(typeof ERASER_SIZES)[number]["id"]>("16");
+  /** Where the eraser is over the page, to draw its outline in place of the pointer. */
+  const [hover, setHover] = useState<Point | null>(null);
+  /** Corners placed so far for a polyline or polygon being drawn. */
+  const [polyPts, setPolyPts] = useState<Point[] | null>(null);
   const [fill, setFill] = useState<string | null>(null);
   const [stroke, setStroke] = useState<(typeof STROKES)[number]["id"]>("2");
-  const [shape, setShape] = useState<ShapeKind>("rect");
   const [textStyle, setTextStyle] = useState<TextStyle>(DEFAULT_TEXT);
   const [drag, setDrag] = useState<Drag | null>(null);
   const [job, setJob] = useState<Job>({ status: "idle" });
   const past = useRef<Item[][]>([]);
+  /** Undone states, for Redo; any new change clears it. */
+  const future = useRef<Item[][]>([]);
   const nextId = useRef(1);
   const svgRef = useRef<SVGSVGElement>(null);
   const noteRef = useRef<HTMLTextAreaElement>(null);
@@ -354,6 +548,7 @@ export default function PdfEditor() {
     setPageIndex(0);
     setImageError(null);
     past.current = [];
+    future.current = [];
     madeUrls.current.forEach((url) => URL.revokeObjectURL(url));
     madeUrls.current = [];
     if (!file) return setDoc({ status: "none" });
@@ -382,11 +577,12 @@ export default function PdfEditor() {
     if (doc.status !== "ready") return setView(null);
     let cancelled = false;
     let url: string | null = null;
-    Promise.all([doc.renderer.size(pageIndex), doc.renderer.thumbnail(pageIndex, PAGE_PIXELS)])
-      .then(([size, blob]) => {
+    // The page's text is optional: if it can't be read, text marks fall back to boxes.
+    Promise.all([doc.renderer.size(pageIndex), doc.renderer.thumbnail(pageIndex, PAGE_PIXELS), doc.renderer.textBoxes(pageIndex).catch(() => [])])
+      .then(([size, blob, boxes]) => {
         if (cancelled) return;
         url = URL.createObjectURL(blob);
-        setView({ index: pageIndex, url, ...size });
+        setView({ index: pageIndex, url, ...size, chars: splitChars(boxes, charWidth) });
       })
       .catch((err: Error) => !cancelled && setDoc({ status: "error", error: pdfErrorMessage(err.message) }));
     return () => {
@@ -426,15 +622,27 @@ export default function PdfEditor() {
 
   /** Replaces the items, remembering the old list for Undo unless `record` is false. */
   function change(next: Item[], record = true) {
-    if (record) past.current = [...past.current.slice(-99), items];
+    if (record) {
+      past.current = [...past.current.slice(-99), items];
+      future.current = [];
+    }
     setItems(next);
   }
 
   function undo() {
     const prev = past.current.pop();
     if (!prev) return;
+    future.current.push(items);
     setItems(prev);
     if (!prev.some((i) => i.id === selectedId)) setSelectedId(null);
+  }
+
+  function redo() {
+    const next = future.current.pop();
+    if (!next) return;
+    past.current.push(items);
+    setItems(next);
+    if (!next.some((i) => i.id === selectedId)) setSelectedId(null);
   }
 
   /** Selects an item (or nothing), dropping any text or comment left empty, and shows its style. */
@@ -447,10 +655,11 @@ export default function PdfEditor() {
     if (item.kind === "text") {
       const { font, size, bold, italic, underline, color, background, align, opacity } = item;
       setTextStyle({ font, size, bold, italic, underline, color, background, align, opacity });
-    } else if (item.kind === "highlight") setMarker(item.color);
+    } else if (item.kind === "markup") (item.style === "highlight" ? setMarker : setLineMark)(item.color);
+    else if (item.kind === "ink" && item.marker) setMarker(item.color);
     else if (item.kind !== "comment" && item.kind !== "image") {
       setInk(item.color);
-      if (item.kind === "rect" || item.kind === "ellipse") setFill(item.fill);
+      if (item.kind === "rect" || item.kind === "ellipse" || item.kind === "poly") setFill(item.fill);
       setStroke(String(item.stroke) as (typeof STROKES)[number]["id"]);
     }
   }
@@ -468,16 +677,19 @@ export default function PdfEditor() {
     if (selected?.kind === "text") change(items.map((i) => (i.id === selected.id ? { ...selected, ...patch } : i)));
   }
 
-  function newItem(kind: Exclude<Tool, "select" | "ink">, a: Point, b: Point | null): Item {
+  function newItem(kind: "text" | "comment" | DragTool, a: Point, b: Point | null): Item {
     const id = nextId.current++;
     const base = { id, page: pageIndex };
     if (kind === "text") return { ...base, kind, x: a.x, y: a.y, text: "", ...textStyle };
     if (kind === "comment") return { ...base, kind, x: a.x, y: a.y, text: "" };
     const [w, h] = DEFAULT_BOX[kind];
     const end = b ?? { x: a.x + w, y: a.y + h };
-    if (kind === "line") return { ...base, kind, x: a.x, y: a.y, x2: end.x, y2: end.y, color: ink, stroke: Number(stroke) };
+    if (kind === "line" || kind === "arrow" || kind === "arc")
+      return { ...base, kind: "line", x: a.x, y: a.y, x2: end.x, y2: end.y, color: ink, stroke: Number(stroke), arrow: kind === "arrow", curve: kind === "arc" };
     const box = { x: Math.min(a.x, end.x), y: Math.min(a.y, end.y), width: Math.abs(end.x - a.x), height: Math.abs(end.y - a.y) };
-    if (kind === "highlight") return { ...base, kind, ...box, color: marker };
+    // A highlight dragged where there's no text to select: one free box.
+    if (kind === "highlight") return { ...base, kind: "markup", style: "highlight", rects: [box], color: marker };
+    if (kind === "cloud") return { ...base, kind: "rect", ...box, color: ink, fill, stroke: Number(stroke), cloud: true };
     return { ...base, kind, ...box, color: ink, fill, stroke: Number(stroke) };
   }
 
@@ -493,7 +705,53 @@ export default function PdfEditor() {
   function inkItem(points: Point[]): Item {
     const [{ x, y }] = points;
     const round = (v: number) => Math.round(v * 10) / 10;
-    return { id: nextId.current++, page: pageIndex, kind: "ink", x, y, points: points.map((p) => [round(p.x - x), round(p.y - y)]), color: ink, stroke: Number(stroke) };
+    const pen = tool === "marker" ? { color: marker, stroke: MARKER_WIDTH, marker: true } : { color: ink, stroke: Number(stroke), marker: false };
+    return { id: nextId.current++, page: pageIndex, kind: "ink", x, y, points: points.map((p) => [round(p.x - x), round(p.y - y)]), ...pen };
+  }
+
+  /** A polyline or polygon through page points, stored as offsets from its first corner. */
+  function polyItem(points: Point[], closed: boolean): Item {
+    const [{ x, y }] = points;
+    return { id: nextId.current++, page: pageIndex, kind: "poly", x, y, points: points.map((p) => [p.x - x, p.y - y]), closed, color: ink, fill, stroke: Number(stroke) };
+  }
+
+  /** Finishes the polyline or polygon being drawn, if it has enough corners; drops it otherwise. */
+  function finishPoly(closed = tool === "polygon") {
+    // A double-click lands two clicks on one spot, so drop corners that repeat the one before.
+    const pts = (polyPts ?? []).filter((p, i, all) => !i || Math.hypot(p.x - all[i - 1].x, p.y - all[i - 1].y) > 1);
+    setPolyPts(null);
+    if (pts.length >= (closed ? 3 : 2)) add(polyItem(pts, closed));
+  }
+
+  /** A text mark over the letters from `from` to `to` on the current page. */
+  function markItem(from: number, to: number): Item {
+    const style = tool as MarkupStyle;
+    return { id: nextId.current++, page: pageIndex, kind: "markup", style, rects: selectionRects(view!.chars, from, to), color: style === "highlight" ? marker : lineMark };
+  }
+
+  /**
+   * Erases at a point: pen strokes, text marks and unfilled shapes lose just the part under the eraser
+   * (splitting in two if it cuts through); anything else under the pointer goes whole.
+   */
+  function eraseAt(clientX: number, clientY: number, p: Point, list: Item[]): Item[] {
+    const hit = document.elementsFromPoint(clientX, clientY).find((el) => el.closest("[data-id]"))?.closest("[data-id]");
+    const hitId = hit ? Number(hit.getAttribute("data-id")) : null;
+    return list.flatMap((item): Item[] => {
+      if (item.page !== pageIndex) return [item];
+      if (item.kind === "ink") {
+        const pieces = eraseInk(item, p.x, p.y, Number(eraserSize) / 2);
+        return pieces.length === 1 && pieces[0] === item ? [item] : pieces.map((piece) => ({ ...piece, id: nextId.current++ }));
+      }
+      if (item.kind === "markup") {
+        const left = eraseMarkup(item, p.x, p.y, Number(eraserSize) / 2);
+        return left === item ? [item] : left ? [{ ...left, id: item.id }] : [];
+      }
+      if (item.kind === "rect" || item.kind === "ellipse" || item.kind === "line" || item.kind === "poly") {
+        const pieces = eraseShape(item, p.x, p.y, Number(eraserSize) / 2);
+        if (pieces) return pieces.length === 1 && pieces[0] === item ? [item] : pieces.map((piece) => ({ ...piece, id: nextId.current++ }));
+      }
+      return item.id === hitId ? [] : [item];
+    });
   }
 
   /** Places a picture in the middle of the current page, selected so it can be moved and resized straight away. */
@@ -549,7 +807,24 @@ export default function PdfEditor() {
       return;
     }
     if (tool === "text" || tool === "comment") return add(newItem(tool, p, null));
-    if (tool === "ink") {
+    if (isPolyTool(tool)) {
+      if (!polyPts) return setPolyPts([p]);
+      // Clicking back on the first corner closes a polygon.
+      if (tool === "polygon" && polyPts.length >= 3 && Math.hypot(p.x - polyPts[0].x, p.y - polyPts[0].y) < 8) return finishPoly(true);
+      return setPolyPts([...polyPts, p]);
+    }
+    if (tool === "eraser") {
+      select(null);
+      setItems(eraseAt(e.clientX, e.clientY, p, items));
+      return setDrag({ mode: "erase", before: items });
+    }
+    if (tool === "highlight" || isTextMark(tool)) {
+      const at = charAt(view.chars, p.x, p.y);
+      setMarkHint(at === null && tool !== "highlight");
+      if (at !== null) return setDrag({ mode: "mark", from: at, to: at });
+      if (tool !== "highlight") return;
+    }
+    if (tool === "ink" || tool === "marker") {
       inkPoints.current = [p];
       return setDrag({ mode: "ink", count: 1 });
     }
@@ -557,9 +832,16 @@ export default function PdfEditor() {
   }
 
   function onPointerMove(e: PointerEvent<SVGSVGElement>) {
-    if (!drag || !view) return;
+    if (!view) return;
     const p = pointAt(e);
+    if (tool === "eraser" || polyPts) setHover(p);
+    if (!drag) return;
     if (drag.mode === "draw") return setDrag({ ...drag, now: p });
+    if (drag.mode === "mark") {
+      const to = charAt(view.chars, p.x, p.y);
+      return to !== null && to !== drag.to && setDrag({ ...drag, to });
+    }
+    if (drag.mode === "erase") return setItems(eraseAt(e.clientX, e.clientY, p, items));
     if (drag.mode === "ink") {
       // Coalesced events carry the in-between positions a fast stroke would otherwise skip.
       for (const ev of e.nativeEvent.getCoalescedEvents?.() ?? [e]) {
@@ -570,7 +852,8 @@ export default function PdfEditor() {
       return setDrag({ mode: "ink", count: inkPoints.current.length });
     }
     const orig = drag.before.find((i) => i.id === drag.id);
-    if (!orig) return;
+    // Text marks belong to the text under them, so they stay put.
+    if (!orig || orig.kind === "markup") return;
     const dx = p.x - drag.start.x;
     const dy = p.y - drag.start.y;
     let moved: Item;
@@ -588,6 +871,18 @@ export default function PdfEditor() {
   function onPointerUp() {
     if (!drag) return;
     setDrag(null);
+    if (drag.mode === "erase") {
+      if (items.length !== drag.before.length) {
+        past.current = [...past.current.slice(-99), drag.before];
+        future.current = [];
+      }
+      return;
+    }
+    if (drag.mode === "mark") {
+      // Keep marking: like the pen, new marks aren't selected.
+      change([...items.filter((i) => !isEmpty(i)), markItem(drag.from, drag.to)]);
+      return;
+    }
     if (drag.mode === "ink") {
       // Keep drawing: new strokes are added without selecting them.
       change([...items.filter((i) => !isEmpty(i)), inkItem(inkPoints.current)]);
@@ -595,10 +890,13 @@ export default function PdfEditor() {
       return;
     }
     if (drag.mode !== "draw") {
-      if (drag.moved) past.current = [...past.current.slice(-99), drag.before];
+      if (drag.moved) {
+        past.current = [...past.current.slice(-99), drag.before];
+        future.current = [];
+      }
       return;
     }
-    if (tool === "select" || tool === "text" || tool === "comment" || tool === "ink") return;
+    if (!isDragTool(tool)) return;
     const far = Math.hypot(drag.now.x - drag.start.x, drag.now.y - drag.start.y) > 4;
     add(newItem(tool, drag.start, far ? drag.now : null));
   }
@@ -607,11 +905,16 @@ export default function PdfEditor() {
     if (!view) return;
     const step = e.shiftKey ? 10 : 1;
     const arrows: Record<string, [number, number]> = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] };
-    if ((e.key === "Enter" || e.key === " ") && tool !== "select" && tool !== "ink") {
+    if (polyPts && (e.key === "Enter" || e.key === "Escape")) {
+      e.preventDefault();
+      return e.key === "Enter" ? finishPoly() : setPolyPts(null);
+    }
+    const placeable = tool === "text" || tool === "comment" || isDragTool(tool);
+    if ((e.key === "Enter" || e.key === " ") && placeable) {
       e.preventDefault();
       // Keyboard placement: start near the middle of the page, then move with the arrow keys.
       add(newItem(tool, { x: view.width / 2 - 50, y: view.height / 2 - 20 }, null));
-    } else if (selected && e.key in arrows) {
+    } else if (selected && selected.kind !== "markup" && e.key in arrows) {
       e.preventDefault();
       const [dx, dy] = arrows[e.key];
       const moved = { ...selected, x: selected.x + dx, y: selected.y + dy, ...(selected.kind === "line" && { x2: selected.x2 + dx, y2: selected.y2 + dy }) };
@@ -629,6 +932,7 @@ export default function PdfEditor() {
 
   function goTo(index: number) {
     select(null);
+    setPolyPts(null);
     setDrag(null);
     setPageIndex(index);
   }
@@ -656,25 +960,71 @@ export default function PdfEditor() {
     }
   }
 
-  // Undo works from anywhere in the editor except inside text fields, which keep their own undo.
+  function switchTab(id: Tab) {
+    setTab(id);
+    setPolyPts(null);
+    setMarkHint(false);
+    if (!TABS.find((t) => t.id === id)!.tools.some((t) => t.id === tool)) setTool("select");
+  }
+
+  // Tabs pattern: arrow keys move between tabs and show them; Home and End jump to the ends.
+  function onTabKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+    const i = TABS.findIndex((t) => t.id === tab);
+    const next = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: TABS.length - 1 }[e.key];
+    if (next === undefined) return;
+    e.preventDefault();
+    const id = TABS[(next + TABS.length) % TABS.length].id;
+    switchTab(id);
+    document.getElementById(`pdf-tab-${id}`)?.focus();
+  }
+
+  // Undo and redo work from anywhere in the editor except inside text fields, which keep their own.
   function onEditorKeyDown(e: KeyboardEvent<HTMLDivElement>) {
-    if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === "z" && !(e.target as Element).closest("textarea, input, select")) {
-      e.preventDefault();
-      undo();
-    }
+    if (!(e.metaKey || e.ctrlKey) || (e.target as Element).closest("textarea, input, select")) return;
+    const key = e.key.toLowerCase();
+    if (key === "z" && !e.shiftKey) undo();
+    else if ((key === "z" && e.shiftKey) || key === "y") redo();
+    else return;
+    e.preventDefault();
   }
 
   const draft =
     drag?.mode === "ink" && inkPoints.current.length
       ? inkItem(inkPoints.current)
-      : drag?.mode === "draw" && tool !== "select" && tool !== "text" && tool !== "comment" && tool !== "ink"
-        ? newItem(tool, drag.start, drag.now)
-        : null;
-  const styleKind = selected?.kind ?? (tool === "select" ? null : tool);
+      : drag?.mode === "mark"
+        ? markItem(drag.from, drag.to)
+        : drag?.mode === "draw" && isDragTool(tool)
+          ? newItem(tool, drag.start, drag.now)
+          : polyPts && hover
+            ? polyItem([...polyPts, hover], false)
+            : null;
+  // Which style controls to show: the selected item's, or the chosen tool's for what it adds next.
+  const styleKind: Tool | "image" | null = selected
+    ? selected.kind === "markup"
+      ? selected.style
+      : selected.kind === "ink" && selected.marker
+        ? "marker"
+        : selected.kind === "line"
+          ? selected.arrow
+            ? "arrow"
+            : selected.curve
+              ? "arc"
+              : "line"
+          : selected.kind === "poly"
+            ? selected.closed
+              ? "polygon"
+              : "polyline"
+            : selected.kind === "rect" && selected.cloud
+              ? "cloud"
+              : selected.kind
+    : tool === "select"
+      ? null
+      : tool;
+  const tabTools = TABS.find((t) => t.id === tab)!.tools;
   const outName = file ? file.name.replace(/(\.pdf)?$/i, "-edited.pdf") : "edited.pdf";
   const pages = doc.status === "ready" ? doc.pages : 0;
   const box = selected && selected.page === pageIndex ? bounds(selected) : null;
-  const resizable = selected && selected.kind !== "text" && selected.kind !== "comment" && selected.kind !== "ink";
+  const resizable = selected && (selected.kind === "rect" || selected.kind === "ellipse" || selected.kind === "line" || selected.kind === "image");
 
   return (
     <>
@@ -690,96 +1040,100 @@ export default function PdfEditor() {
 
           {doc.status === "ready" && (
             <>
-              <div className="flex flex-wrap items-center gap-3">
-                <div role="radiogroup" aria-label="Tool" className="inline-flex flex-wrap rounded-md border border-[color:var(--border)]">
-                  {TOOLS.map((t) => {
-                    const on = t.id === "shapes" ? isShape(tool) : tool === t.id;
-                    return (
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-end gap-x-3 border-b border-[color:var(--border)]">
+                  <div role="tablist" aria-label="Tool groups" className="flex" onKeyDown={onTabKeyDown}>
+                    {TABS.map((t) => (
+                      <button
+                        key={t.id}
+                        id={`pdf-tab-${t.id}`}
+                        type="button"
+                        role="tab"
+                        aria-selected={tab === t.id}
+                        aria-controls="pdf-tools"
+                        tabIndex={tab === t.id ? 0 : -1}
+                        onClick={() => switchTab(t.id)}
+                        className={`-mb-px flex flex-col items-center gap-1 border-b-2 px-4 pb-2 pt-1 text-xs ${
+                          tab === t.id
+                            ? "border-[color:var(--accent)] font-medium text-[color:var(--accent)]"
+                            : "border-transparent text-[color:var(--text-muted)] hover:text-[color:var(--text)]"
+                        }`}
+                      >
+                        <t.icon aria-hidden className="h-5 w-5" />
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="ml-auto flex flex-wrap items-center gap-2 pb-2">
+                    <Button icon={Undo2} onClick={undo} disabled={!past.current.length} aria-label="Undo" title="Undo (Ctrl+Z)" />
+                    <Button icon={Redo2} onClick={redo} disabled={!future.current.length} aria-label="Redo" title="Redo (Ctrl+Shift+Z)" />
+                    <Button
+                      icon={RotateCcw}
+                      onClick={() => {
+                        change([]);
+                        setSelectedId(null);
+                      }}
+                      disabled={!items.length}
+                      title="Remove all edits on every page. Undo brings them back."
+                    >
+                      Reset
+                    </Button>
+                    <Button variant="primary" icon={Save} onClick={save} disabled={!kept.length || badChars.length > 0 || job.status === "working"}>
+                      Save PDF
+                    </Button>
+                  </div>
+                </div>
+
+                <div id="pdf-tools" role="tabpanel" aria-labelledby={`pdf-tab-${tab}`} className="flex flex-wrap items-center gap-2">
+                  <div role="radiogroup" aria-label="Tool" className="flex flex-wrap items-center gap-1">
+                    {tabTools.map((t) => (
                       <button
                         key={t.id}
                         type="button"
                         role="radio"
-                        aria-checked={on}
+                        aria-checked={tool === t.id}
                         aria-label={t.label}
                         title={t.label}
                         onClick={() => {
-                          setTool(t.id === "shapes" ? shape : t.id);
+                          setTool(t.id);
+                          setMarkHint(false);
+                          setPolyPts(null);
                           if (t.id !== "select") select(null);
                         }}
-                        className={`p-2 first:rounded-l-md last:rounded-r-md ${
-                          on ? "bg-[color:var(--accent)] text-[color:var(--on-accent)]" : "text-[color:var(--text-muted)] hover:text-[color:var(--text)]"
+                        className={`rounded-md p-2 ${
+                          tool === t.id
+                            ? "bg-[color:color-mix(in_srgb,var(--accent)_18%,transparent)] text-[color:var(--text)] ring-1 ring-[color:var(--accent)]"
+                            : "text-[color:var(--text-muted)] hover:text-[color:var(--text)]"
                         }`}
                       >
-                        <t.icon aria-hidden className="h-4 w-4" />
+                        {t.icon}
                       </button>
-                    );
-                  })}
+                    ))}
+                  </div>
+                  {tab === "insert" && (
+                    <>
+                      <Divider />
+                      <Button icon={ImagePlus} onClick={() => imageInput.current?.click()} title="Add a logo, photo or stamp">
+                        Add image
+                      </Button>
+                      <input
+                        ref={imageInput}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const picked = e.target.files?.[0];
+                          e.target.value = "";
+                          if (picked) void addImage(picked);
+                        }}
+                      />
+                    </>
+                  )}
                 </div>
-                <button
-                  type="button"
-                  aria-label="Add image"
-                  title="Add image (logo, photo or stamp)"
-                  onClick={() => imageInput.current?.click()}
-                  className="rounded-md border border-[color:var(--border)] p-2 text-[color:var(--text-muted)] hover:text-[color:var(--text)]"
-                >
-                  <ImagePlus aria-hidden className="h-4 w-4" />
-                </button>
-                <input
-                  ref={imageInput}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const picked = e.target.files?.[0];
-                    e.target.value = "";
-                    if (picked) void addImage(picked);
-                  }}
-                />
-                <Button icon={Undo2} onClick={undo} disabled={!past.current.length} title="Undo (Ctrl+Z)">
-                  Undo
-                </Button>
-                <Button
-                  icon={RotateCcw}
-                  onClick={() => {
-                    change([]);
-                    setSelectedId(null);
-                  }}
-                  disabled={!items.length}
-                  title="Remove all edits on every page. Undo brings them back."
-                >
-                  Reset
-                </Button>
-                <Button variant="primary" icon={Save} onClick={save} disabled={!kept.length || badChars.length > 0 || job.status === "working"} className="ml-auto">
-                  Save PDF
-                </Button>
               </div>
 
               {/* Style for the selected item, or for what the chosen tool adds next. */}
               <div className="flex min-h-9 flex-wrap items-center gap-x-5 gap-y-3">
-                {isShape(tool) && !selected && (
-                  <>
-                    <div role="radiogroup" aria-label="Shape" className="flex items-center gap-1">
-                      {SHAPES.map((sh) => (
-                        <button
-                          key={sh.id}
-                          type="button"
-                          role="radio"
-                          aria-checked={tool === sh.id}
-                          aria-label={`Add ${sh.label.toLowerCase()}`}
-                          title={`Add ${sh.label.toLowerCase()}`}
-                          onClick={() => {
-                            setTool(sh.id);
-                            setShape(sh.id);
-                          }}
-                          className={`${iconButton} aria-checked:bg-[color:color-mix(in_srgb,var(--accent)_18%,transparent)] aria-checked:text-[color:var(--text)]`}
-                        >
-                          <sh.icon aria-hidden className="h-5 w-5" />
-                        </button>
-                      ))}
-                    </div>
-                    <Divider />
-                  </>
-                )}
                 {styleKind === "text" && (
                   <div role="toolbar" aria-label="Text style" className="flex flex-wrap items-center gap-x-3 gap-y-2">
                     <label className="flex items-center gap-2">
@@ -871,7 +1225,53 @@ export default function PdfEditor() {
                     </label>
                   </div>
                 )}
-                {(styleKind === "rect" || styleKind === "ellipse" || styleKind === "line" || styleKind === "ink") && (
+                {(styleKind === "highlight" || styleKind === "marker") && (
+                  <ColorPicker
+                    label="Color"
+                    rows={SWATCH_ROWS}
+                    value={marker}
+                    onChange={(v) => {
+                      if (!v) return;
+                      setMarker(v);
+                      restyle({ color: v });
+                    }}
+                  />
+                )}
+                {styleKind && isTextMark(styleKind) && (
+                  <ColorPicker
+                    label="Color"
+                    rows={SWATCH_ROWS}
+                    value={lineMark}
+                    onChange={(v) => {
+                      if (!v) return;
+                      setLineMark(v);
+                      restyle({ color: v });
+                    }}
+                  />
+                )}
+                {(styleKind === "highlight" || (styleKind && isTextMark(styleKind))) && !selected && (
+                  <p className={`text-sm ${markHint ? "text-[color:var(--error)]" : muted}`}>
+                    {markHint
+                      ? "No text there. These marks go on the PDF's own text; scanned pages have none."
+                      : styleKind === "highlight"
+                        ? "Drag across text to highlight it. Where there's no text, drag a box."
+                        : "Drag across the PDF's text to mark it."}
+                  </p>
+                )}
+                {isPolyTool(tool) && !selected && (
+                  <p className={`text-sm ${muted}`}>
+                    Click to add each corner. Double-click or press Enter to finish{tool === "polygon" && ", or click the first corner to close it"}. Esc
+                    cancels.
+                  </p>
+                )}
+                {styleKind === "marker" && !selected && <p className={`text-sm ${muted}`}>Drag to draw over anything, like a highlighter pen.</p>}
+                {styleKind === "eraser" && (
+                  <>
+                    <SegmentedControl label="Eraser size" options={ERASER_SIZES} value={eraserSize} onChange={setEraserSize} />
+                    <p className={`text-sm ${muted}`}>Rubs out parts of pen strokes, highlights and other text marks. Text boxes, shapes, images and comments are removed whole.</p>
+                  </>
+                )}
+                {styleKind && (isDragTool(styleKind) || isPolyTool(styleKind) || styleKind === "ink") && styleKind !== "highlight" && (
                   <ColorPicker
                     label={styleKind === "ink" ? "Color" : "Outline"}
                     rows={SWATCH_ROWS}
@@ -883,7 +1283,7 @@ export default function PdfEditor() {
                     }}
                   />
                 )}
-                {(styleKind === "rect" || styleKind === "ellipse") && (
+                {(styleKind === "rect" || styleKind === "ellipse" || styleKind === "cloud" || styleKind === "polygon") && (
                   <ColorPicker
                     label="Fill"
                     rows={SWATCH_ROWS}
@@ -895,7 +1295,7 @@ export default function PdfEditor() {
                     }}
                   />
                 )}
-                {(styleKind === "rect" || styleKind === "ellipse" || styleKind === "line" || styleKind === "ink") && (
+                {styleKind && (isDragTool(styleKind) || isPolyTool(styleKind) || styleKind === "ink") && styleKind !== "highlight" && (
                   <SegmentedControl
                     label="Thickness"
                     options={STROKES}
@@ -903,18 +1303,6 @@ export default function PdfEditor() {
                     onChange={(v) => {
                       setStroke(v);
                       restyle({ stroke: Number(v) });
-                    }}
-                  />
-                )}
-                {styleKind === "highlight" && (
-                  <ColorPicker
-                    label="Color"
-                    rows={SWATCH_ROWS}
-                    value={marker}
-                    onChange={(v) => {
-                      if (!v) return;
-                      setMarker(v);
-                      restyle({ color: v });
                     }}
                   />
                 )}
@@ -996,7 +1384,7 @@ export default function PdfEditor() {
                           aria-label={`Page ${pageIndex + 1}`}
                           aria-describedby="pdf-edit-keys"
                           className={`absolute inset-0 h-full w-full text-[color:var(--accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] ${
-                            tool === "select" ? "cursor-default" : "cursor-crosshair"
+                            tool === "select" ? "cursor-default" : tool === "highlight" || isTextMark(tool) ? "cursor-text" : tool === "eraser" ? "cursor-none" : "cursor-crosshair"
                           } ${tool !== "select" || selected ? "touch-none" : ""}`}
                           onPointerDown={onPointerDown}
                           // Clicking would focus the page after the new text box took focus; typing belongs in the box.
@@ -1004,14 +1392,28 @@ export default function PdfEditor() {
                           onPointerMove={onPointerMove}
                           onPointerUp={onPointerUp}
                           onPointerCancel={onPointerUp}
+                          onPointerLeave={() => setHover(null)}
+                          onDoubleClick={() => polyPts && finishPoly()}
                           onKeyDown={onKeyDown}
                         >
                           {pageItems.map((item) => (
                             <g key={item.id} data-id={item.id} className={tool === "select" ? "cursor-move" : undefined}>
-                              <ItemShape item={item} hitArea={tool === "select"} />
+                              <ItemShape item={item} hitArea={tool === "select" || tool === "eraser"} />
                             </g>
                           ))}
                           {draft && <ItemShape item={draft} hitArea={false} />}
+                          {tool === "eraser" && hover && (
+                            <circle
+                              cx={hover.x}
+                              cy={hover.y}
+                              r={Number(eraserSize) / 2}
+                              fill="white"
+                              fillOpacity={0.4}
+                              stroke="currentColor"
+                              strokeWidth={1}
+                              pointerEvents="none"
+                            />
+                          )}
                           {box && (
                             <g pointerEvents="none">
                               <rect x={box.x - 3} y={box.y - 3} width={box.width + 6} height={box.height + 6} fill="none" stroke="currentColor" strokeWidth={1} strokeDasharray="4 3" />
@@ -1039,7 +1441,7 @@ export default function PdfEditor() {
                   </div>
                   <p id="pdf-edit-keys" className="text-xs text-[color:var(--text-muted)]">
                     Keyboard: focus the page, press Enter to add with the chosen tool, arrow keys to move the selected item (Shift for bigger steps), Delete to
-                    remove it, Ctrl+Z to undo.
+                    remove it, Ctrl+Z to undo, Ctrl+Shift+Z to redo. Text marks and drawing need a mouse, pen or touch.
                   </p>
                 </div>
 
@@ -1116,7 +1518,10 @@ export default function PdfEditor() {
                 <span className="text-[color:var(--text-muted)]"> · {formatBytes(job.bytes.length)}</span>
               </p>
               <p className="break-all text-sm text-[color:var(--text-muted)]">{outName}</p>
-              <p className="text-sm text-[color:var(--text-muted)]">Comments show as sticky notes in your PDF reader&apos;s comments pane.</p>
+              <p className="text-sm text-[color:var(--text-muted)]">
+                Highlights, text marks, drawings and comments are saved as annotations: they show in your PDF reader&apos;s comments list, and you can still
+                edit or delete them there.
+              </p>
             </div>
           )}
         </div>
