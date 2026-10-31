@@ -38,7 +38,8 @@ export default function Dialog({ open, onClose, title, description, icon, childr
       onClose={onClose}
       // The backdrop is part of the <dialog> box, so a click whose target is the dialog itself landed outside the content.
       onClick={(event) => event.target === event.currentTarget && onClose()}
-      className="w-[calc(100%-2rem)] max-w-sm rounded-lg border border-[color:var(--border)] bg-[color:var(--surface-raised)] p-0 text-[color:var(--text)] shadow-2xl backdrop:bg-black/60 backdrop:backdrop-blur-sm"
+      // !m-auto keeps it centred even when a parent's space-y-* margins reach it.
+      className="!m-auto w-[calc(100%-2rem)] max-w-sm rounded-lg border border-[color:var(--border)] bg-[color:var(--surface-raised)] p-0 text-[color:var(--text)] shadow-2xl backdrop:bg-black/60 backdrop:backdrop-blur-sm"
     >
       <div className="relative p-6">
         <button

@@ -12,7 +12,7 @@ const OPTIONS: PageNumberOptions = {
   font: "sans",
   size: 12,
   bold: false,
-  color: "black",
+  color: "#000000",
   start: 1,
 };
 

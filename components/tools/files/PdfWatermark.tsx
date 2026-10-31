@@ -5,6 +5,7 @@ import { Stamp } from "lucide-react";
 import { InputPanel, OutputPanel } from "@/components/tool-shell/ToolPanels";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
+import ColorPicker from "@/components/ui/ColorPicker";
 import Field from "@/components/ui/Field";
 import FileDrop from "@/components/ui/FileDrop";
 import SegmentedControl from "@/components/ui/SegmentedControl";
@@ -13,7 +14,7 @@ import TaskProgress from "@/components/ui/TaskProgress";
 import TextInput from "@/components/ui/TextInput";
 import { formatBytes } from "@/lib/format-bytes";
 import { plural } from "@/lib/notices";
-import { PDF_COLOR_OPTIONS, type PdfColor } from "@/lib/tools/files/pdf-colors";
+import { SWATCH_ROWS } from "@/lib/tools/files/pdf-colors";
 import { PDF_MAX_BYTES, pdfErrorMessage } from "@/lib/tools/files/pdf-errors";
 import { openPdfRenderer } from "@/lib/tools/files/pdf-render";
 import { parsePageRanges, rangeIndexes } from "@/lib/tools/files/pdf-split";
@@ -77,7 +78,7 @@ export default function PdfWatermark() {
   const [size, setSize] = useState<WatermarkSize>("medium");
   const [opacity, setOpacity] = useState<(typeof OPACITIES)[number]["id"]>("0.3");
   const [angle, setAngle] = useState<(typeof ANGLES)[number]["id"]>("45");
-  const [color, setColor] = useState<PdfColor>("gray");
+  const [color, setColor] = useState("#9e9e9e");
   const [pagesText, setPagesText] = useState("");
   const [job, setJob] = useState<Job>({ status: "idle" });
   const cancelJob = useRef(() => {});
@@ -218,7 +219,7 @@ export default function PdfWatermark() {
           </div>
 
           <Field label="Color">
-            <SegmentedControl label="Color" options={PDF_COLOR_OPTIONS} value={color} onChange={setColor} />
+            <ColorPicker label="Color" named rows={SWATCH_ROWS} value={color} onChange={(c) => c && setColor(c)} />
           </Field>
 
           <Field

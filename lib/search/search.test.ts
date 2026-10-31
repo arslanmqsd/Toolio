@@ -91,6 +91,8 @@ describe("search", () => {
     ["rotate multiple pdfs", "rotate-pdf"],
     ["add page numbers to pdf", "pdf-page-numbers"],
     ["number pdf pages", "pdf-page-numbers"],
+    ["edit pdf", "pdf-editor"],
+    ["highlight pdf", "pdf-editor"],
     ["reorder pdf pages", "pdf-page-organizer"],
     ["pdf to jpg", "pdf-to-image"],
     ["convert pdf to png", "pdf-to-image"],

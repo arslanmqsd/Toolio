@@ -5,6 +5,7 @@ import { ListOrdered } from "lucide-react";
 import { InputPanel, OutputPanel } from "@/components/tool-shell/ToolPanels";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
+import ColorPicker from "@/components/ui/ColorPicker";
 import Checkbox from "@/components/ui/Checkbox";
 import Field from "@/components/ui/Field";
 import FileDrop from "@/components/ui/FileDrop";
@@ -15,12 +16,12 @@ import TaskProgress from "@/components/ui/TaskProgress";
 import TextInput from "@/components/ui/TextInput";
 import { formatBytes } from "@/lib/format-bytes";
 import { plural } from "@/lib/notices";
-import { PDF_COLOR_OPTIONS, type PdfColor } from "@/lib/tools/files/pdf-colors";
+import { SWATCH_ROWS } from "@/lib/tools/files/pdf-colors";
+import { PDF_FONT_OPTIONS, type PdfFont } from "@/lib/tools/files/pdf-fonts";
 import { PDF_MAX_BYTES, pdfErrorMessage } from "@/lib/tools/files/pdf-errors";
 import {
   formatPageNumber,
   type HorizontalPosition,
-  type NumberFont,
   type NumberFormat,
   type PageNumberOptions,
   type PageNumbersProgress,
@@ -45,12 +46,6 @@ const POSITIONS: { vertical: VerticalPosition; horizontal: HorizontalPosition; l
 ];
 
 const FORMATS: NumberFormat[] = ["n", "page-n", "n-of-total", "page-n-of-total"];
-
-const FONTS: { id: NumberFont; label: string }[] = [
-  { id: "sans", label: "Sans" },
-  { id: "serif", label: "Serif" },
-  { id: "mono", label: "Mono" },
-];
 
 /** In points: about 6, 13 and 19 mm. */
 const MARGINS = [
@@ -88,10 +83,10 @@ export default function PdfPageNumbers() {
   const [mirror, setMirror] = useState(false);
   const [margin, setMargin] = useState<(typeof MARGINS)[number]["id"]>("36");
   const [format, setFormat] = useState<NumberFormat>("n");
-  const [font, setFont] = useState<NumberFont>("sans");
+  const [font, setFont] = useState<PdfFont>("sans");
   const [sizeText, setSizeText] = useState("11");
   const [bold, setBold] = useState(false);
-  const [color, setColor] = useState<PdfColor>("black");
+  const [color, setColor] = useState("#000000");
   const [startText, setStartText] = useState("1");
   const [pagesText, setPagesText] = useState("");
   const [job, setJob] = useState<Job>({ status: "idle" });
@@ -238,10 +233,10 @@ export default function PdfPageNumbers() {
 
           <div className="grid gap-5 sm:grid-cols-2">
             <Field label="Font">
-              <SegmentedControl label="Font" options={FONTS} value={font} onChange={setFont} />
+              <SegmentedControl label="Font" options={PDF_FONT_OPTIONS} value={font} onChange={setFont} />
             </Field>
             <Field label="Color">
-              <SegmentedControl label="Color" options={PDF_COLOR_OPTIONS} value={color} onChange={setColor} />
+              <ColorPicker label="Color" named rows={SWATCH_ROWS} value={color} onChange={(c) => c && setColor(c)} />
             </Field>
             <Field
               label="Size"

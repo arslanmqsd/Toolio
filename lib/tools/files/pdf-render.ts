@@ -6,12 +6,30 @@
 import { exportScale, type ImageFormat } from "./pdf-to-image";
 import { runsToText } from "./pdf-text";
 
+/** A piece of a page's text, as a box on the page as seen: points from the top-left, rotation applied. */
+export interface TextBox {
+  str: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  /** What the PDF says about the piece's font, when pdf.js could tell. */
+  font?: { family: "sans" | "serif" | "mono"; bold: boolean; italic: boolean };
+}
+
 export interface PdfRenderer {
   pageCount: number;
   /** A PNG of one page (zero-based), its longest side `maxSide` CSS pixels, with the page's own rotation applied. */
   thumbnail: (index: number, maxSide: number) => Promise<Blob>;
   /** One page (zero-based) at `dpi`, as PNG or JPEG, shrunk if needed to stay inside browser canvas limits. */
   image: (index: number, dpi: number, format: ImageFormat) => Promise<Blob>;
+  /** One page's size (zero-based) in points as seen, rotation applied. */
+  size: (index: number) => Promise<{ width: number; height: number }>;
+  /**
+   * One page's text pieces (zero-based) in the order the PDF stores them, usually reading order. Only text
+   * running left to right as seen is included; sideways or upside-down text is left out.
+   */
+  textBoxes: (index: number) => Promise<TextBox[]>;
   /** One page's text (zero-based), with line and paragraph breaks rebuilt from where the text sits. */
   text: (index: number) => Promise<string>;
   destroy: () => void;
@@ -54,6 +72,54 @@ export async function openPdfRenderer(bytes: Uint8Array): Promise<PdfRenderer> {
     // Sharp on high-density screens without drawing huge canvases for big pages.
     thumbnail: (index, maxSide) => draw(index, (w, h) => (maxSide * Math.min(window.devicePixelRatio || 1, 2)) / Math.max(w, h), "png"),
     image: (index, dpi, format) => draw(index, (w, h) => exportScale(w, h, dpi), format),
+    async size(index) {
+      const { width, height } = (await doc.getPage(index + 1)).getViewport({ scale: 1 });
+      return { width, height };
+    },
+    async textBoxes(index) {
+      const page = await doc.getPage(index + 1);
+      try {
+        const viewport = page.getViewport({ scale: 1 });
+        const { items, styles } = await page.getTextContent();
+        // Loading the page's drawing loads its fonts, which say whether they're bold or italic.
+        await page.getOperatorList().catch(() => null);
+        const fonts = new Map<string, TextBox["font"]>();
+        const fontOf = (id: string): TextBox["font"] => {
+          if (!fonts.has(id)) {
+            const generic = styles[id]?.fontFamily ?? "";
+            let loaded: { name?: string; bold?: boolean; italic?: boolean } | null = null;
+            try {
+              loaded = page.commonObjs.has(id) ? page.commonObjs.get(id) : null;
+            } catch {
+              loaded = null;
+            }
+            const name = loaded?.name ?? "";
+            fonts.set(id, {
+              family: /mono|courier/i.test(generic + name) ? "mono" : /(^|[^-])serif|times|georgia|garamond/i.test(generic + name) && !/sans/i.test(generic) ? "serif" : "sans",
+              bold: !!loaded?.bold || /bold|black|heavy|semibold/i.test(name),
+              italic: !!loaded?.italic || /italic|oblique/i.test(name),
+            });
+          }
+          return fonts.get(id);
+        };
+        const boxes: TextBox[] = [];
+        for (const item of items) {
+          if (!("str" in item) || !item.str.trim() || !item.width) continue;
+          const [a, b, c, d, e, f] = item.transform;
+          const size = Math.hypot(c, d) || item.height;
+          const len = Math.hypot(a, b) || 1;
+          const [ux, uy] = [a / len, b / len];
+          // The run's box in page space: along its baseline, from a little below it (descenders) to the ascent.
+          const corner = (along: number, up: number) => viewport.convertToViewportPoint(e + ux * along - uy * up, f + uy * along + ux * up) as [number, number];
+          const [start, end, top, bottom] = [corner(0, 0), corner(item.width, 0), corner(0, size * 0.85), corner(0, -size * 0.25)];
+          if (end[0] - start[0] <= 0 || Math.abs(end[1] - start[1]) > (end[0] - start[0]) * 0.1) continue;
+          boxes.push({ str: item.str, x: start[0], y: top[1], width: end[0] - start[0], height: bottom[1] - top[1], font: fontOf(item.fontName) });
+        }
+        return boxes;
+      } finally {
+        page.cleanup();
+      }
+    },
     async text(index) {
       const page = await doc.getPage(index + 1);
       try {
