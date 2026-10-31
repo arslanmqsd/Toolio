@@ -41,7 +41,11 @@ import { stampLayout, stampName, type Stamp } from "./pdf-stamps";
  * its top-left corner like the screen.
  */
 export type EditItem =
-  | ({ kind: "text"; page: number; x: number; y: number; text: string } & TextStyle)
+  /**
+   * Text. Edited page text also has `cover`, a box in the page's own background colour hiding the words it
+   * replaces, and `leading`, the original distance between baselines.
+   */
+  | ({ kind: "text"; page: number; x: number; y: number; text: string; cover?: Box & { color: string }; leading?: number } & TextStyle)
   /** Marks on the page's own text, one box per line covered (or one free box on pages without text). */
   | { kind: "markup"; style: MarkupStyle; page: number; rects: Box[]; color: string }
   /** `fill` null leaves the inside see-through. `cloud` draws a rectangle's outline as a row of bumps. */
@@ -211,7 +215,8 @@ export async function applyEdits(input: Uint8Array, items: EditItem[], onProgres
       const lines = item.text.split("\n");
       const widths = lines.map((line) => font.widthOfTextAtSize(line, size));
       const boxWidth = Math.max(...widths);
-      const lineHeight = size * LINE_HEIGHT;
+      const lineHeight = item.leading ?? size * LINE_HEIGHT;
+      if (item.cover) page.drawRectangle({ ...userBox(page, item.cover.x, item.cover.y, item.cover.width, item.cover.height), color: rgb(...hexRgb(item.cover.color)) });
       if (item.background) page.drawRectangle({ ...userBox(page, item.x, item.y, boxWidth, lines.length * lineHeight), color: rgb(...hexRgb(item.background)), opacity });
       // Line by line, so each can be shifted for alignment; the box's top is where the letters start.
       for (const [i, line] of lines.entries()) {

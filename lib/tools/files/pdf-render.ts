@@ -13,6 +13,8 @@ export interface TextBox {
   y: number;
   width: number;
   height: number;
+  /** What the PDF says about the piece's font, when pdf.js could tell. */
+  font?: { family: "sans" | "serif" | "mono"; bold: boolean; italic: boolean };
 }
 
 export interface PdfRenderer {
@@ -78,7 +80,28 @@ export async function openPdfRenderer(bytes: Uint8Array): Promise<PdfRenderer> {
       const page = await doc.getPage(index + 1);
       try {
         const viewport = page.getViewport({ scale: 1 });
-        const { items } = await page.getTextContent();
+        const { items, styles } = await page.getTextContent();
+        // Loading the page's drawing loads its fonts, which say whether they're bold or italic.
+        await page.getOperatorList().catch(() => null);
+        const fonts = new Map<string, TextBox["font"]>();
+        const fontOf = (id: string): TextBox["font"] => {
+          if (!fonts.has(id)) {
+            const generic = styles[id]?.fontFamily ?? "";
+            let loaded: { name?: string; bold?: boolean; italic?: boolean } | null = null;
+            try {
+              loaded = page.commonObjs.has(id) ? page.commonObjs.get(id) : null;
+            } catch {
+              loaded = null;
+            }
+            const name = loaded?.name ?? "";
+            fonts.set(id, {
+              family: /mono|courier/i.test(generic + name) ? "mono" : /(^|[^-])serif|times|georgia|garamond/i.test(generic + name) && !/sans/i.test(generic) ? "serif" : "sans",
+              bold: !!loaded?.bold || /bold|black|heavy|semibold/i.test(name),
+              italic: !!loaded?.italic || /italic|oblique/i.test(name),
+            });
+          }
+          return fonts.get(id);
+        };
         const boxes: TextBox[] = [];
         for (const item of items) {
           if (!("str" in item) || !item.str.trim() || !item.width) continue;
@@ -90,7 +113,7 @@ export async function openPdfRenderer(bytes: Uint8Array): Promise<PdfRenderer> {
           const corner = (along: number, up: number) => viewport.convertToViewportPoint(e + ux * along - uy * up, f + uy * along + ux * up) as [number, number];
           const [start, end, top, bottom] = [corner(0, 0), corner(item.width, 0), corner(0, size * 0.85), corner(0, -size * 0.25)];
           if (end[0] - start[0] <= 0 || Math.abs(end[1] - start[1]) > (end[0] - start[0]) * 0.1) continue;
-          boxes.push({ str: item.str, x: start[0], y: top[1], width: end[0] - start[0], height: bottom[1] - top[1] });
+          boxes.push({ str: item.str, x: start[0], y: top[1], width: end[0] - start[0], height: bottom[1] - top[1], font: fontOf(item.fontName) });
         }
         return boxes;
       } finally {

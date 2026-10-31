@@ -31,6 +31,8 @@ import {
   Slash,
   Square,
   SquareArrowDownRight,
+  TextCursor,
+  TextCursorInput,
   Stamp as StampIcon,
   StickyNote,
   Trash2,
@@ -77,6 +79,7 @@ import { PDF_MAX_BYTES, pdfErrorMessage } from "@/lib/tools/files/pdf-errors";
 import { PDF_FONT_CSS, PDF_FONT_OPTIONS, type PdfFont } from "@/lib/tools/files/pdf-fonts";
 import { openPdfRenderer, type PdfRenderer } from "@/lib/tools/files/pdf-render";
 import { charAt, selectionRects, splitChars, type Char } from "@/lib/tools/files/pdf-text-select";
+import { baselineOf, blockAt, blockColors, textBlocks, type TextBlock } from "@/lib/tools/files/pdf-edit-text";
 import { imageSize, prepareImage } from "@/lib/tools/files/prepare-image";
 import { unsupportedCharacters } from "@/lib/tools/files/pdf-watermark";
 import { runWorkerTask } from "@/lib/worker-task";
@@ -105,6 +108,7 @@ type Tool =
   | "arrow"
   | "stamp"
   | "signature"
+  | "edittext"
   | "comment";
 
 /** Tools that add a shape by dragging from one corner (or end) to the other, or by a single click. */
@@ -122,7 +126,7 @@ function PathIcon({ d }: { d: string }) {
     </svg>
   );
 }
-type Tab = "annotate" | "shapes" | "insert";
+type Tab = "annotate" | "shapes" | "insert" | "edittext";
 type Item = EditItem & { id: number };
 type Point = { x: number; y: number };
 
@@ -190,6 +194,15 @@ const TABS: { id: Tab; label: string; icon: LucideIcon; tools: { id: Tool; label
       { id: "stamp", label: "Stamp", icon: icon(StampIcon) },
       { id: "signature", label: "Signature", icon: icon(SignatureIcon) },
       { id: "eraser", label: "Eraser", icon: icon(Eraser) },
+    ],
+  },
+  {
+    id: "edittext",
+    label: "Edit Text",
+    icon: TextCursorInput,
+    tools: [
+      { id: "select", label: "Select and move", icon: icon(MousePointer2) },
+      { id: "edittext", label: "Edit page text", icon: icon(TextCursor) },
     ],
   },
 ];
@@ -305,7 +318,7 @@ type Doc =
   | { status: "error"; error: string };
 
 /** The page drawn on screen: its picture, size in points, and its own text split into letters for text marks. */
-type View = { index: number; url: string; width: number; height: number; chars: Char[] };
+type View = { index: number; url: string; width: number; height: number; chars: Char[]; blocks: TextBlock[] };
 
 type Drag =
   | { mode: "draw"; start: Point; now: Point }
@@ -339,7 +352,7 @@ function bounds(item: EditItem): { x: number; y: number; width: number; height: 
     case "text": {
       const lines = item.text.split("\n");
       const width = Math.max(item.size, ...lines.map((l) => textWidth(l, item)));
-      return { x: item.x, y: item.y, width, height: lines.length * item.size * LINE_HEIGHT };
+      return { x: item.x, y: item.y, width, height: lines.length * (item.leading ?? item.size * LINE_HEIGHT) };
     }
     case "comment":
       return { x: item.x, y: item.y, width: COMMENT_SIZE, height: COMMENT_SIZE };
@@ -380,13 +393,38 @@ function describe(item: EditItem): string {
   if (item.kind === "stamp") return `Stamp: ${stampName(item)}`;
   if (item.kind === "text" || item.kind === "comment") {
     const words = item.text.trim().replace(/\s+/g, " ");
-    return `${KIND_LABEL[item.kind]}: ${words ? (words.length > 30 ? `${words.slice(0, 30)}…` : words) : "empty"}`;
+    const label = item.kind === "text" && item.cover ? "Edited text" : KIND_LABEL[item.kind];
+    return `${label}: ${words ? (words.length > 30 ? `${words.slice(0, 30)}…` : words) : item.kind === "text" && item.cover ? "removed" : "empty"}`;
   }
   return KIND_LABEL[item.kind];
 }
 
+/** The drawn page's pixels, read once per page picture, for matching edited text's colours. */
+const pagePixels = new Map<string, Promise<ImageData>>();
+
+function pixelsOf(url: string): Promise<ImageData> {
+  let pixels = pagePixels.get(url);
+  if (!pixels) {
+    pixels = new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        [canvas.width, canvas.height] = [img.naturalWidth, img.naturalHeight];
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        if (!ctx) return reject(new Error("no canvas"));
+        ctx.drawImage(img, 0, 0);
+        resolve(ctx.getImageData(0, 0, canvas.width, canvas.height));
+      };
+      img.onerror = () => reject(new Error("couldn't read the page picture"));
+      img.src = url;
+    });
+    pagePixels.set(url, pixels);
+  }
+  return pixels;
+}
+
 /** Text and comments with nothing typed in are dropped rather than saved. */
-const isEmpty = (item: EditItem) => (item.kind === "text" || item.kind === "comment") && !item.text.trim();
+const isEmpty = (item: EditItem) => ((item.kind === "text" && !item.cover) || item.kind === "comment") && !item.text.trim();
 
 /** One line of a text mark on screen, matching how the saved annotation draws it. */
 function MarkLook({ style, box: { x, y, width: w, height: h }, color }: { style: MarkupStyle; box: Box; color: string }) {
@@ -423,6 +461,7 @@ function ItemShape({ item, hitArea }: { item: Item; hitArea: boolean }) {
       const anchorX = item.x + { left: 0, center: box.width / 2, right: box.width }[item.align];
       return (
         <g pointerEvents={hit}>
+          {item.cover && <rect x={item.cover.x} y={item.cover.y} width={item.cover.width} height={item.cover.height} fill={item.cover.color} />}
           <rect {...box} fill={item.background ?? "transparent"} opacity={item.opacity} />
           <text
             y={item.y + item.size * TEXT_ASCENT[item.font]}
@@ -437,7 +476,7 @@ function ItemShape({ item, hitArea }: { item: Item; hitArea: boolean }) {
             style={{ whiteSpace: "pre" }}
           >
             {item.text.split("\n").map((line, i) => (
-              <tspan key={i} x={anchorX} dy={i ? item.size * LINE_HEIGHT : 0}>
+              <tspan key={i} x={anchorX} dy={i ? (item.leading ?? item.size * LINE_HEIGHT) : 0}>
                 {line || " "}
               </tspan>
             ))}
@@ -628,7 +667,7 @@ export default function PdfEditor() {
       .then(([size, blob, boxes]) => {
         if (cancelled) return;
         url = URL.createObjectURL(blob);
-        setView({ index: pageIndex, url, ...size, chars: splitChars(boxes, charWidth) });
+        setView({ index: pageIndex, url, ...size, chars: splitChars(boxes, charWidth), blocks: textBlocks(boxes) });
       })
       .catch((err: Error) => !cancelled && setDoc({ status: "error", error: pdfErrorMessage(err.message) }));
     return () => {
@@ -819,6 +858,36 @@ export default function PdfEditor() {
     }
   }
 
+  /**
+   * Turns a block of the page's own text into editable text in its place: the old words covered in the
+   * page's background colour, the new ones starting as a copy in the closest font, size and colour.
+   */
+  async function editBlock(block: TextBlock) {
+    if (!view) return;
+    const pixels = await pixelsOf(view.url).catch(() => null);
+    const scale = pixels ? pixels.width / view.width : 1;
+    const { x, y, width: w, height: h } = block.box;
+    const colors = pixels ? blockColors(pixels.data, pixels.width, pixels.height, { x: x * scale, y: y * scale, width: w * scale, height: h * scale }) : { background: "#ffffff", text: "#000000" };
+    const { font, size, bold, italic } = block;
+    add({
+      id: nextId.current++,
+      page: pageIndex,
+      kind: "text",
+      x,
+      y: baselineOf(block.lines[0].box) - size * TEXT_ASCENT[font],
+      text: block.lines.map((l) => l.text).join("\n"),
+      ...DEFAULT_TEXT,
+      font,
+      size,
+      bold,
+      italic,
+      color: colors.text,
+      // A point of room all round, so anti-aliased edges of the old letters don't peek out.
+      cover: { x: x - 1, y: y - 1, width: w + 2, height: h + 2, color: colors.background },
+      ...(block.leading && { leading: block.leading }),
+    });
+  }
+
   /** A signature centred on a point of the current page. */
   function signatureItem(sig: Signature, at: Point): Item {
     const scale = SIGNATURE_SIDE / Math.max(sig.width, sig.height);
@@ -868,6 +937,15 @@ export default function PdfEditor() {
     // Keep stamping: like the pen, new stamps aren't selected.
     if (tool === "stamp") return change([...items.filter((i) => !isEmpty(i)), stampItem(stamp, p)]);
     if (tool === "signature") return signature && change([...items.filter((i) => !isEmpty(i)), signatureItem(signature, p)]);
+    if (tool === "edittext") {
+      // A block already edited is picked up again rather than covered twice.
+      const target = (e.target as Element).closest("[data-id]");
+      if (target) return select(Number(target.getAttribute("data-id")));
+      const block = blockAt(view.blocks, p.x, p.y);
+      setMarkHint(!block);
+      if (block) void editBlock(block);
+      return;
+    }
     if (isPolyTool(tool)) {
       if (!polyPts) return setPolyPts([p]);
       // Clicking back on the first corner closes a polygon.
@@ -1027,7 +1105,8 @@ export default function PdfEditor() {
     setTab(id);
     setPolyPts(null);
     setMarkHint(false);
-    if (!TABS.find((t) => t.id === id)!.tools.some((t) => t.id === tool)) setTool("select");
+    if (id === "edittext") setTool("edittext");
+    else if (!TABS.find((t) => t.id === id)!.tools.some((t) => t.id === tool)) setTool("select");
   }
 
   // Tabs pattern: arrow keys move between tabs and show them; Home and End jump to the ends.
@@ -1222,7 +1301,7 @@ export default function PdfEditor() {
                       </span>
                       <span className="sr-only">Size</span>
                       <Select value={String(textStyle.size)} onChange={(e) => restyleText({ size: Number(e.target.value) })} className="w-20">
-                        {TEXT_SIZES.map((size) => (
+                        {[...new Set([...TEXT_SIZES, textStyle.size])].sort((a, b) => a - b).map((size) => (
                           <option key={size} value={size}>
                             {size}
                           </option>
@@ -1334,6 +1413,15 @@ export default function PdfEditor() {
                   </p>
                 )}
                 {styleKind === "marker" && !selected && <p className={`text-sm ${muted}`}>Drag to draw over anything, like a highlighter pen.</p>}
+                {tool === "edittext" && !selected && (
+                  <p className={`text-sm ${markHint || !view?.blocks.length ? "text-[color:var(--error)]" : muted}`}>
+                    {!view?.blocks.length
+                      ? "This page has no text to edit. Scanned pages are pictures of text."
+                      : markHint
+                        ? "No text there. Click inside one of the dashed boxes."
+                        : "Click a dashed box to edit its text. The old words are covered and yours written in their place."}
+                  </p>
+                )}
                 {styleKind === "eraser" && (
                   <>
                     <SegmentedControl label="Eraser size" options={ERASER_SIZES} value={eraserSize} onChange={setEraserSize} />
@@ -1458,7 +1546,7 @@ export default function PdfEditor() {
                           aria-label={`Page ${pageIndex + 1}`}
                           aria-describedby="pdf-edit-keys"
                           className={`absolute inset-0 h-full w-full text-[color:var(--accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] ${
-                            tool === "select" ? "cursor-default" : tool === "highlight" || isTextMark(tool) ? "cursor-text" : tool === "eraser" ? "cursor-none" : "cursor-crosshair"
+                            tool === "select" ? "cursor-default" : tool === "highlight" || isTextMark(tool) || tool === "edittext" ? "cursor-text" : tool === "eraser" ? "cursor-none" : "cursor-crosshair"
                           } ${tool !== "select" || selected ? "touch-none" : ""}`}
                           onPointerDown={onPointerDown}
                           // Clicking would focus the page after the new text box took focus; typing belongs in the box.
@@ -1476,6 +1564,22 @@ export default function PdfEditor() {
                             </g>
                           ))}
                           {draft && <ItemShape item={draft} hitArea={false} />}
+                          {tool === "edittext" &&
+                            view.blocks.map((b, i) => (
+                              <rect
+                                key={i}
+                                x={b.box.x - 2}
+                                y={b.box.y - 2}
+                                width={b.box.width + 4}
+                                height={b.box.height + 4}
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth={0.75}
+                                strokeDasharray="3 2"
+                                opacity={0.7}
+                                pointerEvents="none"
+                              />
+                            ))}
                           {tool === "eraser" && hover && (
                             <circle
                               cx={hover.x}

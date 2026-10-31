@@ -244,6 +244,28 @@ describe("applyEdits", () => {
     expect(y).toBeCloseTo(780 - 12 * 0.683);
   });
 
+  it("covers the page text it replaces in the background colour, before writing", async () => {
+    const cover = { x: 8, y: 18, width: 60, height: 16, color: "#fafafa" };
+    const [content] = await pageContents(await applyEdits(await pdf([{}]), [text({ cover } as Partial<EditItem>)]));
+    const box = content.indexOf("1 0 0 1 8 766 cm");
+    expect(box).toBeGreaterThan(-1);
+    expect(content).toMatch(/0\.98\d* 0\.98\d* 0\.98\d* rg/);
+    expect(box).toBeLessThan(content.indexOf("BT"));
+  });
+
+  it("keeps an edited paragraph's own line spacing", async () => {
+    const [content] = await pageContents(await applyEdits(await pdf([{}]), [text({ text: "One\nTwo", leading: 20 } as Partial<EditItem>)]));
+    const [first, second] = textMatrices(content);
+    expect(first[5] - second[5]).toBeCloseTo(20);
+  });
+
+  it("saves just the cover when edited text is emptied, removing the words", async () => {
+    const cover = { x: 8, y: 18, width: 60, height: 16, color: "#ffffff" };
+    const [content] = await pageContents(await applyEdits(await pdf([{}]), [text({ text: "", cover } as Partial<EditItem>)]));
+    expect(content).toContain("1 0 0 1 8 766 cm");
+    expect(content).not.toContain("BT");
+  });
+
   it("picks the bold, italic and bold italic faces", async () => {
     const [content] = await pageContents(
       await applyEdits(await pdf([{}]), [text({ bold: true }), text({ italic: true }), text({ bold: true, italic: true, font: "serif" }), text({ font: "mono", italic: true })]),
