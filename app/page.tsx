@@ -1,23 +1,13 @@
-import type { CSSProperties } from "react";
 import Link from "next/link";
-import { ArrowRight, Lock, Monitor, ShieldCheck, Sparkles, UserX, Zap, HardDrive, History } from "lucide-react";
+import { ArrowRight, Lock, Monitor, UserX, HardDrive, History } from "lucide-react";
 import HomeSearch from "@/components/home/HomeSearch";
 import RecentTools from "@/components/home/RecentTools";
 import ToolFinder from "@/components/home/ToolFinder";
 import CategoryDot from "@/components/catalog/CategoryDot";
-import { IconTile } from "@/components/catalog/icons";
-import { tintColor } from "@/lib/category-theme-css";
 import ToolCard from "@/components/catalog/ToolCard";
-import { buttonClass } from "@/components/ui/Button";
 import { categories, allTools, plannedTools, toolHref } from "@/registry";
 
 const POPULAR_COUNT = 6;
-
-const HERO_POINTS = [
-  { icon: Zap, label: "Instant results" },
-  { icon: ShieldCheck, label: "Runs in your browser" },
-  { icon: Lock, label: "No sign-up needed" },
-];
 
 // Keep these true: every current tool runs client-side and there is no backend.
 // Revisit when a tool starts processing data on a server.
@@ -50,31 +40,41 @@ export default function Home() {
 
   return (
     <main>
-      <section className="bg-[radial-gradient(ellipse_70%_60%_at_50%_0%,color-mix(in_srgb,var(--accent)_16%,transparent),transparent)] px-4 pb-20 pt-16 text-center sm:pt-24">
-        <p className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--border)] bg-[color:var(--surface-raised)] px-3 py-1 text-xs text-[color:var(--text-muted)]">
-          <Sparkles aria-hidden className="h-3.5 w-3.5 text-[color:var(--accent-text)]" />
-          Your all-in-one toolbox
-        </p>
-        <h1 className="mx-auto mt-6 max-w-3xl text-[2.5rem] font-bold leading-[1.08] tracking-[-0.035em] sm:text-6xl">
-          Small tools.
-          <br />
-          <span className="text-[color:var(--accent-text)]">Big time savings.</span>
-        </h1>
-        <p className="mx-auto mt-5 max-w-md text-[color:var(--text-muted)] sm:text-lg">
-          Convert, generate, clean, calculate, compare, and transform, all in one place.
-        </p>
-        <div className="mt-9">
-          <HomeSearch />
+      {/* Search first, the full directory beside it: the page is a way into the tools, not a pitch. */}
+      <section className="mx-auto grid max-w-6xl gap-12 px-4 pb-16 pt-14 sm:pt-20 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-16">
+        <div>
+          <h1 className="max-w-xl text-[2.5rem] font-bold leading-[1.08] tracking-[-0.03em] sm:text-[3.25rem]">{allTools.length} tools that run in your browser.</h1>
+          <p className="mt-5 max-w-lg text-[color:var(--text-muted)] sm:text-lg">
+            Format JSON, decode a JWT, sign or merge a PDF, clean a CSV. What you paste stays on your device, and there&apos;s nothing to sign up for.
+          </p>
+          <div className="mt-8">
+            <HomeSearch />
+          </div>
+          <RecentTools />
         </div>
-        <ul className="mt-6 flex flex-wrap justify-center gap-x-8 gap-y-2 text-sm text-[color:var(--text-muted)]">
-          {HERO_POINTS.map(({ icon: Icon, label }) => (
-            <li key={label} className="flex items-center gap-1.5">
-              <Icon aria-hidden className="h-4 w-4" />
-              {label}
-            </li>
-          ))}
-        </ul>
-        <RecentTools />
+
+        <nav aria-labelledby="categories-heading" id="categories" className="scroll-mt-20">
+          <h2 id="categories-heading" className="mb-2 text-sm text-[color:var(--text-muted)]">
+            Browse by category
+          </h2>
+          <ul className="divide-y divide-[color:var(--border)] border-y border-[color:var(--border)]">
+            {Object.values(categories).map((category) => {
+              const count = allTools.filter((tool) => tool.category === category.id).length;
+              return (
+                <li key={category.id}>
+                  <Link href={`/tools/${category.id}`} className="group flex items-baseline gap-3 py-3">
+                    <CategoryDot category={category.id} />
+                    <span className="min-w-0 flex-1">
+                      <span className="font-medium group-hover:text-[color:var(--accent-text)] group-hover:underline">{category.label}</span>
+                      <span className="block truncate text-sm text-[color:var(--text-muted)]">{category.description}</span>
+                    </span>
+                    <span className="shrink-0 text-sm tabular-nums text-[color:var(--text-muted)]">{count > 0 ? count : "Soon"}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
       </section>
 
       <div className="mx-auto max-w-6xl space-y-20 px-4 pb-20">
@@ -86,39 +86,6 @@ export default function Home() {
                 <ToolCard {...tool} />
               </li>
             ))}
-          </ul>
-        </section>
-
-        <section aria-labelledby="categories-heading" id="categories" className="scroll-mt-20">
-          <SectionHeader
-            id="categories-heading"
-            title="Everything you need, organized."
-            href="/tools"
-            linkLabel="View all categories"
-          />
-          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {Object.values(categories).map((category) => {
-              const count = allTools.filter((tool) => tool.category === category.id).length;
-              return (
-                <li key={category.id}>
-                  <Link
-                    href={`/tools/${category.id}`}
-                    style={{ "--card-tint": tintColor(category.id) } as CSSProperties}
-                    className="flex h-full gap-4 rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-raised)] p-5 transition-colors hover:border-[color:var(--card-tint)]"
-                  >
-                    <IconTile category={category.id} />
-                    <span>
-                      <span className="block font-semibold">{category.label}</span>
-                      <span className="flex items-center gap-1.5 text-xs text-[color:var(--text-muted)]">
-                        <CategoryDot category={category.id} />
-                        {count > 0 ? `${count} ${count === 1 ? "tool" : "tools"}` : "Coming soon"}
-                      </span>
-                      <span className="mt-2 block text-sm text-[color:var(--text-muted)]">{category.description}</span>
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
           </ul>
         </section>
 
@@ -140,18 +107,6 @@ export default function Home() {
               </li>
             ))}
           </ul>
-        </section>
-
-        <section className="rounded-2xl bg-[color:color-mix(in_srgb,var(--accent)_22%,var(--bg))] px-6 py-12 text-center text-white">
-          <h2 className="text-2xl font-semibold tracking-[-0.02em]">Ready to get things done?</h2>
-          <p className="mt-2 text-white/75">Pick a tool and start in seconds. No sign-up.</p>
-          <Link
-            href="/tools"
-            className={`mt-6 ${buttonClass({ variant: "primary", size: "lg" })}`}
-          >
-            Explore tools
-            <ArrowRight aria-hidden className="h-4 w-4" />
-          </Link>
         </section>
       </div>
     </main>

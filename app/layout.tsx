@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono, Literata } from "next/font/google";
+import { IBM_Plex_Sans, JetBrains_Mono, Literata } from "next/font/google";
 import Link from "next/link";
 import AuthNav from "@/components/auth/AuthNav";
 import CategoryScope from "@/components/layout/CategoryScope";
@@ -13,7 +13,8 @@ import { categoryThemesCss } from "@/lib/category-theme-css";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+// UI face: a sans drawn for software interfaces, with the engineering feel of a toolbox. Plex isn't variable, so weights are listed.
+const plexSans = IBM_Plex_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-plex-sans" });
 const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains-mono" });
 // Display serif for the "editorial" theme. Not preloaded: the browser fetches it only on pages that use it.
 const literata = Literata({ subsets: ["latin"], variable: "--font-literata", preload: false });
@@ -35,7 +36,7 @@ export default function RootLayout({
     <html
       lang="en"
       data-theme="dark"
-      className={`${inter.variable} ${jetbrainsMono.variable} ${literata.variable}`}
+      className={`${plexSans.variable} ${jetbrainsMono.variable} ${literata.variable}`}
       suppressHydrationWarning
     >
       <head>
