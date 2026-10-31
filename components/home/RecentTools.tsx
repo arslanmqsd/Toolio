@@ -13,11 +13,11 @@ export default function RecentTools() {
   if (tools.length === 0) return null;
 
   return (
-    <section aria-labelledby="recent-heading" className="mx-auto mt-10 max-w-2xl">
+    <section aria-labelledby="recent-heading" className="mt-8">
       <h2 id="recent-heading" className="mb-3 text-sm text-[color:var(--text-muted)]">
         Recently used
       </h2>
-      <ul className="flex flex-wrap justify-center gap-2">
+      <ul className="flex flex-wrap gap-2">
         {tools.map((tool) => (
           <li key={tool.id}>
             <Link

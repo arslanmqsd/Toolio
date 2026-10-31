@@ -19,9 +19,9 @@
   --accent-2: var(--accent-warn);
   --error: #E2483D;
   --text-secondary: #5B6472;
-  /* --font-jetbrains-mono / --font-inter are set by next/font in app/layout.tsx. */
+  /* --font-jetbrains-mono / --font-plex-sans are set by next/font in app/layout.tsx. */
   --font-mono: var(--font-jetbrains-mono), 'JetBrains Mono', monospace;
-  --font-ui: var(--font-inter), 'Inter', sans-serif;
+  --font-ui: var(--font-plex-sans), 'IBM Plex Sans', system-ui, sans-serif;
   --font-display: var(--font-ui);
   /* Face for tool output. Mono by default: precise input, precise output. */
   --font-output: var(--font-mono);
