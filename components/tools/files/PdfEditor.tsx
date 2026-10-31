@@ -28,6 +28,8 @@ import {
   Pentagon,
   Shapes,
   Signature as SignatureIcon,
+  CaseUpper,
+  CalendarDays,
   Slash,
   Square,
   SquareArrowDownRight,
@@ -108,6 +110,8 @@ type Tool =
   | "arrow"
   | "stamp"
   | "signature"
+  | "initials"
+  | "date"
   | "edittext"
   | "comment";
 
@@ -126,7 +130,7 @@ function PathIcon({ d }: { d: string }) {
     </svg>
   );
 }
-type Tab = "annotate" | "shapes" | "insert" | "edittext";
+export type Tab = "annotate" | "shapes" | "insert" | "edittext" | "sign";
 type Item = EditItem & { id: number };
 type Point = { x: number; y: number };
 
@@ -205,6 +209,21 @@ const TABS: { id: Tab; label: string; icon: LucideIcon; tools: { id: Tool; label
       { id: "edittext", label: "Edit page text", icon: icon(TextCursor) },
     ],
   },
+  // Sign PDF's only tab: everything a form needs filled in to sign it.
+  {
+    id: "sign",
+    label: "Sign",
+    icon: SignatureIcon,
+    tools: [
+      { id: "select", label: "Select and move", icon: icon(MousePointer2) },
+      { id: "signature", label: "Signature", icon: icon(SignatureIcon) },
+      { id: "initials", label: "Initials", icon: icon(CaseUpper) },
+      { id: "text", label: "Text: name, title or company", icon: icon(Type) },
+      { id: "date", label: "Today's date", icon: icon(CalendarDays) },
+      { id: "stamp", label: "Stamp", icon: icon(StampIcon) },
+      { id: "eraser", label: "Eraser", icon: icon(Eraser) },
+    ],
+  },
 ];
 
 const MARK_LABEL: Record<MarkupStyle, string> = { highlight: "Highlight", underline: "Underline", strike: "Strikethrough", squiggly: "Squiggly" };
@@ -258,6 +277,10 @@ function bytesOf(signature: Signature): ArrayBuffer {
 
 /** A placed signature's longest side, in points (about 5 cm): a usual signature size. */
 const SIGNATURE_SIDE = 150;
+const INITIALS_SIDE = 60;
+
+/** Today as the Date tool writes it, e.g. "31 Oct 2026" (in the reader's own order). */
+const today = () => new Date().toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 
 const TEXT_SIZES = [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 60, 72];
 
@@ -583,19 +606,22 @@ function ItemShape({ item, hitArea }: { item: Item; hitArea: boolean }) {
   }
 }
 
-export default function PdfEditor() {
+/** The PDF editor. Other tools reuse it with fewer tabs, like Sign PDF with just "sign". */
+export default function PdfEditor({ tabs = ["annotate", "shapes", "insert", "edittext"], suffix = "edited" }: { tabs?: Tab[]; suffix?: string }) {
+  const shownTabs = TABS.filter((t) => tabs.includes(t.id));
   const [file, setFile] = useState<File | null>(null);
   const [doc, setDoc] = useState<Doc>({ status: "none" });
   const [pageIndex, setPageIndex] = useState(0);
   const [view, setView] = useState<View | null>(null);
-  const [tool, setTool] = useState<Tool>("select");
+  // Signing starts on Signature, which asks for one straight away if none is saved.
+  const [tool, setTool] = useState<Tool>(tabs[0] === "sign" ? "signature" : "select");
   const [items, setItems] = useState<Item[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [ink, setInk] = useState("#000000");
   const [marker, setMarker] = useState("#ffeb5a");
   /** Colour for underline, strikethrough and squiggly marks. */
   const [lineMark, setLineMark] = useState("#e74c3c");
-  const [tab, setTab] = useState<Tab>("annotate");
+  const [tab, setTab] = useState<Tab>(tabs[0]);
   const [markHint, setMarkHint] = useState(false);
   const [eraserSize, setEraserSize] = useState<(typeof ERASER_SIZES)[number]["id"]>("16");
   /** Where the eraser is over the page, to draw its outline in place of the pointer. */
@@ -623,6 +649,7 @@ export default function PdfEditor() {
   const [stamp, setStamp] = useState<Stamp>(STANDARD_STAMPS[0]);
   /** The signature the Signature tool places next. */
   const [signature, setSignature] = useState<Signature | null>(null);
+  const [initials, setInitials] = useState<Signature | null>(null);
   /** Picture URLs made for this PDF, freed when it's closed. */
   const madeUrls = useRef<string[]>([]);
 
@@ -762,10 +789,10 @@ export default function PdfEditor() {
     if (selected?.kind === "text") change(items.map((i) => (i.id === selected.id ? { ...selected, ...patch } : i)));
   }
 
-  function newItem(kind: "text" | "comment" | DragTool, a: Point, b: Point | null): Item {
+  function newItem(kind: "text" | "comment" | DragTool, a: Point, b: Point | null, text = ""): Item {
     const id = nextId.current++;
     const base = { id, page: pageIndex };
-    if (kind === "text") return { ...base, kind, x: a.x, y: a.y, text: "", ...textStyle };
+    if (kind === "text") return { ...base, kind, x: a.x, y: a.y, text, ...textStyle };
     if (kind === "comment") return { ...base, kind, x: a.x, y: a.y, text: "" };
     const [w, h] = DEFAULT_BOX[kind];
     const end = b ?? { x: a.x + w, y: a.y + h };
@@ -888,9 +915,9 @@ export default function PdfEditor() {
     });
   }
 
-  /** A signature centred on a point of the current page. */
-  function signatureItem(sig: Signature, at: Point): Item {
-    const scale = SIGNATURE_SIDE / Math.max(sig.width, sig.height);
+  /** A signature (or initials, smaller) centred on a point of the current page. */
+  function signatureItem(sig: Signature, at: Point, side = SIGNATURE_SIDE): Item {
+    const scale = side / Math.max(sig.width, sig.height);
     const [width, height] = [sig.width * scale, sig.height * scale];
     return { id: nextId.current++, page: pageIndex, kind: "image", x: at.x - width / 2, y: at.y - height / 2, width, height, rotation: 0, bytes: bytesOf(sig), type: "png" };
   }
@@ -937,6 +964,8 @@ export default function PdfEditor() {
     // Keep stamping: like the pen, new stamps aren't selected.
     if (tool === "stamp") return change([...items.filter((i) => !isEmpty(i)), stampItem(stamp, p)]);
     if (tool === "signature") return signature && change([...items.filter((i) => !isEmpty(i)), signatureItem(signature, p)]);
+    if (tool === "initials") return initials && change([...items.filter((i) => !isEmpty(i)), signatureItem(initials, p, INITIALS_SIDE)]);
+    if (tool === "date") return add(newItem("text", p, null, today()));
     if (tool === "edittext") {
       // A block already edited is picked up again rather than covered twice.
       const target = (e.target as Element).closest("[data-id]");
@@ -1048,11 +1077,13 @@ export default function PdfEditor() {
       e.preventDefault();
       return e.key === "Enter" ? finishPoly() : setPolyPts(null);
     }
-    const placeable = tool === "text" || tool === "comment" || tool === "stamp" || tool === "signature" || isDragTool(tool);
+    const placeable = tool === "text" || tool === "comment" || tool === "stamp" || tool === "signature" || tool === "initials" || tool === "date" || isDragTool(tool);
     if ((e.key === "Enter" || e.key === " ") && placeable) {
       e.preventDefault();
       if (tool === "stamp") return add(stampItem(stamp, { x: view.width / 2, y: view.height / 2 }));
       if (tool === "signature") return signature && add(signatureItem(signature, { x: view.width / 2, y: view.height / 2 }));
+      if (tool === "initials") return initials && add(signatureItem(initials, { x: view.width / 2, y: view.height / 2 }, INITIALS_SIDE));
+      if (tool === "date") return add(newItem("text", { x: view.width / 2 - 50, y: view.height / 2 - 20 }, null, today()));
       // Keyboard placement: start near the middle of the page, then move with the arrow keys.
       add(newItem(tool, { x: view.width / 2 - 50, y: view.height / 2 - 20 }, null));
     } else if (selected && selected.kind !== "markup" && e.key in arrows) {
@@ -1106,16 +1137,16 @@ export default function PdfEditor() {
     setPolyPts(null);
     setMarkHint(false);
     if (id === "edittext") setTool("edittext");
-    else if (!TABS.find((t) => t.id === id)!.tools.some((t) => t.id === tool)) setTool("select");
+    else if (!shownTabs.find((t) => t.id === id)!.tools.some((t) => t.id === tool)) setTool("select");
   }
 
   // Tabs pattern: arrow keys move between tabs and show them; Home and End jump to the ends.
   function onTabKeyDown(e: KeyboardEvent<HTMLDivElement>) {
-    const i = TABS.findIndex((t) => t.id === tab);
-    const next = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: TABS.length - 1 }[e.key];
+    const i = shownTabs.findIndex((t) => t.id === tab);
+    const next = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: shownTabs.length - 1 }[e.key];
     if (next === undefined) return;
     e.preventDefault();
-    const id = TABS[(next + TABS.length) % TABS.length].id;
+    const id = shownTabs[(next + shownTabs.length) % shownTabs.length].id;
     switchTab(id);
     document.getElementById(`pdf-tab-${id}`)?.focus();
   }
@@ -1161,9 +1192,11 @@ export default function PdfEditor() {
               : selected.kind
     : tool === "select"
       ? null
-      : tool;
-  const tabTools = TABS.find((t) => t.id === tab)!.tools;
-  const outName = file ? file.name.replace(/(\.pdf)?$/i, "-edited.pdf") : "edited.pdf";
+      : tool === "date"
+        ? "text"
+        : tool;
+  const tabTools = shownTabs.find((t) => t.id === tab)!.tools;
+  const outName = file ? file.name.replace(/(\.pdf)?$/i, `-${suffix}.pdf`) : `${suffix}.pdf`;
   const pages = doc.status === "ready" ? doc.pages : 0;
   const box = selected && selected.page === pageIndex ? bounds(selected) : null;
   const resizable = selected && (selected.kind === "rect" || selected.kind === "ellipse" || selected.kind === "line" || selected.kind === "image" || selected.kind === "stamp");
@@ -1185,7 +1218,7 @@ export default function PdfEditor() {
               <div className="space-y-3">
                 <div className="flex flex-wrap items-end gap-x-3 border-b border-[color:var(--border)]">
                   <div role="tablist" aria-label="Tool groups" className="flex" onKeyDown={onTabKeyDown}>
-                    {TABS.map((t) => (
+                    {shownTabs.map((t) => (
                       <button
                         key={t.id}
                         id={`pdf-tab-${t.id}`}
@@ -1468,6 +1501,7 @@ export default function PdfEditor() {
                 {!styleKind && <p className={`text-sm ${muted}`}>Pick a tool, then click or drag on the page. Select an item to move, restyle or delete it.</p>}
                 {tool === "stamp" && <StampPicker value={stamp} onChange={setStamp} />}
                 {tool === "signature" && <SignaturePicker value={signature} onChange={setSignature} />}
+                {tool === "initials" && <SignaturePicker initials value={initials} onChange={setInitials} />}
                 {styleKind === "stamp" && tool !== "stamp" && <p className={`text-sm ${muted}`}>Drag to move. Drag the corner handle to resize.</p>}
                 {styleKind === "image" && (
                   <>

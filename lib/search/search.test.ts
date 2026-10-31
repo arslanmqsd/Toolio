@@ -93,6 +93,8 @@ describe("search", () => {
     ["number pdf pages", "pdf-page-numbers"],
     ["edit pdf", "pdf-editor"],
     ["highlight pdf", "pdf-editor"],
+    ["sign pdf", "sign-pdf"],
+    ["electronic signature", "sign-pdf"],
     ["reorder pdf pages", "pdf-page-organizer"],
     ["pdf to jpg", "pdf-to-image"],
     ["convert pdf to png", "pdf-to-image"],

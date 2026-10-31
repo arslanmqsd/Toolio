@@ -113,7 +113,7 @@ const swatchButton =
   "h-7 w-7 rounded-full border-2 border-[color:var(--surface-raised)] ring-1 ring-[color:var(--border)] aria-pressed:ring-2 aria-pressed:ring-[color:var(--accent)]";
 
 /** Draw, type or upload a signature. */
-function SignatureDialog({ open, onClose, onCreate }: { open: boolean; onClose: () => void; onCreate: (signature: Signature) => void }) {
+function SignatureDialog({ open, onClose, onCreate, initials }: { open: boolean; onClose: () => void; onCreate: (signature: Signature) => void; initials: boolean }) {
   const [mode, setMode] = useState<"draw" | "type" | "upload">("draw");
   const [color, setColor] = useState(INKS[0].color);
   const [strokes, setStrokes] = useState<Pt[][]>([]);
@@ -168,7 +168,7 @@ function SignatureDialog({ open, onClose, onCreate }: { open: boolean; onClose: 
   }
 
   return (
-    <Dialog open={open} onClose={onClose} title="New signature" description="It's kept in this browser, ready to place on any PDF.">
+    <Dialog open={open} onClose={onClose} title={initials ? "New initials" : "New signature"} description="It's kept in this browser, ready to place on any PDF.">
       <div className="space-y-4">
         <SegmentedControl label="How to sign" variant="tabs" options={MODES} value={mode} onChange={setMode} />
         {mode === "draw" && (
@@ -200,8 +200,8 @@ function SignatureDialog({ open, onClose, onCreate }: { open: boolean; onClose: 
         )}
         {mode === "type" && (
           <div className="space-y-3">
-            <Field label="Your name" htmlFor={nameId}>
-              <TextInput id={nameId} value={name} maxLength={60} onChange={(e) => setName(e.target.value)} autoComplete="name" autoFocus />
+            <Field label={initials ? "Your initials" : "Your name"} htmlFor={nameId}>
+              <TextInput id={nameId} value={name} maxLength={initials ? 6 : 60} onChange={(e) => setName(e.target.value)} autoComplete={initials ? "off" : "name"} autoFocus />
             </Field>
             <div role="group" aria-label="Handwriting" className="grid grid-cols-2 gap-2">
               {SCRIPTS.map((s) => (
@@ -268,7 +268,8 @@ function SignatureDialog({ open, onClose, onCreate }: { open: boolean; onClose: 
   );
 }
 
-const STORAGE_KEY = "pdf-editor-signatures";
+/** Signatures and initials are saved apart, so each picker lists only its own. */
+const STORAGE_KEY = { signature: "pdf-editor-signatures", initials: "pdf-editor-initials" };
 /** Saved signatures kept at most; the oldest drop off. */
 const MAX_SAVED = 8;
 
@@ -277,30 +278,32 @@ const isSignature = (s: unknown): s is Signature => {
   return !!v && typeof v.url === "string" && v.url.startsWith("data:image/png;base64,") && v.width > 0 && v.height > 0;
 };
 
-function readSaved(): Signature[] {
+function readSaved(key: string): Signature[] {
   try {
-    const parsed: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]");
+    const parsed: unknown = JSON.parse(localStorage.getItem(key) ?? "[]");
     return Array.isArray(parsed) ? parsed.filter(isSignature) : [];
   } catch {
     return [];
   }
 }
 
-function writeSaved(list: Signature[]) {
+function writeSaved(key: string, list: Signature[]) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    localStorage.setItem(key, JSON.stringify(list));
   } catch {
     // Storage blocked or full: the signatures still last until the page closes.
   }
 }
 
-/** The signature to place next: the person's saved ones, and a way to make a new one. */
-export function SignaturePicker({ value, onChange }: { value: Signature | null; onChange: (signature: Signature | null) => void }) {
+/** The signature (or initials) to place next: the person's saved ones, and a way to make a new one. */
+export function SignaturePicker({ value, onChange, initials = false }: { value: Signature | null; onChange: (signature: Signature | null) => void; initials?: boolean }) {
+  const key = STORAGE_KEY[initials ? "initials" : "signature"];
+  const noun = initials ? "initials" : "signature";
   const [saved, setSaved] = useState<Signature[]>([]);
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
-    const list = readSaved();
+    const list = readSaved(key);
     setSaved(list);
     // Ready to sign with the latest one; with none yet, go straight to making one.
     if (!value && list[0]) onChange(list[0]);
@@ -311,25 +314,25 @@ export function SignaturePicker({ value, onChange }: { value: Signature | null; 
 
   function save(next: Signature[]) {
     setSaved(next);
-    writeSaved(next);
+    writeSaved(key, next);
   }
 
   return (
     <div className="w-full space-y-2">
       <div className="flex flex-wrap items-center gap-3">
         <Button icon={Plus} size="sm" onClick={() => setCreating(true)}>
-          New signature
+          New {noun}
         </Button>
-        <p className="text-sm text-[color:var(--text-muted)]">{saved.length ? "Pick a signature, then click the page where it goes." : "No signatures yet."}</p>
+        <p className="text-sm text-[color:var(--text-muted)]">{saved.length ? `Pick your ${noun}, then click the page where it goes.` : initials ? "No initials yet." : "No signatures yet."}</p>
       </div>
       {saved.length > 0 && (
-        <ul aria-label="Your signatures" className="grid grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-2 pt-1.5">
+        <ul aria-label={initials ? "Your initials" : "Your signatures"} className="grid grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-2 pt-1.5">
           {saved.map((s, i) => (
             <li key={s.url} className="relative">
               <button
                 type="button"
                 aria-pressed={value?.url === s.url}
-                aria-label={`Signature ${i + 1}`}
+                aria-label={`${initials ? "Initials" : "Signature"} ${i + 1}`}
                 onClick={() => onChange(s)}
                 className="flex h-14 w-full items-center justify-center rounded-md border border-[color:var(--border)] bg-white p-1.5 hover:border-[color:var(--accent)] aria-pressed:border-[color:var(--accent)] aria-pressed:ring-2 aria-pressed:ring-[color:var(--accent)]"
               >
@@ -338,8 +341,8 @@ export function SignaturePicker({ value, onChange }: { value: Signature | null; 
               </button>
               <button
                 type="button"
-                aria-label={`Remove signature ${i + 1}`}
-                title="Remove this signature"
+                aria-label={`Remove ${noun} ${i + 1}`}
+                title={initials ? "Remove these initials" : "Remove this signature"}
                 onClick={() => {
                   save(saved.filter((x) => x.url !== s.url));
                   if (value?.url === s.url) onChange(null);
@@ -353,6 +356,7 @@ export function SignaturePicker({ value, onChange }: { value: Signature | null; 
         </ul>
       )}
       <SignatureDialog
+        initials={initials}
         open={creating}
         onClose={() => setCreating(false)}
         onCreate={(signature) => {
