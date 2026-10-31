@@ -4,7 +4,10 @@ import {
   PDFDocument,
   PDFHexString,
   PDFString,
+  StandardFonts,
   appendBezierCurve,
+  beginText,
+  endText,
   closePath,
   degrees,
   fill as fillPath,
@@ -18,7 +21,10 @@ import {
   setLineJoin,
   setFillingColor,
   setGraphicsState,
+  setFontAndSize,
   setLineWidth,
+  setTextMatrix,
+  showText,
   setStrokingColor,
   stroke,
   type PDFOperator,
@@ -28,6 +34,7 @@ import { hexRgb } from "./pdf-colors";
 import { PDF_FONTS, type PdfFont } from "./pdf-fonts";
 import type { EmbeddableType } from "./images-to-pdf";
 import { seenToUser } from "./pdf-page-numbers";
+import { stampLayout, stampName, type Stamp } from "./pdf-stamps";
 
 /**
  * Additions to a PDF, in points on the page as seen (rotation applied, crop box only), measured from
@@ -44,6 +51,8 @@ export type EditItem =
   /** Corners as offsets from (x, y); `closed` joins the last back to the first, making a polygon that can be filled. */
   | { kind: "poly"; page: number; x: number; y: number; points: [number, number][]; closed: boolean; color: string; fill: string | null; stroke: number }
   | { kind: "comment"; page: number; x: number; y: number; text: string }
+  /** A rubber stamp ("APPROVED", "SIGN HERE", a tick…) filling the box. */
+  | ({ kind: "stamp"; page: number; x: number; y: number; width: number; height: number } & Stamp)
   /**
    * A picture (logo, photo, stamp), already a PNG or JPEG the PDF can hold. x, y, width and height are the
    * box it fills as seen; `rotation` turns it clockwise inside that box.
@@ -122,14 +131,24 @@ function userBox(page: PDFPage, x: number, y: number, width: number, height: num
  * Adds an annotation with its own drawn look (`ops`, in page coordinates), so every reader shows it the same
  * way while still letting people select, edit or delete it. `points` are the corners it must cover.
  */
-function annotate(doc: PDFDocument, page: PDFPage, subtype: string, points: [number, number][], pad: number, ops: PDFOperator[], extra: Record<string, unknown>, multiply: boolean) {
+function annotate(
+  doc: PDFDocument,
+  page: PDFPage,
+  subtype: string,
+  points: [number, number][],
+  pad: number,
+  ops: PDFOperator[],
+  extra: Record<string, unknown>,
+  multiply: boolean,
+  resources: Record<string, unknown> = {},
+) {
   const xs = points.map((p) => p[0]);
   const ys = points.map((p) => p[1]);
   const rect = [Math.min(...xs) - pad, Math.min(...ys) - pad, Math.max(...xs) + pad, Math.max(...ys) + pad];
   // Multiply tints the page like a marker: dark text under it stays dark.
   const look = doc.context.formXObject(multiply ? [setGraphicsState("Tint"), ...ops] : ops, {
     BBox: rect,
-    Resources: multiply ? { ExtGState: { Tint: { Type: "ExtGState", BM: "Multiply" } } } : {},
+    Resources: { ...(multiply && { ExtGState: { Tint: { Type: "ExtGState", BM: "Multiply" } } }), ...resources },
   });
   const annot = doc.context.obj({
     Type: "Annot",
@@ -221,6 +240,35 @@ export async function applyEdits(input: Uint8Array, items: EditItem[], onProgres
         F: 4 | 8 | 16,
       });
       page.node.addAnnot(doc.context.register(note));
+    } else if (item.kind === "stamp") {
+      const name = StandardFonts.HelveticaBoldOblique;
+      const font = fonts.get(name) ?? (await doc.embedFont(name));
+      fonts.set(name, font);
+      const at = (x: number, y: number) => toUser(page, x, y);
+      const look = stampLayout(item, (text) => font.widthOfTextAtSize(text, 1));
+      // Pages only turn in quarter turns: exact cosine and sine keep the matrix clean.
+      const [cos, sin] = [[1, 0], [0, 1], [-1, 0], [0, -1]][(((page.getRotation().angle / 90) % 4) + 4) % 4];
+      const ops: PDFOperator[] = [pushGraphicsState(), setStrokingColor(rgb(...hexRgb(item.color))), setLineCap(LineCapStyle.Round), setLineJoin(LineJoinStyle.Round)];
+      if (look.frame) ops.push(setFillingColor(rgb(...hexRgb(look.fill))), setLineWidth(look.frameWidth), ...pathOps(look.frame, at), fillAndStroke());
+      if (look.mark) ops.push(setLineWidth(look.markWidth), ...pathOps(look.mark, at), stroke());
+      if (look.text) {
+        const { cx, baseline, size, color } = look.text;
+        // Turned with the page, so the words read across the page as seen.
+        const [tx, ty] = at(cx - font.widthOfTextAtSize(item.text, size) / 2, baseline);
+        ops.push(
+          beginText(),
+          setFillingColor(rgb(...hexRgb(color))),
+          setFontAndSize("F1", size),
+          setTextMatrix(cos, sin, -sin, cos, tx, ty),
+          showText(font.encodeText(item.text)),
+          endText(),
+        );
+      }
+      ops.push(popGraphicsState());
+      const { x, y, width: w, height: h } = item;
+      annotate(doc, page, "Stamp", [at(x, y), at(x + w, y + h)], look.frameWidth + look.markWidth, ops, { Name: "Draft", Contents: PDFHexString.fromText(stampName(item)), C: hexRgb(item.color) }, false, {
+        Font: { F1: font.ref },
+      });
     } else if (item.kind === "image") {
       const image = images.get(item.bytes) ?? (await (item.type === "png" ? doc.embedPng(item.bytes) : doc.embedJpg(item.bytes)));
       images.set(item.bytes, image);

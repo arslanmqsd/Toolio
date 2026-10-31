@@ -27,8 +27,11 @@ import {
   PenLine,
   Pentagon,
   Shapes,
+  Signature as SignatureIcon,
   Slash,
   Square,
+  SquareArrowDownRight,
+  Stamp as StampIcon,
   StickyNote,
   Trash2,
   Type,
@@ -77,6 +80,9 @@ import { charAt, selectionRects, splitChars, type Char } from "@/lib/tools/files
 import { imageSize, prepareImage } from "@/lib/tools/files/prepare-image";
 import { unsupportedCharacters } from "@/lib/tools/files/pdf-watermark";
 import { runWorkerTask } from "@/lib/worker-task";
+import { STANDARD_STAMPS, stampName, stampSize, type Stamp } from "@/lib/tools/files/pdf-stamps";
+import { StampDrawing, StampPicker, stampWidthAt1 } from "./PdfStamps";
+import { SignaturePicker, type Signature } from "./PdfSignatures";
 
 function createWorker() {
   return new Worker(new URL("../../../lib/tools/files/pdf-editor.worker.ts", import.meta.url));
@@ -97,6 +103,8 @@ type Tool =
   | "line"
   | "polyline"
   | "arrow"
+  | "stamp"
+  | "signature"
   | "comment";
 
 /** Tools that add a shape by dragging from one corner (or end) to the other, or by a single click. */
@@ -173,7 +181,17 @@ const TABS: { id: Tab; label: string; icon: LucideIcon; tools: { id: Tool; label
       { id: "eraser", label: "Eraser", icon: icon(Eraser) },
     ],
   },
-  { id: "insert", label: "Insert", icon: ImagePlus, tools: [{ id: "select", label: "Select and move", icon: icon(MousePointer2) }] },
+  {
+    id: "insert",
+    label: "Insert",
+    icon: SquareArrowDownRight,
+    tools: [
+      { id: "select", label: "Select and move", icon: icon(MousePointer2) },
+      { id: "stamp", label: "Stamp", icon: icon(StampIcon) },
+      { id: "signature", label: "Signature", icon: icon(SignatureIcon) },
+      { id: "eraser", label: "Eraser", icon: icon(Eraser) },
+    ],
+  },
 ];
 
 const MARK_LABEL: Record<MarkupStyle, string> = { highlight: "Highlight", underline: "Underline", strike: "Strikethrough", squiggly: "Squiggly" };
@@ -197,6 +215,7 @@ const KIND_LABEL: Record<Exclude<EditItem["kind"], "markup">, string> = {
   comment: "Comment",
   ink: "Drawing",
   image: "Image",
+  stamp: "Stamp",
 };
 
 const STROKES = [
@@ -210,6 +229,22 @@ const IMAGE_SIDE = 200;
 
 /** On-screen copies of inserted pictures, keyed by their bytes, so undo and redraws reuse one URL each. */
 const imageUrls = new WeakMap<ArrayBuffer, string>();
+
+/** Each saved signature's bytes, made once so every copy placed is stored in the PDF once. */
+const signatureBytes = new Map<string, ArrayBuffer>();
+
+function bytesOf(signature: Signature): ArrayBuffer {
+  let bytes = signatureBytes.get(signature.url);
+  if (!bytes) {
+    bytes = Uint8Array.from(atob(signature.url.slice(signature.url.indexOf(",") + 1)), (c) => c.charCodeAt(0)).buffer;
+    signatureBytes.set(signature.url, bytes);
+    imageUrls.set(bytes, signature.url);
+  }
+  return bytes;
+}
+
+/** A placed signature's longest side, in points (about 5 cm): a usual signature size. */
+const SIGNATURE_SIDE = 150;
 
 const TEXT_SIZES = [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 60, 72];
 
@@ -342,6 +377,7 @@ function describe(item: EditItem): string {
   if (item.kind === "line") return item.arrow ? "Arrow" : item.curve ? "Arc" : "Line";
   if (item.kind === "poly") return item.closed ? "Polygon" : "Polyline";
   if (item.kind === "rect" && item.cloud) return "Cloud";
+  if (item.kind === "stamp") return `Stamp: ${stampName(item)}`;
   if (item.kind === "text" || item.kind === "comment") {
     const words = item.text.trim().replace(/\s+/g, " ");
     return `${KIND_LABEL[item.kind]}: ${words ? (words.length > 30 ? `${words.slice(0, 30)}…` : words) : "empty"}`;
@@ -490,6 +526,12 @@ function ItemShape({ item, hitArea }: { item: Item; hitArea: boolean }) {
         </g>
       );
     }
+    case "stamp":
+      return (
+        <g pointerEvents={hit}>
+          <StampDrawing stamp={item} />
+        </g>
+      );
     case "comment":
       return (
         <g pointerEvents={hit}>
@@ -538,6 +580,10 @@ export default function PdfEditor() {
   const inkPoints = useRef<Point[]>([]);
   const imageInput = useRef<HTMLInputElement>(null);
   const [imageError, setImageError] = useState<string | null>(null);
+  /** The stamp the Stamp tool places next. */
+  const [stamp, setStamp] = useState<Stamp>(STANDARD_STAMPS[0]);
+  /** The signature the Signature tool places next. */
+  const [signature, setSignature] = useState<Signature | null>(null);
   /** Picture URLs made for this PDF, freed when it's closed. */
   const madeUrls = useRef<string[]>([]);
 
@@ -657,7 +703,7 @@ export default function PdfEditor() {
       setTextStyle({ font, size, bold, italic, underline, color, background, align, opacity });
     } else if (item.kind === "markup") (item.style === "highlight" ? setMarker : setLineMark)(item.color);
     else if (item.kind === "ink" && item.marker) setMarker(item.color);
-    else if (item.kind !== "comment" && item.kind !== "image") {
+    else if (item.kind !== "comment" && item.kind !== "image" && item.kind !== "stamp") {
       setInk(item.color);
       if (item.kind === "rect" || item.kind === "ellipse" || item.kind === "poly") setFill(item.fill);
       setStroke(String(item.stroke) as (typeof STROKES)[number]["id"]);
@@ -766,12 +812,24 @@ export default function PdfEditor() {
       const scale = Math.min(IMAGE_SIDE / Math.max(size.width, size.height), (view.width * 0.9) / size.width, (view.height * 0.9) / size.height);
       const width = size.width * scale;
       const height = size.height * scale;
-      const item: Item = { id: nextId.current++, page: pageIndex, kind: "image", x: (view.width - width) / 2, y: (view.height - height) / 2, width, height, rotation: 0, bytes, type };
       setTool("select");
-      add(item);
+      add({ id: nextId.current++, page: pageIndex, kind: "image", x: (view.width - width) / 2, y: (view.height - height) / 2, width, height, rotation: 0, bytes, type });
     } catch {
       setImageError(`“${picked.name}” couldn't be read as an image. Try a PNG or JPG.`);
     }
+  }
+
+  /** A signature centred on a point of the current page. */
+  function signatureItem(sig: Signature, at: Point): Item {
+    const scale = SIGNATURE_SIDE / Math.max(sig.width, sig.height);
+    const [width, height] = [sig.width * scale, sig.height * scale];
+    return { id: nextId.current++, page: pageIndex, kind: "image", x: at.x - width / 2, y: at.y - height / 2, width, height, rotation: 0, bytes: bytesOf(sig), type: "png" };
+  }
+
+  /** A stamp centred on a point of the current page, at its natural size. */
+  function stampItem(look: Stamp, at: Point): Item {
+    const { width, height } = stampSize(look, stampWidthAt1);
+    return { id: nextId.current++, page: pageIndex, kind: "stamp", x: at.x - width / 2, y: at.y - height / 2, width, height, ...look };
   }
 
   /** Turns the selected picture a quarter, keeping its centre where it was. */
@@ -807,6 +865,9 @@ export default function PdfEditor() {
       return;
     }
     if (tool === "text" || tool === "comment") return add(newItem(tool, p, null));
+    // Keep stamping: like the pen, new stamps aren't selected.
+    if (tool === "stamp") return change([...items.filter((i) => !isEmpty(i)), stampItem(stamp, p)]);
+    if (tool === "signature") return signature && change([...items.filter((i) => !isEmpty(i)), signatureItem(signature, p)]);
     if (isPolyTool(tool)) {
       if (!polyPts) return setPolyPts([p]);
       // Clicking back on the first corner closes a polygon.
@@ -858,7 +919,7 @@ export default function PdfEditor() {
     const dy = p.y - drag.start.y;
     let moved: Item;
     // Pictures keep their shape when resized.
-    if (drag.mode === "resize" && orig.kind === "image") {
+    if (drag.mode === "resize" && (orig.kind === "image" || orig.kind === "stamp")) {
       const width = Math.max(8, orig.width + dx);
       moved = { ...orig, width, height: (width * orig.height) / orig.width };
     } else if (drag.mode === "resize" && "width" in orig) moved = { ...orig, width: Math.max(4, orig.width + dx), height: Math.max(4, orig.height + dy) };
@@ -909,9 +970,11 @@ export default function PdfEditor() {
       e.preventDefault();
       return e.key === "Enter" ? finishPoly() : setPolyPts(null);
     }
-    const placeable = tool === "text" || tool === "comment" || isDragTool(tool);
+    const placeable = tool === "text" || tool === "comment" || tool === "stamp" || tool === "signature" || isDragTool(tool);
     if ((e.key === "Enter" || e.key === " ") && placeable) {
       e.preventDefault();
+      if (tool === "stamp") return add(stampItem(stamp, { x: view.width / 2, y: view.height / 2 }));
+      if (tool === "signature") return signature && add(signatureItem(signature, { x: view.width / 2, y: view.height / 2 }));
       // Keyboard placement: start near the middle of the page, then move with the arrow keys.
       add(newItem(tool, { x: view.width / 2 - 50, y: view.height / 2 - 20 }, null));
     } else if (selected && selected.kind !== "markup" && e.key in arrows) {
@@ -1024,7 +1087,7 @@ export default function PdfEditor() {
   const outName = file ? file.name.replace(/(\.pdf)?$/i, "-edited.pdf") : "edited.pdf";
   const pages = doc.status === "ready" ? doc.pages : 0;
   const box = selected && selected.page === pageIndex ? bounds(selected) : null;
-  const resizable = selected && (selected.kind === "rect" || selected.kind === "ellipse" || selected.kind === "line" || selected.kind === "image");
+  const resizable = selected && (selected.kind === "rect" || selected.kind === "ellipse" || selected.kind === "line" || selected.kind === "image" || selected.kind === "stamp");
 
   return (
     <>
@@ -1112,10 +1175,16 @@ export default function PdfEditor() {
                   </div>
                   {tab === "insert" && (
                     <>
-                      <Divider />
-                      <Button icon={ImagePlus} onClick={() => imageInput.current?.click()} title="Add a logo, photo or stamp">
-                        Add image
-                      </Button>
+                      <button
+                        type="button"
+                        aria-label="Add image"
+                        title="Add image: a logo or photo"
+                        onClick={() => imageInput.current?.click()}
+                        className="-ml-1 rounded-md p-2 text-[color:var(--text-muted)] hover:text-[color:var(--text)]"
+                      >
+                        <ImagePlus aria-hidden className="h-4 w-4" />
+                      </button>
+
                       <input
                         ref={imageInput}
                         type="file"
@@ -1268,7 +1337,9 @@ export default function PdfEditor() {
                 {styleKind === "eraser" && (
                   <>
                     <SegmentedControl label="Eraser size" options={ERASER_SIZES} value={eraserSize} onChange={setEraserSize} />
-                    <p className={`text-sm ${muted}`}>Rubs out parts of pen strokes, highlights and other text marks. Text boxes, shapes, images and comments are removed whole.</p>
+                    <p className={`text-sm ${muted}`}>
+                      Rubs out parts of pen strokes, text marks and shape outlines. Text boxes, filled shapes, images, stamps and comments are removed whole.
+                    </p>
                   </>
                 )}
                 {styleKind && (isDragTool(styleKind) || isPolyTool(styleKind) || styleKind === "ink") && styleKind !== "highlight" && (
@@ -1307,6 +1378,9 @@ export default function PdfEditor() {
                   />
                 )}
                 {!styleKind && <p className={`text-sm ${muted}`}>Pick a tool, then click or drag on the page. Select an item to move, restyle or delete it.</p>}
+                {tool === "stamp" && <StampPicker value={stamp} onChange={setStamp} />}
+                {tool === "signature" && <SignaturePicker value={signature} onChange={setSignature} />}
+                {styleKind === "stamp" && tool !== "stamp" && <p className={`text-sm ${muted}`}>Drag to move. Drag the corner handle to resize.</p>}
                 {styleKind === "image" && (
                   <>
                     <div role="group" aria-label="Rotate" className="flex items-center gap-1">
