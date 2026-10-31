@@ -21,7 +21,6 @@ const dockerComposeBuilder: ToolConfig = {
     "docker compose healthcheck",
   ],
   actions: ["generate"],
-  component: () => import("@/components/tools/developer/DockerComposeBuilder"),
   consumes: [],
   produces: ["yaml", "env"],
 };

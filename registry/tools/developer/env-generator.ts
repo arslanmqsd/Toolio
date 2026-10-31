@@ -25,7 +25,6 @@ const envGenerator: ToolConfig = {
     "settings.py",
   ],
   actions: ["generate", "convert"],
-  component: () => import("@/components/tools/developer/EnvGenerator"),
   consumes: ["env"],
   produces: ["code", "env"],
 };

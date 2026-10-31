@@ -24,7 +24,6 @@ const chmodCalculator: ToolConfig = {
     "chmod recursive",
   ],
   actions: ["calculate", "generate", "convert"],
-  component: () => import("@/components/tools/developer/ChmodCalculator"),
   consumes: [],
   produces: ["code"],
 };

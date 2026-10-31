@@ -17,7 +17,6 @@ const pdfEditor: ToolConfig = {
     "pdf sticky note",
   ],
   actions: ["transform"],
-  component: () => import("@/components/tools/files/PdfEditor"),
   consumes: [],
   produces: [],
 };

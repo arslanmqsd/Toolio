@@ -21,7 +21,6 @@ const urlParser: ToolConfig = {
     "relative url resolver",
   ],
   actions: ["inspect", "transform", "format"],
-  component: () => import("@/components/tools/developer/UrlParser"),
   consumes: ["url"],
   produces: ["url"],
 };

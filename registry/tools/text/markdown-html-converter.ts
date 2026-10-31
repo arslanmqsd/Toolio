@@ -19,7 +19,6 @@ const markdownHtmlConverter: ToolConfig = {
     "convert html to markdown",
   ],
   actions: ["convert", "transform"],
-  component: () => import("@/components/tools/text/MarkdownHtmlConverter"),
   consumes: ["markdown", "html"],
   produces: ["markdown", "html"],
 };

@@ -5,6 +5,8 @@ export default defineConfig({
   resolve: {
     alias: { "@": fileURLToPath(new URL(".", import.meta.url)) },
   },
+  // tsconfig says "preserve" for Next.js; tests need JSX compiled.
+  oxc: { jsx: { runtime: "automatic" } },
   test: {
     // A few tests (hashing, regex fuzzing, RSA keys) take seconds and slow down when every file runs in parallel.
     testTimeout: 15_000,

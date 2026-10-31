@@ -20,7 +20,6 @@ const wordCounter: ToolConfig = {
     "sentence counter",
   ],
   actions: ["inspect"],
-  component: () => import("@/components/tools/text/WordCounter"),
   consumes: ["text"],
   produces: [],
 };

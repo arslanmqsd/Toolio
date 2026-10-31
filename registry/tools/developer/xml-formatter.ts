@@ -23,7 +23,6 @@ const xmlFormatter: ToolConfig = {
     "xml lint",
   ],
   actions: ["format", "inspect", "transform"],
-  component: () => import("@/components/tools/developer/XmlFormatter"),
   consumes: ["xml"],
   produces: ["xml"],
 };

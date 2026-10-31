@@ -22,7 +22,6 @@ const base64Converter: ToolConfig = {
     "decode basic auth header",
   ],
   actions: ["convert", "inspect"],
-  component: () => import("@/components/tools/developer/Base64Converter"),
   consumes: ["text", "base64", "file"],
   produces: ["text", "base64", "file"],
 };

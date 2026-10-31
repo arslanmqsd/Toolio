@@ -24,7 +24,6 @@ const hashGenerator: ToolConfig = {
     "md5sum",
   ],
   actions: ["generate", "compare"],
-  component: () => import("@/components/tools/developer/HashGenerator"),
   consumes: ["text", "file"],
   produces: ["hash"],
 };

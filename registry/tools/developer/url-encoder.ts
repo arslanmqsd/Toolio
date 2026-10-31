@@ -22,7 +22,6 @@ const urlEncoder: ToolConfig = {
     "what does %20 mean",
   ],
   actions: ["convert", "inspect"],
-  component: () => import("@/components/tools/developer/UrlEncoder"),
   consumes: ["text", "url"],
   produces: ["text", "url"],
 };

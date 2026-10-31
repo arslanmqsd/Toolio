@@ -20,7 +20,6 @@ const textCleaner: ToolConfig = {
     "trim whitespace",
   ],
   actions: ["clean"],
-  component: () => import("@/components/tools/text/TextCleaner"),
   consumes: ["text"],
   produces: ["text"],
 };

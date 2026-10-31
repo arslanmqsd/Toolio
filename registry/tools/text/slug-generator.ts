@@ -20,7 +20,6 @@ const slugGenerator: ToolConfig = {
     "transliterate",
   ],
   actions: ["convert"],
-  component: () => import("@/components/tools/text/SlugGenerator"),
   consumes: ["text"],
   produces: ["text", "csv"],
 };

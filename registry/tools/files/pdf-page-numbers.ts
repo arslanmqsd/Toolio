@@ -15,7 +15,6 @@ const pdfPageNumbers: ToolConfig = {
     "pdf footer page number",
   ],
   actions: ["transform"],
-  component: () => import("@/components/tools/files/PdfPageNumbers"),
   consumes: [],
   produces: [],
 };

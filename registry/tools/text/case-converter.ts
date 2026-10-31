@@ -21,7 +21,6 @@ const caseConverter: ToolConfig = {
     "capitalize words",
   ],
   actions: ["convert"],
-  component: () => import("@/components/tools/text/CaseConverter"),
   consumes: ["text"],
   produces: ["text"],
 };

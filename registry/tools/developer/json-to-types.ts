@@ -29,7 +29,6 @@ const jsonToTypes: ToolConfig = {
     "infer types from json",
   ],
   actions: ["convert", "generate"],
-  component: () => import("@/components/tools/developer/JsonToTypes"),
   consumes: ["json"],
   produces: ["code"],
 };

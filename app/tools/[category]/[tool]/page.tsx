@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import RecordToolVisit from "@/components/tool-shell/RecordToolVisit";
+import ToolComponent from "@/components/tool-shell/ToolComponent";
 import ToolShell from "@/components/tool-shell/ToolShell";
 import { toolMetadata } from "@/lib/seo";
 import { allTools, categories, getTool } from "@/registry";
@@ -20,15 +21,14 @@ export function generateMetadata({ params }: ToolPageProps): Metadata {
   return tool ? toolMetadata(tool) : {};
 }
 
-export default async function ToolPage({ params }: ToolPageProps) {
+export default function ToolPage({ params }: ToolPageProps) {
   const tool = getTool(params.category, params.tool);
   if (!tool) notFound();
 
-  const { default: ToolComponent } = await tool.component();
   return (
     <ToolShell toolId={tool.id} category={categories[tool.category]} title={tool.title} description={tool.description}>
       <RecordToolVisit id={tool.id} />
-      <ToolComponent />
+      <ToolComponent id={tool.id} />
     </ToolShell>
   );
 }

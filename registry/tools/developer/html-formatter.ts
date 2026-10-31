@@ -22,7 +22,6 @@ const htmlFormatter: ToolConfig = {
     "html beautifier",
   ],
   actions: ["format", "transform"],
-  component: () => import("@/components/tools/developer/HtmlFormatter"),
   consumes: ["html"],
   produces: ["html"],
 };

@@ -17,7 +17,6 @@ const findReplace: ToolConfig = {
     "text replacer",
   ],
   actions: ["transform"],
-  component: () => import("@/components/tools/text/FindReplace"),
   consumes: ["text"],
   produces: ["text"],
 };

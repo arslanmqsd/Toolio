@@ -15,7 +15,6 @@ const pdfToText: ToolConfig = {
     "pdf to plain text",
   ],
   actions: ["extract"],
-  component: () => import("@/components/tools/files/PdfToText"),
   consumes: [],
   produces: ["text"],
 };

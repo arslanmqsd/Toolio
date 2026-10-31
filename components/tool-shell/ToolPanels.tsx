@@ -7,8 +7,8 @@ import { panelButtonClass } from "./panel-styles";
 import SaveSnippetButton from "./SaveSnippetButton";
 import SendToMenu from "./SendToMenu";
 
-const panelClass = "flex min-w-0 flex-col rounded-[var(--panel-radius)] border border-[color:var(--border)]";
-const panelHeaderClass =
+export const panelClass = "flex min-w-0 flex-col rounded-[var(--panel-radius)] border border-[color:var(--border)]";
+export const panelHeaderClass =
   "flex items-center justify-between border-b border-[color:var(--border)] px-4 py-2 text-xs font-medium text-[color:var(--text-muted)]";
 
 interface InputPanelProps {

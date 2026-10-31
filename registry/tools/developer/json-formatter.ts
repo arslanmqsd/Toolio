@@ -24,7 +24,6 @@ const jsonFormatter: ToolConfig = {
     "json viewer",
   ],
   actions: ["format", "inspect", "transform"],
-  component: () => import("@/components/tools/developer/JsonFormatter"),
   consumes: ["json"],
   produces: ["json"],
 };

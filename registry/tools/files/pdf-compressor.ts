@@ -16,7 +16,6 @@ const pdfCompressor: ToolConfig = {
     "optimize pdf",
   ],
   actions: ["transform"],
-  component: () => import("@/components/tools/files/PdfCompressor"),
   consumes: [],
   produces: [],
 };

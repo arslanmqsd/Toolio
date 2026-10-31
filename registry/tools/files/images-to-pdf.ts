@@ -16,7 +16,6 @@ const imagesToPdf: ToolConfig = {
     "webp to pdf",
   ],
   actions: ["convert"],
-  component: () => import("@/components/tools/files/ImagesToPdf"),
   consumes: [],
   produces: [],
 };

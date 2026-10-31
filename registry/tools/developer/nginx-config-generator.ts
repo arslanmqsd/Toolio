@@ -21,7 +21,6 @@ const nginxConfigGenerator: ToolConfig = {
     "nginx redirect http to https",
   ],
   actions: ["generate"],
-  component: () => import("@/components/tools/developer/NginxConfigGenerator"),
   consumes: [],
   produces: ["code"],
 };

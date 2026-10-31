@@ -17,7 +17,6 @@ const pdfPageOrganizer: ToolConfig = {
     "sort pdf pages",
   ],
   actions: ["transform"],
-  component: () => import("@/components/tools/files/PdfPageOrganizer"),
   consumes: [],
   produces: [],
 };

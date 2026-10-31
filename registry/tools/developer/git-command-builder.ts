@@ -24,7 +24,6 @@ const gitCommandBuilder: ToolConfig = {
     "git tag",
   ],
   actions: ["generate"],
-  component: () => import("@/components/tools/developer/GitCommandBuilder"),
   consumes: [],
   produces: ["git"],
 };

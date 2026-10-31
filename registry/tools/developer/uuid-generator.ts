@@ -23,7 +23,6 @@ const uuidGenerator: ToolConfig = {
     "database primary key",
   ],
   actions: ["generate"],
-  component: () => import("@/components/tools/developer/UuidGenerator"),
   consumes: [],
   produces: ["uuid"],
 };

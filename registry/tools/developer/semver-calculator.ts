@@ -23,7 +23,6 @@ const semverCalculator: ToolConfig = {
     "sort versions",
   ],
   actions: ["compare", "inspect"],
-  component: () => import("@/components/tools/developer/SemverCalculator"),
   consumes: ["text"],
   produces: ["text"],
 };

@@ -21,7 +21,6 @@ const dockerCommandBuilder: ToolConfig = {
     "docker logs",
   ],
   actions: ["generate"],
-  component: () => import("@/components/tools/developer/DockerCommandBuilder"),
   consumes: [],
   produces: ["docker"],
 };

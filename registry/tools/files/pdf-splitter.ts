@@ -16,7 +16,6 @@ const pdfSplitter: ToolConfig = {
     "save pdf pages",
   ],
   actions: ["extract"],
-  component: () => import("@/components/tools/files/PdfSplitter"),
   consumes: [],
   produces: [],
 };

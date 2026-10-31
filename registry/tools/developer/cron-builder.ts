@@ -24,7 +24,6 @@ const cronBuilder: ToolConfig = {
     "kubernetes cronjob",
   ],
   actions: ["generate", "inspect"],
-  component: () => import("@/components/tools/developer/CronBuilder"),
   consumes: ["cron"],
   produces: ["cron"],
 };
