@@ -69,6 +69,7 @@ import {
   EyeOff,
   FileMinus,
   Crop,
+  FileLock,
 } from "lucide-react";
 import { tintColor } from "@/lib/category-theme-css";
 import type { CategoryId } from "@/registry";
@@ -117,6 +118,7 @@ const toolIcons: Record<string, LucideIcon> = {
   "redact-pdf": EyeOff,
   "remove-pdf-pages": FileMinus,
   "crop-pdf": Crop,
+  "protect-pdf": FileLock,
   "image-resizer": Image,
   "csv-cleaner": Sheet,
   "lorem-ipsum-generator": Pilcrow,
