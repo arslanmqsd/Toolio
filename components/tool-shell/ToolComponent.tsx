@@ -52,6 +52,7 @@ export const TOOL_COMPONENTS: Record<string, ComponentType> = {
   "gitignore-generator": dynamic(() => import("@/components/tools/developer/GitignoreGenerator"), { loading: ToolLoading }),
   "hash-generator": dynamic(() => import("@/components/tools/developer/HashGenerator"), { loading: ToolLoading }),
   "html-formatter": dynamic(() => import("@/components/tools/developer/HtmlFormatter"), { loading: ToolLoading }),
+  "html-to-pdf": dynamic(() => import("@/components/tools/files/HtmlToPdf"), { loading: ToolLoading }),
   "http-status": dynamic(() => import("@/components/tools/developer/HttpStatus"), { loading: ToolLoading }),
   "images-to-pdf": dynamic(() => import("@/components/tools/files/ImagesToPdf"), { loading: ToolLoading }),
   "json-csv-converter": dynamic(() => import("@/components/tools/data/JsonCsvConverter"), { loading: ToolLoading }),

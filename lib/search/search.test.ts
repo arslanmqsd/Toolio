@@ -94,6 +94,8 @@ describe("search", () => {
     ["edit pdf", "pdf-editor"],
     ["highlight pdf", "pdf-editor"],
     ["sign pdf", "sign-pdf"],
+    ["html to pdf", "html-to-pdf"],
+    ["save web page as pdf", "html-to-pdf"],
     ["electronic signature", "sign-pdf"],
     ["reorder pdf pages", "pdf-page-organizer"],
     ["pdf to jpg", "pdf-to-image"],

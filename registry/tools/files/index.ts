@@ -1,4 +1,5 @@
 import type { ToolConfig } from "@/registry/types";
+import htmlToPdf from "./html-to-pdf";
 import imagesToPdf from "./images-to-pdf";
 import pdfCompressor from "./pdf-compressor";
 import pdfEditor from "./pdf-editor";
@@ -13,4 +14,4 @@ import pdfWatermark from "./pdf-watermark";
 import rotatePdf from "./rotate-pdf";
 import signPdf from "./sign-pdf";
 
-export const fileTools: ToolConfig[] = [pdfEditor, signPdf, pdfWatermark, pdfToImage, pdfToText, imagesToPdf, pdfPageOrganizer, rotatePdf, pdfPageNumbers, pdfSplitter, pdfMerger, pdfCompressor, pdfMetadataEditor];
+export const fileTools: ToolConfig[] = [pdfEditor, signPdf, pdfWatermark, pdfToImage, pdfToText, imagesToPdf, htmlToPdf, pdfPageOrganizer, rotatePdf, pdfPageNumbers, pdfSplitter, pdfMerger, pdfCompressor, pdfMetadataEditor];
