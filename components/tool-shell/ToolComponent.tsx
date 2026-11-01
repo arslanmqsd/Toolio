@@ -77,6 +77,7 @@ export const TOOL_COMPONENTS: Record<string, ComponentType> = {
   "pdf-to-image": dynamic(() => import("@/components/tools/files/PdfToImage"), { loading: ToolLoading }),
   "pdf-to-text": dynamic(() => import("@/components/tools/files/PdfToText"), { loading: ToolLoading }),
   "pdf-watermark": dynamic(() => import("@/components/tools/files/PdfWatermark"), { loading: ToolLoading }),
+  "ocr-pdf": dynamic(() => import("@/components/tools/files/OcrPdf"), { loading: ToolLoading }),
   "protect-pdf": dynamic(() => import("@/components/tools/files/ProtectPdf"), { loading: ToolLoading }),
   "redact-pdf": dynamic(() => import("@/components/tools/files/RedactPdf"), { loading: ToolLoading }),
   "regex-tester": dynamic(() => import("@/components/tools/developer/RegexTester"), { loading: ToolLoading }),
