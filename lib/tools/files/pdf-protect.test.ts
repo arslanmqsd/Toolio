@@ -2,7 +2,7 @@ import { createRequire } from "node:module";
 import { beforeAll, describe, expect, it } from "vitest";
 import createModule, { type QpdfInstance } from "@neslinesli93/qpdf-wasm";
 import { PDFDocument } from "pdf-lib";
-import { isEncrypted, protectPdf } from "./pdf-protect";
+import { isEncrypted, lockOf, protectPdf, unlockPdf } from "./pdf-protect";
 
 let qpdf: QpdfInstance;
 const wasm = createRequire(import.meta.url).resolve("@neslinesli93/qpdf-wasm/dist/qpdf.wasm");
@@ -85,5 +85,66 @@ describe("protectPdf", () => {
   it("cleans up its working files between runs", async () => {
     protectPdf(qpdf, await sample(), "hunter2");
     expect(() => qpdf.FS.readFile("/out.pdf")).toThrow();
+  });
+});
+
+/** A PDF that opens without a password but has an owner password blocking printing and copying. */
+async function restrictedOnly() {
+  (qpdf.FS as Fs).writeFile("/r.pdf", await sample());
+  expect(qpdf.callMain(["--encrypt", "--user-password=", "--owner-password=boss", "--bits=256", "--print=none", "--extract=n", "--", "/r.pdf", "/r2.pdf"])).toBe(0);
+  return qpdf.FS.readFile("/r2.pdf");
+}
+
+describe("lockOf", () => {
+  it("is none for a plain PDF", async () => {
+    expect(lockOf(qpdf, await sample())).toBe("none");
+  });
+
+  it("spots an open password", async () => {
+    expect(lockOf(qpdf, protectPdf(qpdf, await sample(), "pw"))).toBe("password");
+  });
+
+  it("spots restrictions on a PDF that opens without a password", async () => {
+    expect(lockOf(qpdf, await restrictedOnly())).toBe("restrictions");
+  });
+});
+
+describe("unlockPdf", () => {
+  it("removes the password when given the right one", async () => {
+    const out = unlockPdf(qpdf, protectPdf(qpdf, await sample(), "hunter2"), "hunter2");
+    expect(isEncrypted(out)).toBe(false);
+    expect((await PDFDocument.load(out)).getPageCount()).toBe(2);
+  });
+
+  it("refuses the wrong password", async () => {
+    const locked = protectPdf(qpdf, await sample(), "hunter2");
+    expect(() => unlockPdf(qpdf, locked, "hunter3")).toThrow("password");
+  });
+
+  it("refuses an empty password when one is needed", async () => {
+    const locked = protectPdf(qpdf, await sample(), "hunter2");
+    expect(() => unlockPdf(qpdf, locked, "")).toThrow("password");
+  });
+
+  it("lifts restrictions without a password", async () => {
+    const out = unlockPdf(qpdf, await restrictedOnly(), "");
+    expect(isEncrypted(out)).toBe(false);
+    expect((await PDFDocument.load(out)).getPageCount()).toBe(2);
+  });
+
+  it("takes any characters in the password", async () => {
+    const password = `p@ss "wörd" --encrypt; $HOME`;
+    expect(isEncrypted(unlockPdf(qpdf, protectPdf(qpdf, await sample(), password), password))).toBe(false);
+  });
+
+  it("says there's nothing to unlock on a plain PDF", async () => {
+    const plain = await sample();
+    expect(() => unlockPdf(qpdf, plain, "")).toThrow("not-encrypted");
+  });
+
+  it("leaves no decrypted copy behind", async () => {
+    unlockPdf(qpdf, protectPdf(qpdf, await sample(), "pw"), "pw");
+    expect(() => qpdf.FS.readFile("/out.pdf")).toThrow();
+    expect(() => qpdf.FS.readFile("/in.pdf")).toThrow();
   });
 });

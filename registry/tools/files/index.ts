@@ -16,6 +16,7 @@ import protectPdf from "./protect-pdf";
 import redactPdf from "./redact-pdf";
 import removePdfPages from "./remove-pdf-pages";
 import rotatePdf from "./rotate-pdf";
+import unlockPdf from "./unlock-pdf";
 import signPdf from "./sign-pdf";
 
-export const fileTools: ToolConfig[] = [pdfEditor, signPdf, redactPdf, pdfWatermark, pdfToImage, pdfToText, imagesToPdf, htmlToPdf, pdfPageOrganizer, removePdfPages, cropPdf, protectPdf, rotatePdf, pdfPageNumbers, pdfSplitter, pdfMerger, pdfCompressor, pdfMetadataEditor];
+export const fileTools: ToolConfig[] = [pdfEditor, signPdf, redactPdf, pdfWatermark, pdfToImage, pdfToText, imagesToPdf, htmlToPdf, pdfPageOrganizer, removePdfPages, cropPdf, protectPdf, unlockPdf, rotatePdf, pdfPageNumbers, pdfSplitter, pdfMerger, pdfCompressor, pdfMetadataEditor];

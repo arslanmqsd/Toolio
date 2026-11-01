@@ -58,7 +58,7 @@ export default function ProtectPdf() {
     setJob({ status: "working" });
     try {
       const bytes = await file.arrayBuffer();
-      const task = runWorkerTask<PdfProtectRequest, never, Uint8Array>(createWorker, { bytes, password }, { transfer: [bytes] });
+      const task = runWorkerTask<PdfProtectRequest, never, Uint8Array>(createWorker, { kind: "protect", bytes, password }, { transfer: [bytes] });
       cancelJob.current = task.cancel;
       const result = await task.result;
       setJob({ status: "done", bytes: result });

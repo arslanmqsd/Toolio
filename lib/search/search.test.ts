@@ -100,6 +100,8 @@ describe("search", () => {
     ["crop pdf", "crop-pdf"],
     ["password protect pdf", "protect-pdf"],
     ["encrypt pdf", "protect-pdf"],
+    ["remove pdf password", "unlock-pdf"],
+    ["unlock pdf", "unlock-pdf"],
     ["trim pdf margins", "crop-pdf"],
     ["black out text in pdf", "redact-pdf"],
     ["save web page as pdf", "html-to-pdf"],
