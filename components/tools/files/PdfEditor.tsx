@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import {
   AlignCenter,
   AlignLeft,
@@ -30,6 +30,10 @@ import {
   Signature as SignatureIcon,
   CaseUpper,
   CalendarDays,
+  EyeOff,
+  FileX2,
+  SquareDashed,
+  TextSelect,
   Slash,
   Square,
   SquareArrowDownRight,
@@ -46,6 +50,7 @@ import {
 import { InputPanel, OutputPanel } from "@/components/tool-shell/ToolPanels";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
+import TextInput from "@/components/ui/TextInput";
 import ColorPicker from "@/components/ui/ColorPicker";
 import Field from "@/components/ui/Field";
 import FileDrop from "@/components/ui/FileDrop";
@@ -76,6 +81,8 @@ import {
   type TextStyle,
 } from "@/lib/tools/files/pdf-editor";
 import type { PdfEditorRequest } from "@/lib/tools/files/pdf-editor.worker";
+import { findMatches, type FlatPage } from "@/lib/tools/files/pdf-redact";
+import type { PdfRedactRequest } from "@/lib/tools/files/pdf-redact.worker";
 import { SWATCH_ROWS } from "@/lib/tools/files/pdf-colors";
 import { PDF_MAX_BYTES, pdfErrorMessage } from "@/lib/tools/files/pdf-errors";
 import { PDF_FONT_CSS, PDF_FONT_OPTIONS, type PdfFont } from "@/lib/tools/files/pdf-fonts";
@@ -85,9 +92,43 @@ import { baselineOf, blockAt, blockColors, textBlocks, type TextBlock } from "@/
 import { imageSize, prepareImage } from "@/lib/tools/files/prepare-image";
 import { unsupportedCharacters } from "@/lib/tools/files/pdf-watermark";
 import { runWorkerTask } from "@/lib/worker-task";
+import { saveFile } from "@/lib/save-file";
 import { STANDARD_STAMPS, stampName, stampSize, type Stamp } from "@/lib/tools/files/pdf-stamps";
 import { StampDrawing, StampPicker, stampWidthAt1 } from "./PdfStamps";
 import { SignaturePicker, type Signature } from "./PdfSignatures";
+import { RedactPagesDialog } from "./PdfRedactPages";
+
+function createRedactWorker() {
+  return new Worker(new URL("../../../lib/tools/files/pdf-redact.worker.ts", import.meta.url));
+}
+
+/** Redacted pages are saved as pictures this sharp: crisp text when printed, without huge files. */
+const REDACT_DPI = 200;
+/** Extra black round each redaction, in points: letter boxes are estimates, so this covers their edges. */
+const REDACT_PAD = 1;
+
+/** A page drawn as a picture with its redactions painted solid black, ready to replace it. */
+async function burnIn(renderer: PdfRenderer, index: number, rects: Box[]): Promise<FlatPage> {
+  const [size, blob] = await Promise.all([renderer.size(index), renderer.image(index, REDACT_DPI, "png")]);
+  const bitmap = await createImageBitmap(blob);
+  const canvas = document.createElement("canvas");
+  try {
+    [canvas.width, canvas.height] = [bitmap.width, bitmap.height];
+    const ctx = canvas.getContext("2d")!;
+    ctx.drawImage(bitmap, 0, 0);
+    const [sx, sy] = [canvas.width / size.width, canvas.height / size.height];
+    ctx.fillStyle = "#000";
+    for (const b of rects) {
+      const [x, y] = [Math.floor((b.x - REDACT_PAD) * sx), Math.floor((b.y - REDACT_PAD) * sy)];
+      ctx.fillRect(x, y, Math.ceil((b.x + b.width + REDACT_PAD) * sx) - x, Math.ceil((b.y + b.height + REDACT_PAD) * sy) - y);
+    }
+    const png = await new Promise<Blob>((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("render failed"))), "image/png"));
+    return { index, png: await png.arrayBuffer(), ...size };
+  } finally {
+    bitmap.close();
+    canvas.width = canvas.height = 0;
+  }
+}
 
 function createWorker() {
   return new Worker(new URL("../../../lib/tools/files/pdf-editor.worker.ts", import.meta.url));
@@ -113,11 +154,13 @@ type Tool =
   | "initials"
   | "date"
   | "edittext"
+  | "redacttext"
+  | "redactarea"
   | "comment";
 
 /** Tools that add a shape by dragging from one corner (or end) to the other, or by a single click. */
-type DragTool = "highlight" | "rect" | "ellipse" | "arc" | "cloud" | "line" | "arrow";
-const isDragTool = (tool: string): tool is DragTool => ["highlight", "rect", "ellipse", "arc", "cloud", "line", "arrow"].includes(tool);
+type DragTool = "highlight" | "rect" | "ellipse" | "arc" | "cloud" | "line" | "arrow" | "redactarea";
+const isDragTool = (tool: string): tool is DragTool => ["highlight", "rect", "ellipse", "arc", "cloud", "line", "arrow", "redactarea"].includes(tool);
 
 /** Tools that add corners one click at a time. */
 const isPolyTool = (tool: string): tool is "polyline" | "polygon" => tool === "polyline" || tool === "polygon";
@@ -130,7 +173,7 @@ function PathIcon({ d }: { d: string }) {
     </svg>
   );
 }
-export type Tab = "annotate" | "shapes" | "insert" | "edittext" | "sign";
+export type Tab = "annotate" | "shapes" | "insert" | "edittext" | "sign" | "redact";
 type Item = EditItem & { id: number };
 type Point = { x: number; y: number };
 
@@ -224,6 +267,18 @@ const TABS: { id: Tab; label: string; icon: LucideIcon; tools: { id: Tool; label
       { id: "eraser", label: "Eraser", icon: icon(Eraser) },
     ],
   },
+  // Redact PDF's only tab.
+  {
+    id: "redact",
+    label: "Redact",
+    icon: EyeOff,
+    tools: [
+      { id: "select", label: "Select", icon: icon(MousePointer2) },
+      { id: "redacttext", label: "Mark text to redact", icon: icon(TextSelect) },
+      { id: "redactarea", label: "Mark an area to redact", icon: icon(SquareDashed) },
+      { id: "eraser", label: "Eraser: unmark", icon: icon(Eraser) },
+    ],
+  },
 ];
 
 const MARK_LABEL: Record<MarkupStyle, string> = { highlight: "Highlight", underline: "Underline", strike: "Strikethrough", squiggly: "Squiggly" };
@@ -248,6 +303,7 @@ const KIND_LABEL: Record<Exclude<EditItem["kind"], "markup">, string> = {
   ink: "Drawing",
   image: "Image",
   stamp: "Stamp",
+  redact: "Redaction",
 };
 
 const STROKES = [
@@ -319,6 +375,7 @@ const DEFAULT_BOX: Record<DragTool, [number, number]> = {
   cloud: [140, 90],
   line: [120, 0],
   arrow: [120, 0],
+  redactarea: [120, 16],
 };
 
 let measureChars: CanvasRenderingContext2D | null = null;
@@ -392,7 +449,8 @@ function bounds(item: EditItem): { x: number; y: number; width: number; height: 
       const ys = item.points.map((p) => item.y + p[1]);
       return { x: Math.min(...xs), y: Math.min(...ys), width: Math.max(...xs) - Math.min(...xs), height: Math.max(...ys) - Math.min(...ys) };
     }
-    case "markup": {
+    case "markup":
+    case "redact": {
       const left = Math.min(...item.rects.map((b) => b.x));
       const top = Math.min(...item.rects.map((b) => b.y));
       return {
@@ -516,6 +574,15 @@ function ItemShape({ item, hitArea }: { item: Item; hitArea: boolean }) {
           ))}
         </g>
       );
+    case "redact":
+      // See-through until saved, so it's clear what's marked; the saved page is solid black there.
+      return (
+        <g pointerEvents={hit}>
+          {item.rects.map((b, i) => (
+            <rect key={i} x={b.x} y={b.y} width={b.width} height={b.height} fill="#000" fillOpacity={0.6} stroke="#e74c3c" strokeWidth={1} />
+          ))}
+        </g>
+      );
     case "rect":
       return item.cloud ? (
         <path d={pathD(cloudPath(item))} fill={item.fill ?? "transparent"} stroke={item.color} strokeWidth={item.stroke} strokeLinejoin="round" pointerEvents={hit} />
@@ -614,7 +681,7 @@ export default function PdfEditor({ tabs = ["annotate", "shapes", "insert", "edi
   const [pageIndex, setPageIndex] = useState(0);
   const [view, setView] = useState<View | null>(null);
   // Signing starts on Signature, which asks for one straight away if none is saved.
-  const [tool, setTool] = useState<Tool>(tabs[0] === "sign" ? "signature" : "select");
+  const [tool, setTool] = useState<Tool>(tabs[0] === "sign" ? "signature" : tabs[0] === "redact" ? "redacttext" : "select");
   const [items, setItems] = useState<Item[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [ink, setInk] = useState("#000000");
@@ -623,6 +690,10 @@ export default function PdfEditor({ tabs = ["annotate", "shapes", "insert", "edi
   const [lineMark, setLineMark] = useState("#e74c3c");
   const [tab, setTab] = useState<Tab>(tabs[0]);
   const [markHint, setMarkHint] = useState(false);
+  const redacting = tabs.includes("redact");
+  const [findQuery, setFindQuery] = useState("");
+  const [findResult, setFindResult] = useState<string | null>(null);
+  const [pagesDialog, setPagesDialog] = useState(false);
   const [eraserSize, setEraserSize] = useState<(typeof ERASER_SIZES)[number]["id"]>("16");
   /** Where the eraser is over the page, to draw its outline in place of the pointer. */
   const [hover, setHover] = useState<Point | null>(null);
@@ -729,6 +800,8 @@ export default function PdfEditor({ tabs = ["annotate", "shapes", "insert", "edi
   const selected = items.find((i) => i.id === selectedId) ?? null;
   const pageItems = items.filter((i) => i.page === pageIndex);
   const kept = items.filter((i) => !isEmpty(i));
+  /** The tool a drag draws with: marking text to redact draws a free box where there is no text. */
+  const drawTool: Tool = tool === "redacttext" ? "redactarea" : tool;
   const badChars = unsupportedCharacters(items.flatMap((i) => (i.kind === "text" ? [i.text.replace(/\n/g, "")] : [])).join(""));
   const editedPages = new Set(kept.map((i) => i.page)).size;
 
@@ -769,7 +842,7 @@ export default function PdfEditor({ tabs = ["annotate", "shapes", "insert", "edi
       setTextStyle({ font, size, bold, italic, underline, color, background, align, opacity });
     } else if (item.kind === "markup") (item.style === "highlight" ? setMarker : setLineMark)(item.color);
     else if (item.kind === "ink" && item.marker) setMarker(item.color);
-    else if (item.kind !== "comment" && item.kind !== "image" && item.kind !== "stamp") {
+    else if (item.kind !== "comment" && item.kind !== "image" && item.kind !== "stamp" && item.kind !== "redact") {
       setInk(item.color);
       if (item.kind === "rect" || item.kind === "ellipse" || item.kind === "poly") setFill(item.fill);
       setStroke(String(item.stroke) as (typeof STROKES)[number]["id"]);
@@ -799,6 +872,7 @@ export default function PdfEditor({ tabs = ["annotate", "shapes", "insert", "edi
     if (kind === "line" || kind === "arrow" || kind === "arc")
       return { ...base, kind: "line", x: a.x, y: a.y, x2: end.x, y2: end.y, color: ink, stroke: Number(stroke), arrow: kind === "arrow", curve: kind === "arc" };
     const box = { x: Math.min(a.x, end.x), y: Math.min(a.y, end.y), width: Math.abs(end.x - a.x), height: Math.abs(end.y - a.y) };
+    if (kind === "redactarea") return { ...base, kind: "redact", rects: [box] };
     // A highlight dragged where there's no text to select: one free box.
     if (kind === "highlight") return { ...base, kind: "markup", style: "highlight", rects: [box], color: marker };
     if (kind === "cloud") return { ...base, kind: "rect", ...box, color: ink, fill, stroke: Number(stroke), cloud: true };
@@ -837,6 +911,7 @@ export default function PdfEditor({ tabs = ["annotate", "shapes", "insert", "edi
 
   /** A text mark over the letters from `from` to `to` on the current page. */
   function markItem(from: number, to: number): Item {
+    if (tool === "redacttext") return { id: nextId.current++, page: pageIndex, kind: "redact", rects: selectionRects(view!.chars, from, to) };
     const style = tool as MarkupStyle;
     return { id: nextId.current++, page: pageIndex, kind: "markup", style, rects: selectionRects(view!.chars, from, to), color: style === "highlight" ? marker : lineMark };
   }
@@ -986,11 +1061,13 @@ export default function PdfEditor({ tabs = ["annotate", "shapes", "insert", "edi
       setItems(eraseAt(e.clientX, e.clientY, p, items));
       return setDrag({ mode: "erase", before: items });
     }
-    if (tool === "highlight" || isTextMark(tool)) {
+    if (tool === "highlight" || tool === "redacttext" || isTextMark(tool)) {
       const at = charAt(view.chars, p.x, p.y);
-      setMarkHint(at === null && tool !== "highlight");
+      // Highlight and redact fall back to a free box where there's no text, like a scanned page.
+      const boxes = tool === "highlight" || tool === "redacttext";
+      setMarkHint(at === null && !boxes);
       if (at !== null) return setDrag({ mode: "mark", from: at, to: at });
-      if (tool !== "highlight") return;
+      if (!boxes) return;
     }
     if (tool === "ink" || tool === "marker") {
       inkPoints.current = [p];
@@ -1021,7 +1098,7 @@ export default function PdfEditor({ tabs = ["annotate", "shapes", "insert", "edi
     }
     const orig = drag.before.find((i) => i.id === drag.id);
     // Text marks belong to the text under them, so they stay put.
-    if (!orig || orig.kind === "markup") return;
+    if (!orig || orig.kind === "markup" || orig.kind === "redact") return;
     const dx = p.x - drag.start.x;
     const dy = p.y - drag.start.y;
     let moved: Item;
@@ -1064,9 +1141,9 @@ export default function PdfEditor({ tabs = ["annotate", "shapes", "insert", "edi
       }
       return;
     }
-    if (!isDragTool(tool)) return;
+    if (!isDragTool(drawTool)) return;
     const far = Math.hypot(drag.now.x - drag.start.x, drag.now.y - drag.start.y) > 4;
-    add(newItem(tool, drag.start, far ? drag.now : null));
+    add(newItem(drawTool, drag.start, far ? drag.now : null));
   }
 
   function onKeyDown(e: KeyboardEvent<SVGSVGElement>) {
@@ -1086,7 +1163,7 @@ export default function PdfEditor({ tabs = ["annotate", "shapes", "insert", "edi
       if (tool === "date") return add(newItem("text", { x: view.width / 2 - 50, y: view.height / 2 - 20 }, null, today()));
       // Keyboard placement: start near the middle of the page, then move with the arrow keys.
       add(newItem(tool, { x: view.width / 2 - 50, y: view.height / 2 - 20 }, null));
-    } else if (selected && selected.kind !== "markup" && e.key in arrows) {
+    } else if (selected && selected.kind !== "markup" && selected.kind !== "redact" && e.key in arrows) {
       e.preventDefault();
       const [dx, dy] = arrows[e.key];
       const moved = { ...selected, x: selected.x + dx, y: selected.y + dy, ...(selected.kind === "line" && { x2: selected.x2 + dx, y2: selected.y2 + dy }) };
@@ -1114,11 +1191,67 @@ export default function PdfEditor({ tabs = ["annotate", "shapes", "insert", "edi
     setFile(null);
   }
 
+  /** Marks every place the text appears, on every page, for redaction. */
+  async function markMatches(e: FormEvent) {
+    e.preventDefault();
+    if (doc.status !== "ready" || !findQuery.trim()) return;
+    const found: Item[] = [];
+    for (let page = 0; page < doc.pages; page++) {
+      const boxes = await doc.renderer.textBoxes(page).catch(() => []);
+      const chars = splitChars(boxes, charWidth);
+      for (const [from, to] of findMatches(boxes.flatMap((b) => [...b.str]), findQuery))
+        found.push({ id: nextId.current++, page, kind: "redact", rects: selectionRects(chars, from, to) });
+    }
+    if (found.length) change([...items.filter((i) => !isEmpty(i)), ...found]);
+    const pagesHit = new Set(found.map((i) => i.page)).size;
+    setFindResult(
+      found.length
+        ? `Marked ${plural(found.length, "match", "matches")} on ${plural(pagesHit, "page", "pages")}.`
+        : `“${findQuery.trim()}” isn't in the PDF's text. Scanned pages have no text to search: mark those by area.`,
+    );
+  }
+
+  /** Marks whole pages to black out, each with one box the size of the page. */
+  async function markWholePages(pages: number[]) {
+    if (doc.status !== "ready") return;
+    const renderer = doc.renderer;
+    const sizes = await Promise.all(pages.map((i) => renderer.size(i)));
+    const marks: Item[] = pages.map((page, n) => ({ id: nextId.current++, page, kind: "redact", rects: [{ x: 0, y: 0, ...sizes[n] }] }));
+    change([...items.filter((i) => !isEmpty(i)), ...marks]);
+    setFindResult(`Marked ${plural(pages.length, "whole page", "whole pages")}.`);
+  }
+
+  /** Redacting: the marked pages become pictures with black boxes burned in, then a fresh PDF is built. */
+  async function saveRedacted(renderer: PdfRenderer) {
+    const byPage = new Map<number, Box[]>();
+    for (const item of kept) if (item.kind === "redact") byPage.set(item.page, [...(byPage.get(item.page) ?? []), ...item.rects]);
+    const pages: FlatPage[] = [];
+    for (const [n, [index, rects]] of [...byPage].entries()) {
+      setJob({ status: "working", progress: { phase: "editing", done: n, total: byPage.size } });
+      pages.push(await burnIn(renderer, index, rects));
+    }
+    const bytes = await file!.arrayBuffer();
+    const task = runWorkerTask<PdfRedactRequest, EditProgress, Uint8Array>(
+      createRedactWorker,
+      { bytes, pages },
+      { transfer: [bytes, ...pages.map((p) => p.png)], onProgress: (progress) => progress.phase !== "editing" && setJob({ status: "working", progress }) },
+    );
+    cancelJob.current = task.cancel;
+    finish(await task.result);
+  }
+
+  /** Shows the result and downloads it straight away; the panel's Download button saves it again. */
+  function finish(bytes: Uint8Array) {
+    setJob({ status: "done", bytes });
+    saveFile(bytes as Uint8Array<ArrayBuffer>, outName, "application/pdf");
+  }
+
   async function save() {
     if (!file || !kept.length || badChars.length) return;
     setSelectedId(null);
     setJob({ status: "working", progress: { phase: "reading" } });
     try {
+      if (redacting && doc.status === "ready") return await saveRedacted(doc.renderer);
       const bytes = await file.arrayBuffer();
       const task = runWorkerTask<PdfEditorRequest, EditProgress, Uint8Array>(
         createWorker,
@@ -1126,7 +1259,7 @@ export default function PdfEditor({ tabs = ["annotate", "shapes", "insert", "edi
         { transfer: [bytes], onProgress: (progress) => setJob({ status: "working", progress }) },
       );
       cancelJob.current = task.cancel;
-      setJob({ status: "done", bytes: await task.result });
+      finish(await task.result);
     } catch (err) {
       if ((err as Error).message !== "cancelled") setJob({ status: "error", error: pdfErrorMessage((err as Error).message) });
     }
@@ -1166,14 +1299,16 @@ export default function PdfEditor({ tabs = ["annotate", "shapes", "insert", "edi
       ? inkItem(inkPoints.current)
       : drag?.mode === "mark"
         ? markItem(drag.from, drag.to)
-        : drag?.mode === "draw" && isDragTool(tool)
-          ? newItem(tool, drag.start, drag.now)
+        : drag?.mode === "draw" && isDragTool(drawTool)
+          ? newItem(drawTool, drag.start, drag.now)
           : polyPts && hover
             ? polyItem([...polyPts, hover], false)
             : null;
   // Which style controls to show: the selected item's, or the chosen tool's for what it adds next.
   const styleKind: Tool | "image" | null = selected
-    ? selected.kind === "markup"
+    ? selected.kind === "redact"
+      ? null
+      : selected.kind === "markup"
       ? selected.style
       : selected.kind === "ink" && selected.marker
         ? "marker"
@@ -1190,7 +1325,7 @@ export default function PdfEditor({ tabs = ["annotate", "shapes", "insert", "edi
             : selected.kind === "rect" && selected.cloud
               ? "cloud"
               : selected.kind
-    : tool === "select"
+    : tool === "select" || tool === "redacttext" || tool === "redactarea"
       ? null
       : tool === "date"
         ? "text"
@@ -1254,7 +1389,7 @@ export default function PdfEditor({ tabs = ["annotate", "shapes", "insert", "edi
                       Reset
                     </Button>
                     <Button variant="primary" icon={Save} onClick={save} disabled={!kept.length || badChars.length > 0 || job.status === "working"}>
-                      Save PDF
+                      {redacting ? "Redact and save" : "Save PDF"}
                     </Button>
                   </div>
                 </div>
@@ -1430,6 +1565,50 @@ export default function PdfEditor({ tabs = ["annotate", "shapes", "insert", "edi
                     }}
                   />
                 )}
+                {tab === "redact" && !selected && (
+                  <div className="w-full space-y-2">
+                    <Button size="sm" icon={FileX2} onClick={() => setPagesDialog(true)}>
+                      Black out whole pages
+                    </Button>
+                    {doc.status === "ready" && (
+                      <RedactPagesDialog
+                        open={pagesDialog}
+                        onClose={() => setPagesDialog(false)}
+                        current={pageIndex}
+                        pageCount={doc.pages}
+                        onMark={(pages) => {
+                          setPagesDialog(false);
+                          void markWholePages(pages);
+                        }}
+                      />
+                    )}
+                    <form onSubmit={markMatches} className="space-y-1.5">
+                      <label htmlFor="redact-find" className="block text-sm">
+                        Find text to redact
+                      </label>
+                      <div className="flex max-w-md gap-2">
+                        <TextInput
+                          id="redact-find"
+                          value={findQuery}
+                          onChange={(e) => {
+                            setFindQuery(e.target.value);
+                            setFindResult(null);
+                          }}
+                          placeholder="A name, email or account number"
+                        />
+                        <Button type="submit" disabled={!findQuery.trim()} className="shrink-0">
+                          Mark all
+                        </Button>
+                      </div>
+                    </form>
+                    <p className={`text-sm ${muted}`} aria-live="polite">
+                      {findResult ??
+                        (markHint
+                          ? ""
+                          : "Drag across text or draw a box to mark it. Saving blacks out every mark for good: pages with marks are saved as pictures, so nothing under the black can be copied or recovered.")}
+                    </p>
+                  </div>
+                )}
                 {(styleKind === "highlight" || (styleKind && isTextMark(styleKind))) && !selected && (
                   <p className={`text-sm ${markHint ? "text-[color:var(--error)]" : muted}`}>
                     {markHint
@@ -1498,7 +1677,7 @@ export default function PdfEditor({ tabs = ["annotate", "shapes", "insert", "edi
                     }}
                   />
                 )}
-                {!styleKind && <p className={`text-sm ${muted}`}>Pick a tool, then click or drag on the page. Select an item to move, restyle or delete it.</p>}
+                {!styleKind && tab !== "redact" && <p className={`text-sm ${muted}`}>Pick a tool, then click or drag on the page. Select an item to move, restyle or delete it.</p>}
                 {tool === "stamp" && <StampPicker value={stamp} onChange={setStamp} />}
                 {tool === "signature" && <SignaturePicker value={signature} onChange={setSignature} />}
                 {tool === "initials" && <SignaturePicker initials value={initials} onChange={setInitials} />}
@@ -1580,7 +1759,7 @@ export default function PdfEditor({ tabs = ["annotate", "shapes", "insert", "edi
                           aria-label={`Page ${pageIndex + 1}`}
                           aria-describedby="pdf-edit-keys"
                           className={`absolute inset-0 h-full w-full text-[color:var(--accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] ${
-                            tool === "select" ? "cursor-default" : tool === "highlight" || isTextMark(tool) || tool === "edittext" ? "cursor-text" : tool === "eraser" ? "cursor-none" : "cursor-crosshair"
+                            tool === "select" ? "cursor-default" : tool === "highlight" || isTextMark(tool) || tool === "edittext" || tool === "redacttext" ? "cursor-text" : tool === "eraser" ? "cursor-none" : "cursor-crosshair"
                           } ${tool !== "select" || selected ? "touch-none" : ""}`}
                           onPointerDown={onPointerDown}
                           // Clicking would focus the page after the new text box took focus; typing belongs in the box.
@@ -1704,17 +1883,23 @@ export default function PdfEditor({ tabs = ["annotate", "shapes", "insert", "edi
       </InputPanel>
 
       <OutputPanel
-        label="Edited PDF"
+        label={redacting ? "Redacted PDF" : "Edited PDF"}
         wide
         copyable={false}
         download={job.status === "done" ? { filename: outName, mimeType: "application/pdf", content: job.bytes as Uint8Array<ArrayBuffer> } : undefined}
       >
         <div role="status" aria-live="polite" aria-busy={job.status === "working"}>
           {job.status === "idle" ? (
-            <p className={muted}>{file ? "Add text, highlights, shapes or comments, then save." : "Choose a PDF to edit."}</p>
+            <p className={muted}>{!file ? "Choose a PDF." : redacting ? "Mark what to remove, then save." : "Add text, highlights, shapes or comments, then save."}</p>
           ) : job.status === "working" ? (
             <TaskProgress
-              label={job.progress.phase === "reading" ? "Reading PDF…" : job.progress.phase === "saving" ? "Saving…" : `Adding edit ${job.progress.done + 1} of ${job.progress.total}…`}
+              label={
+                job.progress.phase === "reading"
+                  ? "Reading PDF…"
+                  : job.progress.phase === "saving"
+                    ? "Saving…"
+                    : `${redacting ? "Redacting page" : "Adding edit"} ${job.progress.done + 1} of ${job.progress.total}…`
+              }
               value={job.progress.phase === "editing" ? job.progress.done / job.progress.total : undefined}
               onCancel={() => {
                 cancelJob.current();
@@ -1726,13 +1911,14 @@ export default function PdfEditor({ tabs = ["annotate", "shapes", "insert", "edi
           ) : (
             <div className="space-y-1 font-[family-name:var(--font-ui)]">
               <p className="text-base">
-                Saved <span className="font-semibold">{plural(kept.length, "edit", "edits")}</span>
+                {redacting ? "Redacted" : "Saved"} <span className="font-semibold">{plural(kept.length, redacting ? "mark" : "edit", redacting ? "marks" : "edits")}</span>
                 <span className="text-[color:var(--text-muted)]"> · {formatBytes(job.bytes.length)}</span>
               </p>
-              <p className="break-all text-sm text-[color:var(--text-muted)]">{outName}</p>
+              <p className="break-all text-sm text-[color:var(--text-muted)]">Downloaded as {outName}. Use Download above to save it again.</p>
               <p className="text-sm text-[color:var(--text-muted)]">
-                Highlights, text marks, drawings and comments are saved as annotations: they show in your PDF reader&apos;s comments list, and you can still
-                edit or delete them there.
+                {redacting
+                  ? "Pages with marks are now pictures, so what was under the black is gone for good. Bookmarks and document info were removed too."
+                  : "Highlights, text marks, drawings and comments are saved as annotations: they show in your PDF reader's comments list, and you can still edit or delete them there."}
               </p>
             </div>
           )}

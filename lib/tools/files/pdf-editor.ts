@@ -48,6 +48,8 @@ export type EditItem =
   | ({ kind: "text"; page: number; x: number; y: number; text: string; cover?: Box & { color: string }; leading?: number } & TextStyle)
   /** Marks on the page's own text, one box per line covered (or one free box on pages without text). */
   | { kind: "markup"; style: MarkupStyle; page: number; rects: Box[]; color: string }
+  /** Areas to black out for good, one box per line of text covered. Saved by redactPages, not here. */
+  | { kind: "redact"; page: number; rects: Box[] }
   /** `fill` null leaves the inside see-through. `cloud` draws a rectangle's outline as a row of bumps. */
   | { kind: "rect" | "ellipse"; page: number; x: number; y: number; width: number; height: number; color: string; fill: string | null; stroke: number; cloud?: boolean }
   /** From (x, y) to (x2, y2): straight, or a quarter curve (`curve`), with an arrowhead at the end (`arrow`). */
@@ -204,6 +206,7 @@ export async function applyEdits(input: Uint8Array, items: EditItem[], onProgres
 
   for (const [i, item] of items.entries()) {
     onProgress({ phase: "editing", done: i, total: items.length });
+    if (item.kind === "redact") continue;
     const page = doc.getPage(item.page);
 
     if (item.kind === "text") {
