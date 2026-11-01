@@ -71,6 +71,7 @@ import {
   Crop,
   FileLock,
   LockOpen,
+  ScanText,
 } from "lucide-react";
 import { tintColor } from "@/lib/category-theme-css";
 import type { CategoryId } from "@/registry";
@@ -121,6 +122,7 @@ const toolIcons: Record<string, LucideIcon> = {
   "crop-pdf": Crop,
   "protect-pdf": FileLock,
   "unlock-pdf": LockOpen,
+  "ocr-pdf": ScanText,
   "image-resizer": Image,
   "csv-cleaner": Sheet,
   "lorem-ipsum-generator": Pilcrow,

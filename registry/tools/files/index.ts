@@ -1,6 +1,7 @@
 import type { ToolConfig } from "@/registry/types";
 import cropPdf from "./crop-pdf";
 import htmlToPdf from "./html-to-pdf";
+import ocrPdf from "./ocr-pdf";
 import imagesToPdf from "./images-to-pdf";
 import pdfCompressor from "./pdf-compressor";
 import pdfEditor from "./pdf-editor";
@@ -19,4 +20,4 @@ import rotatePdf from "./rotate-pdf";
 import unlockPdf from "./unlock-pdf";
 import signPdf from "./sign-pdf";
 
-export const fileTools: ToolConfig[] = [pdfEditor, signPdf, redactPdf, pdfWatermark, pdfToImage, pdfToText, imagesToPdf, htmlToPdf, pdfPageOrganizer, removePdfPages, cropPdf, protectPdf, unlockPdf, rotatePdf, pdfPageNumbers, pdfSplitter, pdfMerger, pdfCompressor, pdfMetadataEditor];
+export const fileTools: ToolConfig[] = [pdfEditor, signPdf, redactPdf, pdfWatermark, pdfToImage, pdfToText, ocrPdf, imagesToPdf, htmlToPdf, pdfPageOrganizer, removePdfPages, cropPdf, protectPdf, unlockPdf, rotatePdf, pdfPageNumbers, pdfSplitter, pdfMerger, pdfCompressor, pdfMetadataEditor];

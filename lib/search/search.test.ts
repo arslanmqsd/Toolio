@@ -102,6 +102,8 @@ describe("search", () => {
     ["encrypt pdf", "protect-pdf"],
     ["remove pdf password", "unlock-pdf"],
     ["unlock pdf", "unlock-pdf"],
+    ["ocr pdf", "ocr-pdf"],
+    ["make pdf searchable", "ocr-pdf"],
     ["trim pdf margins", "crop-pdf"],
     ["black out text in pdf", "redact-pdf"],
     ["save web page as pdf", "html-to-pdf"],
