@@ -97,6 +97,8 @@ describe("search", () => {
     ["html to pdf", "html-to-pdf"],
     ["redact pdf", "redact-pdf"],
     ["remove pdf pages", "remove-pdf-pages"],
+    ["crop pdf", "crop-pdf"],
+    ["trim pdf margins", "crop-pdf"],
     ["black out text in pdf", "redact-pdf"],
     ["save web page as pdf", "html-to-pdf"],
     ["electronic signature", "sign-pdf"],

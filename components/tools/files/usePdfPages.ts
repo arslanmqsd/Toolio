@@ -15,7 +15,7 @@ export type PdfPagesDoc = { status: "none" } | { status: "opening" } | { status:
 
 /**
  * Opens a PDF for a page grid: pdf-lib counts the pages (and checks the file can be edited), then pdf.js
- * draws a preview of each, longest side `thumbSize` CSS pixels. `renderer` stays open for bigger views.
+ * draws a preview of each, longest side `thumbSize` CSS pixels (none when 0). `renderer` stays open for bigger views.
  */
 export function usePdfPages(file: File | null, thumbSize: number) {
   const [doc, setDoc] = useState<PdfPagesDoc>({ status: "none" });
@@ -51,7 +51,7 @@ export function usePdfPages(file: File | null, thumbSize: number) {
           destroyRenderer = opened.destroy;
           if (cancelled) return opened.destroy();
           setRenderer(opened);
-          for (let i = 0; i < opened.pageCount && !cancelled; i++) {
+          for (let i = 0; thumbSize > 0 && i < opened.pageCount && !cancelled; i++) {
             const blob = await opened.thumbnail(i, thumbSize).catch(() => null);
             if (!blob || cancelled) continue;
             const url = URL.createObjectURL(blob);
