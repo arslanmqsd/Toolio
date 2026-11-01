@@ -91,6 +91,7 @@ export const TOOL_COMPONENTS: Record<string, ComponentType> = {
   "text-diff-checker": dynamic(() => import("@/components/tools/text/TextDiffChecker"), { loading: ToolLoading }),
   "time-zone-converter": dynamic(() => import("@/components/tools/calculators/TimeZoneConverter"), { loading: ToolLoading }),
   "unix-timestamp": dynamic(() => import("@/components/tools/developer/UnixTimestamp"), { loading: ToolLoading }),
+  "unlock-pdf": dynamic(() => import("@/components/tools/files/UnlockPdf"), { loading: ToolLoading }),
   "url-encoder": dynamic(() => import("@/components/tools/developer/UrlEncoder"), { loading: ToolLoading }),
   "url-parser": dynamic(() => import("@/components/tools/developer/UrlParser"), { loading: ToolLoading }),
   "uuid-generator": dynamic(() => import("@/components/tools/developer/UuidGenerator"), { loading: ToolLoading }),
