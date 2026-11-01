@@ -10,15 +10,11 @@ import SelectedFile from "@/components/ui/SelectedFile";
 import TaskProgress from "@/components/ui/TaskProgress";
 import { formatBytes } from "@/lib/format-bytes";
 import { plural } from "@/lib/notices";
-import { PDF_MAX_BYTES, pdfErrorMessage } from "@/lib/tools/files/pdf-errors";
+import { pdfErrorMessage } from "@/lib/tools/files/pdf-errors";
 import type { PageEdit } from "@/lib/tools/files/pdf-organize";
 import type { PdfOrganizeRequest } from "@/lib/tools/files/pdf-organize.worker";
-import { openPdfRenderer } from "@/lib/tools/files/pdf-render";
 import { runWorkerTask } from "@/lib/worker-task";
-
-function createWorker() {
-  return new Worker(new URL("../../../lib/tools/files/pdf-organize.worker.ts", import.meta.url));
-}
+import { createOrganizeWorker, usePdfPages } from "./usePdfPages";
 
 /** Longest side of a preview, in CSS pixels. */
 const THUMB_SIZE = 160;
@@ -31,7 +27,6 @@ interface Page {
   deleted: boolean;
 }
 
-type Doc = { status: "none" } | { status: "opening" } | { status: "ready" } | { status: "error"; error: string };
 type SaveState = { status: "idle" } | { status: "working" } | { status: "done"; bytes: Uint8Array } | { status: "error"; error: string };
 
 const initialPages = (count: number): Page[] => Array.from({ length: count }, (_, index) => ({ index, turns: 0, deleted: false }));
@@ -42,64 +37,16 @@ const iconButton =
 
 export default function PdfPageOrganizer() {
   const [file, setFile] = useState<File | null>(null);
-  const [doc, setDoc] = useState<Doc>({ status: "none" });
   const [pages, setPages] = useState<Page[]>([]);
-  const [thumbs, setThumbs] = useState<Record<number, string>>({});
   const [save, setSave] = useState<SaveState>({ status: "idle" });
   const [dragging, setDragging] = useState<number | null>(null);
   const [dropTarget, setDropTarget] = useState<number | null>(null);
   const cancelSave = useRef(() => {});
 
-  // Open the file twice in the background: pdf-lib checks it can be edited, pdf.js draws the previews.
-  useEffect(() => {
-    setPages([]);
-    setThumbs({});
-    if (!file) return setDoc({ status: "none" });
-    if (file.size > PDF_MAX_BYTES) return setDoc({ status: "error", error: `This file is over ${formatBytes(PDF_MAX_BYTES)}, too big to process in the browser.` });
+  const { doc, thumbs } = usePdfPages(file, THUMB_SIZE);
 
-    let cancelled = false;
-    let cancelCount = () => {};
-    let destroyThumbs = () => {};
-    const urls: string[] = [];
-    setDoc({ status: "opening" });
-
-    file
-      .arrayBuffer()
-      .then(async (buffer) => {
-        if (cancelled) return;
-        const bytes = new Uint8Array(buffer);
-        const task = runWorkerTask<PdfOrganizeRequest, never, number>(createWorker, { kind: "count", bytes: buffer.slice(0) });
-        cancelCount = task.cancel;
-        const count = await task.result;
-        if (cancelled) return;
-        setPages(initialPages(count));
-        setDoc({ status: "ready" });
-
-        // Previews are a nicety: if pdf.js can't draw a page, its card shows the page number instead.
-        // shortcut: renders every page in order up front; render only visible cards if 500+ page files feel slow.
-        try {
-          const thumbnails = await openPdfRenderer(bytes);
-          destroyThumbs = thumbnails.destroy;
-          for (let i = 0; i < thumbnails.pageCount && !cancelled; i++) {
-            const blob = await thumbnails.thumbnail(i, THUMB_SIZE).catch(() => null);
-            if (!blob || cancelled) continue;
-            const url = URL.createObjectURL(blob);
-            urls.push(url);
-            setThumbs((prev) => ({ ...prev, [i]: url }));
-          }
-        } catch {
-          // Leave the numbered placeholders.
-        }
-      })
-      .catch((err: Error) => !cancelled && err.message !== "cancelled" && setDoc({ status: "error", error: pdfErrorMessage(err.message) }));
-
-    return () => {
-      cancelled = true;
-      cancelCount();
-      destroyThumbs();
-      urls.forEach((url) => URL.revokeObjectURL(url));
-    };
-  }, [file]);
+  // A newly opened file starts with every page as it was.
+  useEffect(() => setPages(doc.status === "ready" ? initialPages(doc.pages) : []), [doc]);
 
   // Any edit makes an earlier saved file out of date.
   useEffect(() => {
@@ -134,7 +81,7 @@ export default function PdfPageOrganizer() {
     setSave({ status: "working" });
     try {
       const bytes = await file.arrayBuffer();
-      const task = runWorkerTask<PdfOrganizeRequest, never, Uint8Array>(createWorker, { kind: "organize", bytes, edits }, { transfer: [bytes] });
+      const task = runWorkerTask<PdfOrganizeRequest, never, Uint8Array>(createOrganizeWorker, { kind: "organize", bytes, edits }, { transfer: [bytes] });
       cancelSave.current = task.cancel;
       setSave({ status: "done", bytes: await task.result });
     } catch (err) {

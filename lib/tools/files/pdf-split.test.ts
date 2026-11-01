@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PDFDocument } from "pdf-lib";
-import { extractPages, parsePageRanges, rangeIndexes, rangeLabel, type SplitProgress } from "./pdf-split";
+import { compactRanges, extractPages, parsePageRanges, rangeIndexes, rangeLabel, type SplitProgress } from "./pdf-split";
 
 const ranges = (input: string, pageCount = 10) => {
   const parsed = parsePageRanges(input, pageCount);
@@ -44,6 +44,26 @@ describe("parsePageRanges", () => {
     expect(ranges("1-3, abc")).toBe(`"abc" isn't a page or a range like 2-5.`);
     expect(ranges("-")).toBe(`"-" isn't a page or a range like 2-5.`);
     expect(ranges("1-2-3")).toBe(`"1-2-3" isn't a page or a range like 2-5.`);
+  });
+});
+
+describe("compactRanges", () => {
+  it("joins runs of pages into ranges, counted from 1", () => {
+    expect(compactRanges([1, 4, 5, 6])).toBe("2, 5-7");
+  });
+
+  it("sorts and drops repeats", () => {
+    expect(compactRanges([6, 0, 5, 0])).toBe("1, 6-7");
+  });
+
+  it("is empty for no pages", () => {
+    expect(compactRanges([])).toBe("");
+  });
+
+  it("reads back to the same pages", () => {
+    const pages = [0, 2, 3, 4, 9];
+    const parsed = parsePageRanges(compactRanges(pages), 10);
+    expect(parsed.ok && parsed.ranges.flatMap(rangeIndexes)).toEqual(pages);
   });
 });
 

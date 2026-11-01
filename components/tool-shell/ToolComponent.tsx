@@ -78,6 +78,7 @@ export const TOOL_COMPONENTS: Record<string, ComponentType> = {
   "pdf-watermark": dynamic(() => import("@/components/tools/files/PdfWatermark"), { loading: ToolLoading }),
   "redact-pdf": dynamic(() => import("@/components/tools/files/RedactPdf"), { loading: ToolLoading }),
   "regex-tester": dynamic(() => import("@/components/tools/developer/RegexTester"), { loading: ToolLoading }),
+  "remove-pdf-pages": dynamic(() => import("@/components/tools/files/RemovePdfPages"), { loading: ToolLoading }),
   "rotate-pdf": dynamic(() => import("@/components/tools/files/RotatePdf"), { loading: ToolLoading }),
   "semver-calculator": dynamic(() => import("@/components/tools/developer/SemverCalculator"), { loading: ToolLoading }),
   "sign-pdf": dynamic(() => import("@/components/tools/files/SignPdf"), { loading: ToolLoading }),
