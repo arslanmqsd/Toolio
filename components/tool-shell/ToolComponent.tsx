@@ -39,6 +39,7 @@ export const TOOL_COMPONENTS: Record<string, ComponentType> = {
   "case-converter": dynamic(() => import("@/components/tools/text/CaseConverter"), { loading: ToolLoading }),
   "chmod-calculator": dynamic(() => import("@/components/tools/developer/ChmodCalculator"), { loading: ToolLoading }),
   "cron-builder": dynamic(() => import("@/components/tools/developer/CronBuilder"), { loading: ToolLoading }),
+  "crop-pdf": dynamic(() => import("@/components/tools/files/CropPdf"), { loading: ToolLoading }),
   "csv-cleaner": dynamic(() => import("@/components/tools/data/CsvCleaner"), { loading: ToolLoading }),
   "curl-converter": dynamic(() => import("@/components/tools/developer/CurlConverter"), { loading: ToolLoading }),
   "data-size-converter": dynamic(() => import("@/components/tools/developer/DataSizeConverter"), { loading: ToolLoading }),
