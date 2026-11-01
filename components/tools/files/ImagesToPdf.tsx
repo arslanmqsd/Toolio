@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { FileOutput } from "lucide-react";
 import { InputPanel, OutputPanel } from "@/components/tool-shell/ToolPanels";
 import Alert from "@/components/ui/Alert";
@@ -67,9 +67,19 @@ function progressLabel(progress: Progress): string {
 const errorMessage = (message: string) =>
   message === "out of memory" ? "The browser ran out of memory. Try fewer or smaller images." : "One of the images couldn't be read. Remove it and try again.";
 
-export default function ImagesToPdf() {
+interface ImagesToPdfProps {
+  /** Replaces the file drop with another way to add images, such as Scan to PDF's phone link. */
+  source?: (addFiles: (files: File[]) => void) => ReactNode;
+  initialSize?: PageSize;
+  /** The PDF's file name; by default it's named after a single image, or "images.pdf". */
+  outName?: string;
+  /** What the output panel says before there are any images. */
+  emptyText?: string;
+}
+
+export default function ImagesToPdf({ source, initialSize = "image", outName: fixedName, emptyText = "Add images to turn into a PDF, one page each." }: ImagesToPdfProps) {
   const [items, setItems] = useState<Item[]>([]);
-  const [size, setSize] = useState<PageSize>("image");
+  const [size, setSize] = useState<PageSize>(initialSize);
   const [margin, setMargin] = useState<Margin>("0");
   const [job, setJob] = useState<Job>({ status: "idle" });
   const nextId = useRef(0);
@@ -154,7 +164,7 @@ export default function ImagesToPdf() {
   const broken = items.filter((item) => item.error).length;
   const checking = items.some((item) => !item.size && !item.error);
   const canConvert = items.length > 0 && !tooBig && !broken && !checking && job.status !== "working";
-  const outName = items.length === 1 ? items[0].file.name.replace(/\.[^.]+$/, "") + ".pdf" : "images.pdf";
+  const outName = fixedName ?? (items.length === 1 ? items[0].file.name.replace(/\.[^.]+$/, "") + ".pdf" : "images.pdf");
 
   return (
     <>
@@ -184,7 +194,7 @@ export default function ImagesToPdf() {
             />
           )}
 
-          <FileDrop onFiles={addFiles} accept="image/*" multiple what="images" compact={items.length > 0} />
+          {source ? source(addFiles) : <FileDrop onFiles={addFiles} accept="image/*" multiple what="images" compact={items.length > 0} />}
 
           {tooBig && (
             <Alert title="Too much for the browser">
@@ -224,7 +234,7 @@ export default function ImagesToPdf() {
       >
         <div role="status" aria-live="polite" aria-busy={job.status === "working"}>
           {job.status === "idle" ? (
-            <p className={muted}>{items.length ? "Set the order and page size, then make the PDF." : "Add images to turn into a PDF, one page each."}</p>
+            <p className={muted}>{items.length ? "Set the order and page size, then make the PDF." : emptyText}</p>
           ) : job.status === "working" ? (
             <TaskProgress
               label={progressLabel(job.progress)}

@@ -39,3 +39,26 @@ export async function prepareImage(file: Blob): Promise<PreparedImage> {
     canvas.width = canvas.height = 0;
   }
 }
+
+/**
+ * A camera photo as an upright JPEG no longer than `maxSide` pixels. Phone cameras take 12–50 megapixels;
+ * a page needs far less to print sharply, and the smaller file sends in seconds.
+ */
+export async function shrinkPhoto(file: Blob, maxSide = 2400): Promise<Uint8Array> {
+  const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+  const canvas = document.createElement("canvas");
+  try {
+    const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    const ctx = canvas.getContext("2d")!;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.85));
+    if (!blob) throw new Error("This photo couldn't be read.");
+    return new Uint8Array(await blob.arrayBuffer());
+  } finally {
+    bitmap.close();
+    canvas.width = canvas.height = 0;
+  }
+}

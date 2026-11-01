@@ -104,6 +104,8 @@ describe("search", () => {
     ["unlock pdf", "unlock-pdf"],
     ["ocr pdf", "ocr-pdf"],
     ["make pdf searchable", "ocr-pdf"],
+    ["scan to pdf", "scan-to-pdf"],
+    ["phone scanner", "scan-to-pdf"],
     ["trim pdf margins", "crop-pdf"],
     ["black out text in pdf", "redact-pdf"],
     ["save web page as pdf", "html-to-pdf"],
