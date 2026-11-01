@@ -98,6 +98,8 @@ describe("search", () => {
     ["redact pdf", "redact-pdf"],
     ["remove pdf pages", "remove-pdf-pages"],
     ["crop pdf", "crop-pdf"],
+    ["password protect pdf", "protect-pdf"],
+    ["encrypt pdf", "protect-pdf"],
     ["trim pdf margins", "crop-pdf"],
     ["black out text in pdf", "redact-pdf"],
     ["save web page as pdf", "html-to-pdf"],

@@ -12,9 +12,10 @@ import pdfSplitter from "./pdf-splitter";
 import pdfToImage from "./pdf-to-image";
 import pdfToText from "./pdf-to-text";
 import pdfWatermark from "./pdf-watermark";
+import protectPdf from "./protect-pdf";
 import redactPdf from "./redact-pdf";
 import removePdfPages from "./remove-pdf-pages";
 import rotatePdf from "./rotate-pdf";
 import signPdf from "./sign-pdf";
 
-export const fileTools: ToolConfig[] = [pdfEditor, signPdf, redactPdf, pdfWatermark, pdfToImage, pdfToText, imagesToPdf, htmlToPdf, pdfPageOrganizer, removePdfPages, cropPdf, rotatePdf, pdfPageNumbers, pdfSplitter, pdfMerger, pdfCompressor, pdfMetadataEditor];
+export const fileTools: ToolConfig[] = [pdfEditor, signPdf, redactPdf, pdfWatermark, pdfToImage, pdfToText, imagesToPdf, htmlToPdf, pdfPageOrganizer, removePdfPages, cropPdf, protectPdf, rotatePdf, pdfPageNumbers, pdfSplitter, pdfMerger, pdfCompressor, pdfMetadataEditor];
