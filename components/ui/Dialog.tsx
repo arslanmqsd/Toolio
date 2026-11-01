@@ -11,13 +11,15 @@ interface DialogProps {
   /** Shown above the title; the header centers under it. */
   icon?: ReactNode;
   children: ReactNode;
+  /** "lg" for big content, like a page preview. */
+  size?: "sm" | "lg";
 }
 
 /**
  * Modal dialog on the native <dialog> element: the browser traps focus, makes the page behind inert,
  * and closes it on Escape. Clicking the backdrop closes it too.
  */
-export default function Dialog({ open, onClose, title, description, icon, children }: DialogProps) {
+export default function Dialog({ open, onClose, title, description, icon, children, size = "sm" }: DialogProps) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const descriptionId = useId();
@@ -39,7 +41,7 @@ export default function Dialog({ open, onClose, title, description, icon, childr
       // The backdrop is part of the <dialog> box, so a click whose target is the dialog itself landed outside the content.
       onClick={(event) => event.target === event.currentTarget && onClose()}
       // !m-auto keeps it centred even when a parent's space-y-* margins reach it.
-      className="!m-auto w-[calc(100%-2rem)] max-w-sm rounded-lg border border-[color:var(--border)] bg-[color:var(--surface-raised)] p-0 text-[color:var(--text)] shadow-2xl backdrop:bg-black/60 backdrop:backdrop-blur-sm"
+      className={`!m-auto w-[calc(100%-2rem)] ${size === "lg" ? "max-w-3xl" : "max-w-sm"} rounded-lg border border-[color:var(--border)] bg-[color:var(--surface-raised)] p-0 text-[color:var(--text)] shadow-2xl backdrop:bg-black/60 backdrop:backdrop-blur-sm`}
     >
       <div className="relative p-6">
         <button

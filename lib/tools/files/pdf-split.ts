@@ -38,6 +38,19 @@ export function rangeIndexes({ from, to }: PageRange): number[] {
   return Array.from({ length: Math.abs(to - from) + 1 }, (_, i) => from - 1 + i * step);
 }
 
+/** Zero-based pages as the short text a person would type, counted from 1: [1, 4, 5, 6] → "2, 5-7". */
+export function compactRanges(indexes: number[]): string {
+  const sorted = [...new Set(indexes)].sort((a, b) => a - b);
+  const parts: string[] = [];
+  for (let i = 0; i < sorted.length; i++) {
+    let end = i;
+    while (sorted[end + 1] === sorted[end] + 1) end++;
+    parts.push(rangeLabel({ from: sorted[i] + 1, to: sorted[end] + 1 }));
+    i = end;
+  }
+  return parts.join(", ");
+}
+
 /** "1-3", "5", for file names and labels. */
 export const rangeLabel = ({ from, to }: PageRange) => (from === to ? String(from) : `${from}-${to}`);
 
