@@ -68,7 +68,8 @@ interface HtmlPreviewProps {
 export default function HtmlPreview({ html, styling, width, className = "" }: HtmlPreviewProps) {
   const frameRef = useRef<HTMLIFrameElement>(null);
   const themeVersion = useThemeVersion(styling === "prose");
-  const [css, setCss] = useState(styling === "page" ? PAGE_CSS : "");
+  // Empty until mounted: sanitizing needs the browser, so nothing renders on the server.
+  const [css, setCss] = useState("");
 
   const srcDoc = useMemo(() => {
     if (!css) return undefined;
